@@ -140,8 +140,8 @@ class _SplashWrapperState extends State<SplashWrapper>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryColor.withOpacity(0.8),
-              AppTheme.secondaryColor.withOpacity(0.6),
+              AppTheme.primaryColor.withAlpha((0.8 * 255).round()),
+              AppTheme.secondaryColor.withAlpha((0.6 * 255).round()),
             ],
           ),
         ),
@@ -160,7 +160,7 @@ class _SplashWrapperState extends State<SplashWrapper>
                     borderRadius: BorderRadius.circular(60),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
+                        color: Colors.black.withAlpha((0.2 * 255).round()),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -195,7 +195,7 @@ class _SplashWrapperState extends State<SplashWrapper>
                 child: Text(
                   'Conectando servicios de calidad',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withAlpha((0.9 * 255).round()),
                       ),
                 ),
               ),

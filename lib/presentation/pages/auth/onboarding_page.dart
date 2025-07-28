@@ -40,7 +40,7 @@ class _OnboardingPageState extends State<OnboardingPage>
       icon: Symbols.verified_user,
       title: 'Seguridad garantizada',
       description: 'Todos nuestros prestadores están verificados. Trabaja con confianza y tranquilidad.',
-      gradient: LinearGradient(
+      gradient: const LinearGradient(
         colors: [AppTheme.accentColor, Colors.orange],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
