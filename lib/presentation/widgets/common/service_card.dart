@@ -41,7 +41,7 @@ class ServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -56,7 +56,7 @@ class ServiceCard extends StatelessWidget {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
               ),
               child: imageUrl != null
                   ? ClipRRect(
@@ -153,7 +153,7 @@ class ServiceCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -167,7 +167,7 @@ class ServiceCard extends StatelessWidget {
               height: 80,
               decoration: BoxDecoration(
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
-                color: AppTheme.primaryColor.withOpacity(0.1),
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
               ),
               child: imageUrl != null
                   ? ClipRRect(
@@ -260,7 +260,7 @@ class ServiceCard extends StatelessWidget {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withOpacity(0.1),
+        color: AppTheme.primaryColor.withValues(alpha: 0.1),
         borderRadius: isHorizontal 
             ? const BorderRadius.horizontal(left: Radius.circular(16))
             : const BorderRadius.vertical(top: Radius.circular(16)),
