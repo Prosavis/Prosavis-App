@@ -1,168 +1,225 @@
-# Prosavis - Plataforma de Confianza para Servicios Locales
+# ServicioConecta 🤝
 
-## 🎯 Visión del Proyecto
+Una aplicación móvil moderna que conecta prestadores de servicios con clientes, brindando una plataforma segura y confiable para encontrar servicios de calidad.
 
-**Prosavis** es la plataforma de confianza para contratar servicios locales en Colombia. Nuestra misión es convertirse en el "Rappi para servicios" o el "Urban Company de Colombia", conectando a clientes con profesionales verificados y confiables.
+## ✨ Características
 
-### ¿Qué es Prosavis?
+- **Autenticación con Google**: Inicio de sesión rápido y seguro
+- **Interfaz moderna**: Diseño atractivo con animaciones suaves
+- **Marketplace de servicios**: Encuentra desde plomería hasta tutoría
+- **Arquitectura escalable**: Clean Architecture con BLoC pattern
+- **Firebase Backend**: Base de datos en tiempo real y autenticación
+- **Categorías diversas**: 10+ categorías de servicios disponibles
 
-Una aplicación móvil que resuelve el problema de confianza en la contratación de servicios locales mediante:
+## 🛠️ Tecnologías Utilizadas
 
-- **Verificación de Proveedores**: Sistema robusto para validar identidad y credenciales
-- **Calificaciones Transparentes**: Sistema de feedback que promueve la calidad del servicio
-- **IA Inteligente**: Emparejamiento optimizado entre clientes y profesionales
+- **Flutter**: Framework multiplataforma
+- **Firebase**: Backend como servicio
+- **BLoC**: Gestión de estado
+- **Get It**: Inyección de dependencias
+- **Google Fonts**: Tipografías modernas
+- **Material Symbols**: Iconografía moderna
 
-## 🏗️ Arquitectura del Proyecto
+## 🏗️ Arquitectura
 
-### Fase 1: Prototipo Funcional (Meses 0-12)
-*Enfoque: Velocidad de desarrollo y validación de mercado*
+El proyecto sigue los principios de Clean Architecture:
 
-**Stack Tecnológico:**
-- **Frontend**: Flutter (iOS + Android)
-- **Backend**: Firebase (Authentication, Cloud Firestore, Cloud Functions)
-- **IA**: Firebase ML Kit + APIs externas (AWS Comprehend)
-- **Infraestructura**: Google Cloud Platform
-
-### Fase 2: Escalado y Madurez (Meses 12+)
-*Enfoque: Optimización de costos y control total*
-
-**Stack Tecnológico Futuro:**
-- **Backend**: Go con Echo framework
-- **Base de Datos**: PostgreSQL
-- **Infraestructura**: Amazon Web Services (AWS)
-- **Chat**: WebSocket server en Go
-
-## 🚀 Plan de Desarrollo Inmediato
-
-### Semana 1: Fundación y Autenticación
-- [ ] Configurar proyecto Firebase (Auth, Firestore)
-- [ ] Inicializar proyecto Flutter
-- [ ] Conectar Flutter con Firebase
-- [ ] Generar conceptos visuales con IA
-
-### Semana 2: Registro y Perfiles
-- [ ] Pantallas de Registro/Login en Flutter
-- [ ] Integración con Firebase Auth
-- [ ] Diseño de estructura de datos en Firestore
-
-### Semana 3: Visualización de Servicios
-- [ ] Poblar 10-15 proveedores de ejemplo
-- [ ] Pantalla principal con categorías
-- [ ] Lista y detalle de perfiles de proveedores
-
-### Semana 4: Pulido y Demo
-- [ ] Búsqueda simple (filtrado cliente)
-- [ ] Refinamiento UI/UX
-- [ ] Demo en video del prototipo
-
-## 👨‍💻 Equipo de Desarrollo
-
-**Desarrollador Principal**: Nicolas Ceballos
-- Ingeniero de Sistemas
-- Experiencia en desarrollo de software e IA
-- Enfoque en desarrollo ágil y validación rápida
-
-## 🛠️ Configuración del Proyecto
-
-### Prerrequisitos
-- Flutter SDK (versión estable)
-- Firebase CLI
-- Android Studio / Xcode
-- Cuenta de Google Cloud Platform
-
-### Instalación
-```bash
-# Clonar el repositorio
-git clone [URL_DEL_REPOSITORIO]
-
-# Instalar dependencias
-flutter pub get
-
-# Configurar Firebase
-firebase login
-firebase init
-
-# Ejecutar la aplicación
-flutter run
+```
+lib/
+├── core/                    # Configuraciones y utilidades
+│   ├── constants/          # Constantes de la aplicación
+│   ├── themes/             # Temas y colores
+│   ├── injection/          # Inyección de dependencias
+│   └── usecases/           # Casos de uso base
+├── data/                   # Capa de datos
+│   ├── models/             # Modelos de datos
+│   ├── repositories/       # Implementaciones de repositorios
+│   └── services/           # Servicios externos (Firebase)
+├── domain/                 # Lógica de negocio
+│   ├── entities/           # Entidades del dominio
+│   ├── repositories/       # Contratos de repositorios
+│   └── usecases/           # Casos de uso
+└── presentation/           # Capa de presentación
+    ├── blocs/              # BLoCs para gestión de estado
+    ├── pages/              # Pantallas de la aplicación
+    └── widgets/            # Widgets reutilizables
 ```
 
-## 📱 Características Principales
+## 🚀 Configuración Inicial
 
-### Para Clientes
-- Búsqueda de profesionales verificados
-- Sistema de calificaciones y reseñas
+### Prerrequisitos
+
+1. **Flutter SDK** (versión 3.8.0+)
+   ```bash
+   # Descargar desde: https://flutter.dev/docs/get-started/install
+   ```
+
+2. **Dart SDK** (incluido con Flutter)
+
+3. **Android Studio** o **VS Code** con extensiones de Flutter
+
+4. **Firebase CLI**
+   ```bash
+   npm install -g firebase-tools
+   ```
+
+### Configuración del Proyecto
+
+1. **Clonar el repositorio**
+   ```bash
+   git clone https://github.com/tu-usuario/myapp.git
+   cd myapp
+   ```
+
+2. **Instalar dependencias**
+   ```bash
+   flutter pub get
+   ```
+
+3. **Configurar Firebase**
+   
+   a. Crear un proyecto en [Firebase Console](https://console.firebase.google.com/)
+   
+   b. Habilitar servicios:
+   - Authentication (Google Sign-In)
+   - Cloud Firestore
+   - Firebase Analytics (opcional)
+   
+   c. Descargar `google-services.json` para Android y `GoogleService-Info.plist` para iOS
+
+4. **Configurar variables de entorno**
+   
+   Editar el archivo `.env` con tus credenciales:
+   ```env
+   FIREBASE_PROJECT_ID=tu-proyecto-firebase
+   FIREBASE_API_KEY=tu-api-key
+   FIREBASE_APP_ID=tu-app-id
+   FIREBASE_MESSAGING_SENDER_ID=tu-sender-id
+   GOOGLE_CLIENT_ID=tu-google-client-id
+   ENV=development
+   ```
+
+5. **Configurar autenticación de Google**
+   
+   En Firebase Console > Authentication > Sign-in method:
+   - Habilitar Google Sign-In
+   - Configurar SHA-1 para Android
+   - Configurar Bundle ID para iOS
+
+## 📱 Ejecutar la Aplicación
+
+```bash
+# Verificar dispositivos disponibles
+flutter devices
+
+# Ejecutar en modo debug
+flutter run
+
+# Ejecutar en modo release
+flutter run --release
+```
+
+## 🏗️ Compilar para Producción
+
+### Android
+```bash
+flutter build apk --release
+# o para App Bundle
+flutter build appbundle --release
+```
+
+### iOS
+```bash
+flutter build ios --release
+```
+
+## 🔧 Comandos Útiles
+
+```bash
+# Analizar código
+flutter analyze
+
+# Ejecutar tests
+flutter test
+
+# Limpiar build
+flutter clean
+
+# Actualizar dependencias
+flutter pub upgrade
+```
+
+## 📋 Funcionalidades Principales
+
+### 🔐 Autenticación
+- Inicio de sesión con Google
+- Gestión automática de sesiones
+- Estados de autenticación en tiempo real
+
+### 🏠 Pantalla Principal
+- Búsqueda de servicios
+- Categorías de servicios
+- Servicios destacados
+- Servicios cercanos
+
+### 🎨 Interfaz de Usuario
+- Tema moderno con Material 3
+- Animaciones suaves
+- Iconos llamativos
+- Gradientes atractivos
+
+### 📱 Navegación
+- Onboarding para nuevos usuarios
+- Navegación fluida entre pantallas
+- Bottom navigation bar
+
+## 🚧 Estado del Proyecto
+
+✅ **Completado:**
+- Arquitectura base
+- Autenticación con Google
+- Pantallas principales
+- Configuración de Firebase
+- Widgets reutilizables
+
+🔄 **En Desarrollo:**
+- Funcionalidad de servicios
 - Chat en tiempo real
-- Pagos seguros integrados
-- Historial de servicios
+- Sistema de reservas
+- Pagos integrados
 
-### Para Proveedores
-- Perfil profesional verificado
-- Gestión de disponibilidad
-- Sistema de pagos automático
-- Herramientas de marketing
-- Dashboard de rendimiento
+## 🤝 Contribuir
 
-## 🔒 Capa de Confianza
-
-El diferenciador clave de Prosavis es nuestro sistema de verificación:
-
-1. **Verificación de Identidad**: Documentos oficiales y verificación biométrica
-2. **Validación de Credenciales**: Certificaciones profesionales y experiencia
-3. **Sistema de Reputación**: Calificaciones transparentes y reseñas verificadas
-4. **Seguro de Responsabilidad**: Protección para clientes y proveedores
-
-## 🤖 Integración de IA
-
-- **Emparejamiento Inteligente**: Algoritmos para conectar clientes con el profesional ideal
-- **Detección de Fraude**: IA para identificar comportamientos sospechosos
-- **Optimización de Precios**: Análisis de mercado en tiempo real
-- **Chatbot de Soporte**: Asistencia automatizada para usuarios
-
-## 📊 Métricas de Éxito
-
-- Número de usuarios registrados
-- Tasa de conversión (búsqueda → contratación)
-- Satisfacción del cliente (rating promedio)
-- Retención de proveedores
-- Ingresos recurrentes
-
-## 🔄 Roadmap
-
-### Q1 2024: MVP
-- Autenticación básica
-- Catálogo de servicios
-- Perfiles de proveedores
-- Sistema de calificaciones
-
-### Q2 2024: Funcionalidades Core
-- Chat en tiempo real
-- Sistema de pagos
-- Verificación de proveedores
-- Búsqueda avanzada
-
-### Q3 2024: Escalado
-- IA para emparejamiento
-- Analytics avanzados
-- Integración con servicios externos
-- Optimización de rendimiento
-
-### Q4 2024: Expansión
-- Múltiples ciudades
-- Servicios premium
-- API pública
-- Partners estratégicos
-
-## 📞 Contacto
-
-**Desarrollador Principal**: Nicolas Ceballos
-- Email: [EMAIL]
-- LinkedIn: [LINKEDIN]
-- GitHub: [GITHUB]
+1. Fork el proyecto
+2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
+5. Abre un Pull Request
 
 ## 📄 Licencia
 
-Este proyecto es privado y confidencial. Todos los derechos reservados.
+Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
+
+## 📞 Soporte
+
+Si tienes preguntas o problemas:
+
+1. Revisa la documentación
+2. Busca en Issues existentes
+3. Crea un nuevo Issue con detalles
+
+## 🎯 Roadmap
+
+- [ ] Sistema de calificaciones
+- [ ] Notificaciones push
+- [ ] Mapa de servicios
+- [ ] Modo oscuro
+- [ ] Soporte multi-idioma
+- [ ] Pagos con Stripe
+- [ ] Sistema de referidos
 
 ---
 
-*Prosavis - Conectando confianza, un servicio a la vez.*
+**¡Gracias por usar ServicioConecta!** 🚀
+
+Desarrollado con ❤️ usando Flutter y Firebase.

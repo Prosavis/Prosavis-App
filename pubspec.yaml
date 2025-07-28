@@ -1,5 +1,5 @@
 name: myapp
-description: "A new Flutter project."
+description: "Aplicación marketplace para conectar prestadores de servicios con clientes"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,9 +31,45 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
+  # UI & Iconos
   cupertino_icons: ^1.0.8
+  material_symbols_icons: ^4.2801.0
+  google_fonts: ^6.2.1
+  
+  # Animaciones
+  animations: ^2.0.11
+  lottie: ^3.1.2
+  shimmer: ^3.0.0
+  
+  # Estado & Arquitectura
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+  get_it: ^8.0.2
+  injectable: ^2.4.4
+  
+  # Firebase
+  firebase_core: ^3.6.0
+  firebase_auth: ^5.3.1
+  cloud_firestore: ^5.4.3
+  firebase_analytics: ^11.3.3
+  firebase_crashlytics: ^4.1.3
+  firebase_messaging: ^15.1.3
+  
+  # Autenticación
+  google_sign_in: ^6.2.1
+  
+  # HTTP & Storage
+  dio: ^5.7.0
+  shared_preferences: ^2.3.2
+  
+  # Utils
+  flutter_dotenv: ^5.1.0
+  intl: ^0.19.0
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
+  
+  # Navigation
+  go_router: ^14.6.1
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +81,14 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+  # Code generation
+  build_runner: ^2.4.13
+  injectable_generator: ^2.6.2
+  
+  # Testing
+  bloc_test: ^9.1.7
+  mocktail: ^1.0.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -58,9 +102,11 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
+  assets:
+    - assets/images/
+    - assets/animations/
+    - assets/icons/
+    - .env
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
@@ -73,7 +119,10 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
+  fonts:
+    - family: CustomIcons
+      fonts:
+        - asset: assets/fonts/custom_icons.ttf
   #   - family: Schyler
   #     fonts:
   #       - asset: fonts/Schyler-Regular.ttf

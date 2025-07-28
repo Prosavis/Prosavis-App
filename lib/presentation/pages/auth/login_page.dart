@@ -1,0 +1,370 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:material_symbols_icons/symbols.dart';
+import 'package:animations/animations.dart';
+import '../../../core/themes/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
+import '../../blocs/auth/auth_state.dart';
+import '../home/home_page.dart';
+
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage>
+    with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _fadeController = AnimationController(
+      duration: AppConstants.longAnimation,
+      vsync: this,
+    );
+    _scaleController = AnimationController(
+      duration: AppConstants.mediumAnimation,
+      vsync: this,
+    );
+    
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.elasticOut),
+    );
+
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _fadeController.forward();
+    await Future.delayed(const Duration(milliseconds: 500));
+    _scaleController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    _scaleController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: BlocConsumer<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthAuthenticated) {
+            Navigator.of(context).pushReplacement(
+              PageRouteBuilder(
+                pageBuilder: (context, animation, _) => const HomePage(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                transitionDuration: AppConstants.mediumAnimation,
+              ),
+            );
+          } else if (state is AuthError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.message),
+                backgroundColor: AppTheme.errorColor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          return Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppTheme.primaryColor.withOpacity(0.1),
+                  AppTheme.backgroundColor,
+                  AppTheme.secondaryColor.withOpacity(0.1),
+                ],
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                child: Column(
+                  children: [
+                    const Spacer(),
+                    
+                    // Logo and Title
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: _buildHeader(),
+                      ),
+                    ),
+                    
+                    const Spacer(),
+                    
+                    // Welcome Message
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: _buildWelcomeMessage(),
+                    ),
+                    
+                    const SizedBox(height: AppConstants.paddingLarge * 2),
+                    
+                    // Google Sign In Button
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: ScaleTransition(
+                        scale: _scaleAnimation,
+                        child: _buildGoogleSignInButton(state),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: AppConstants.paddingLarge),
+                    
+                    // Terms and Privacy
+                    FadeTransition(
+                      opacity: _fadeAnimation,
+                      child: _buildTermsAndPrivacy(),
+                    ),
+                    
+                    const Spacer(),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Column(
+      children: [
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            gradient: AppTheme.primaryGradient,
+            borderRadius: BorderRadius.circular(60),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: const Icon(
+            Symbols.handshake,
+            size: 64,
+            color: Colors.white,
+          ),
+        ),
+        
+        const SizedBox(height: AppConstants.paddingLarge),
+        
+        Text(
+          AppConstants.appName,
+          style: GoogleFonts.inter(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        
+        const SizedBox(height: AppConstants.paddingSmall),
+        
+        Text(
+          'Conectando servicios de calidad',
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            color: AppTheme.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWelcomeMessage() {
+    return Column(
+      children: [
+        Text(
+          '¡Bienvenido!',
+          style: GoogleFonts.inter(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+        
+        const SizedBox(height: AppConstants.paddingMedium),
+        
+        Text(
+          'Inicia sesión para encontrar los mejores servicios cerca de ti o para ofrecer tus servicios profesionales.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            fontSize: 16,
+            color: AppTheme.textSecondary,
+            height: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildGoogleSignInButton(AuthState state) {
+    final isLoading = state is AuthLoading;
+    
+    return SizedBox(
+      width: double.infinity,
+      child: OpenContainer(
+        transitionType: ContainerTransitionType.fade,
+        openBuilder: (context, _) => const HomePage(),
+        closedElevation: 0,
+        closedShape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        closedBuilder: (context, openContainer) => ElevatedButton(
+          onPressed: isLoading ? null : () {
+            context.read<AuthBloc>().add(AuthSignInWithGoogleRequested());
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: AppTheme.textPrimary,
+            elevation: 2,
+            shadowColor: Colors.black.withOpacity(0.1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+            ),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24,
+              vertical: 16,
+            ),
+          ),
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.primaryColor,
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/google_logo.png',
+                      height: 24,
+                      width: 24,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Symbols.account_circle,
+                          size: 24,
+                          color: AppTheme.primaryColor,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Continuar con Google',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTermsAndPrivacy() {
+    return Column(
+      children: [
+        Text(
+          'Al continuar, aceptas nuestros',
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            color: AppTheme.textTertiary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to Terms of Service
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Términos de Servicio',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppTheme.primaryColor,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+            Text(
+              ' y ',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppTheme.textTertiary,
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                // TODO: Navigate to Privacy Policy
+              },
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              child: Text(
+                'Política de Privacidad',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppTheme.primaryColor,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+} 
