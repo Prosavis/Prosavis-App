@@ -338,7 +338,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
             contentPadding: EdgeInsets.zero,
             activeColor: AppTheme.primaryColor,
           );
-        }).toList(),
+        }),
       ],
     );
   }

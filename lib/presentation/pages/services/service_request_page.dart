@@ -332,7 +332,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
             contentPadding: EdgeInsets.zero,
             activeColor: AppTheme.primaryColor,
           );
-        }).toList(),
+        }),
       ],
     );
   }
