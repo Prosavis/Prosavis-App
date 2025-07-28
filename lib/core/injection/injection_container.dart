@@ -7,6 +7,9 @@ import 'package:myapp/presentation/blocs/auth/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
+// Alias para setup, mantiene compatibilidad
+Future<void> setupDependencyInjection() async => await init();
+
 Future<void> init() async {
   // 1) Initialize Firebase before registering services that use it
   await FirebaseService.initializeFirebase();

@@ -140,7 +140,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
           children: AppConstants.serviceCategories.map((category) {
             final isSelected = _currentFilters.selectedCategories.contains(category['name']);
             return GestureDetector(
-              onTap: () => _toggleCategory(category['name'] as String),
+              onTap: () => _toggleCategory(category['name']),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -151,7 +151,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                   ),
                 ),
                 child: Text(
-                  category['name'] as String,
+                  category['name'],
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     color: isSelected ? Colors.white : AppTheme.textSecondary,

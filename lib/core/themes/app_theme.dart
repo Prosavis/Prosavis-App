@@ -7,6 +7,7 @@ class AppTheme {
   static const Color secondaryColor = Color(0xFF10B981); // Verde
   static const Color accentColor = Color(0xFFFF6B6B); // Coral
   static const Color backgroundColor = Color(0xFFF8FAFC);
+  static const Color backgroundLight = Color(0xFFF8FAFC); // Alias para backgroundColor
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFEF4444);
   static const Color warningColor = Color(0xFFF59E0B);

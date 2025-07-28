@@ -455,7 +455,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               ),
             ],
           ),
-        )).toList(),
+        )),
       ],
     );
   }
@@ -575,7 +575,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               ],
             ),
             const SizedBox(height: 16),
-            ..._reviews.take(2).map((review) => _buildReviewItem(review)).toList(),
+            ..._reviews.take(2).map((review) => _buildReviewItem(review)),
           ],
         ),
       ),

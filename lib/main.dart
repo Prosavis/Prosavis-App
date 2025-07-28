@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'core/injection/injection_container.dart';
+import 'core/injection/injection_container.dart' as di;
 import 'core/themes/app_theme.dart';
 import 'core/constants/app_constants.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
@@ -17,7 +17,7 @@ void main() async {
 
   try {
     // Setup dependency injection (Firebase se inicializa aquí)
-    await setupDependencyInjection();
+    await di.init();
 
     debugPrint('✅ Aplicación inicializada correctamente');
   } catch (e) {
@@ -39,7 +39,7 @@ class MyApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.system,
       home: BlocProvider(
-        create: (context) => getIt<AuthBloc>()..add(AuthStarted()),
+        create: (context) => di.sl<AuthBloc>()..add(AuthStarted()),
         child: const SplashWrapper(),
       ),
     );

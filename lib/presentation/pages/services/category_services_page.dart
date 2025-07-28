@@ -430,7 +430,6 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
         // Keep original order for newest
         break;
       case SortOption.relevance:
-      default:
         // Keep original order for relevance
         break;
     }

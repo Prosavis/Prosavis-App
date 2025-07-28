@@ -238,7 +238,7 @@ class _CategoriesPageState extends State<CategoriesPage>
         _filteredCategories = AppConstants.serviceCategories;
       } else {
         _filteredCategories = AppConstants.serviceCategories
-            .where((category) => (category['name'] as String)
+            .where((category) => category['name']
                 .toLowerCase()
                 .contains(query.toLowerCase()))
             .toList();

@@ -1,3 +1,6 @@
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/material_symbols_icons.dart';
+
 class AppConstants {
   // App Info
   static const String appName = 'ServicioConecta';
@@ -21,17 +24,17 @@ class AppConstants {
   static const String themeKey = 'theme_mode';
   
   // Service Categories
-  static const List<String> serviceCategories = [
-    'Plomería',
-    'Electricidad',
-    'Limpieza',
-    'Jardinería',
-    'Carpintería',
-    'Pintura',
-    'Mecánica',
-    'Tecnología',
-    'Tutoría',
-    'Otros'
+  static const List<Map<String, dynamic>> serviceCategories = [
+    {'name': 'Plomería', 'icon': Symbols.plumbing, 'id': 1},
+    {'name': 'Electricidad', 'icon': Symbols.electrical_services, 'id': 2},
+    {'name': 'Limpieza', 'icon': Symbols.cleaning_services, 'id': 3},
+    {'name': 'Jardinería', 'icon': Symbols.local_florist, 'id': 4},
+    {'name': 'Carpintería', 'icon': Symbols.construction, 'id': 5},
+    {'name': 'Pintura', 'icon': Symbols.format_paint, 'id': 6},
+    {'name': 'Mecánica', 'icon': Symbols.car_repair, 'id': 7},
+    {'name': 'Tecnología', 'icon': Symbols.computer, 'id': 8},
+    {'name': 'Tutoría', 'icon': Symbols.school, 'id': 9},
+    {'name': 'Otros', 'icon': Symbols.more_horiz, 'id': 10}
   ];
   
   // API Endpoints

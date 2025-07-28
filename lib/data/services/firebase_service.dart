@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:myapp/firebase_options.dart';
+import 'dart:developer' as developer;
 
 class FirebaseService {
   // 1) Inicialización de Firebase
@@ -13,42 +14,32 @@ class FirebaseService {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Usar GoogleSignIn.instance en lugar de crear nueva instancia
-  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   FirebaseService();
 
   // 2) Método de login con Google - implementación simplificada
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // 2.1 Para la nueva API, intentamos authenticate() si está disponible
-      GoogleSignInAccount? googleUser;
-      
-      if (_googleSignIn.supportsAuthenticate()) {
-        googleUser = await _googleSignIn.authenticate();
-      } else {
-        // Fallback para plataformas que no soportan authenticate()
-        // Esto podría ser necesario en versiones de transición
-        throw UnsupportedError('La plataforma actual no soporta authenticate()');
-      }
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) return null; // usuario canceló
 
-      // 2.2 Obtener los tokens directamente del usuario autenticado
-      // Para Firebase, necesitamos idToken y accessToken
-      final scopes = ['email', 'profile'];
-      final authorization = await googleUser.authorizationClient.authorizeScopes(scopes);
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
 
-      // 2.3 Construir credencial de Firebase
+      // Create a new credential
       final credential = GoogleAuthProvider.credential(
-        idToken: authorization.idToken,
-        accessToken: authorization.accessToken,
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
 
-      // 2.4 Hacer sign-in en Firebase
+      // Once signed in, return the UserCredential
       return await _auth.signInWithCredential(credential);
     } catch (e) {
       // Log del error pero no lanzar excepción para manejar errores gracefully
-      print('Error en signInWithGoogle: $e');
+      developer.log('Error en signInWithGoogle: $e');
       return null;
     }
   }

@@ -27,7 +27,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
   DateTime? _preferredDate;
   TimeOfDay? _preferredTime;
   bool _isFlexibleSchedule = false;
-  List<String> _selectedImages = [];
+  final List<String> _selectedImages = [];
 
   final List<String> _urgencyOptions = [
     'Inmediato (hoy)',
@@ -187,12 +187,12 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
       ),
       items: AppConstants.serviceCategories.map((category) {
         return DropdownMenuItem<String>(
-          value: category['name'] as String,
+          value: category['name'],
           child: Row(
             children: [
-              Icon(category['icon'] as IconData, size: 20),
+              Icon(category['icon'], size: 20),
               const SizedBox(width: 8),
-              Text(category['name'] as String),
+              Text(category['name']),
             ],
           ),
         );
