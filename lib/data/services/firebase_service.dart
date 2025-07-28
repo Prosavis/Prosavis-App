@@ -1,119 +1,52 @@
-import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../../firebase_options.dart';
+import 'package:myapp/firebase_options.dart';
 
 class FirebaseService {
-  static final FirebaseService _instance = FirebaseService._internal();
-  factory FirebaseService() => _instance;
-  FirebaseService._internal();
-
-  // Firebase instances
-  late FirebaseApp _app;
-  late FirebaseAuth _auth;
-  late FirebaseFirestore _firestore;
-  late GoogleSignIn _googleSignIn;
-
-  // Getters
-  FirebaseAuth get auth => _auth;
-  FirebaseFirestore get firestore => _firestore;
-  GoogleSignIn get googleSignIn => _googleSignIn;
-
-  // Initialize Firebase
-  Future<void> initializeFirebase() async {
-    try {
-      _app = await Firebase.initializeApp(
+  // 1) Inicialización de Firebase
+  static Future<void> initializeFirebase() async {
+    await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
-      );
-
-      _auth = FirebaseAuth.instanceFor(app: _app);
-      _firestore = FirebaseFirestore.instanceFor(app: _app);
-      
-      _googleSignIn = GoogleSignIn(
-        scopes: [
-          'email',
-          'profile',
-        ],
-      );
-
-      // Configure Firestore settings
-      _firestore.settings = const Settings(
-        persistenceEnabled: true,
-        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-      );
-
-      debugPrint('✅ Firebase inicializado correctamente');
-    } catch (e) {
-      debugPrint('❌ Error al inicializar Firebase: $e');
-      rethrow;
-    }
+    );
   }
 
-  // Sign in with Google
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn googleSignIn = GoogleSignIn();
+
+  FirebaseService();
+
+  // 2) Método de login con Google
   Future<UserCredential?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      
-      if (googleUser == null) {
-        return null; // El usuario canceló el inicio de sesión
-      }
+    // 2.1 Dispara el flujo de Google Sign‑In
+    final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+    if (googleUser == null) return null; // usuario canceló
 
-      final GoogleSignInAuthentication googleAuth = 
-          googleUser.authentication;
+    // 2.2 Obtiene los tokens
+    final GoogleSignInAuthentication googleAuth =
+        await googleUser.authentication;
 
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+    // 2.3 Construye credencial de Firebase
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+      accessToken: googleAuth.accessToken,
+    );
 
-      return await _auth.signInWithCredential(credential);
-    } catch (e) {
-      debugPrint('❌ Error en Google Sign In: $e');
-      rethrow;
-    }
+    // 2.4 Hace sign‑in en Firebase
+    return await _auth.signInWithCredential(credential);
   }
 
-  // Sign out
+  // …otros métodos de tu servicio (logout, observables, etc.)
   Future<void> signOut() async {
-    try {
-      await Future.wait([
-        _auth.signOut(),
-        _googleSignIn.signOut(),
-      ]);
-    } catch (e) {
-      debugPrint('❌ Error al cerrar sesión: $e');
-      rethrow;
-    }
+    await Future.wait([
+      _auth.signOut(),
+      googleSignIn.signOut(),
+    ]);
   }
 
-  // Get current user
   User? getCurrentUser() {
     return _auth.currentUser;
   }
 
-  // Auth state changes stream
   Stream<User?> get authStateChanges => _auth.authStateChanges();
-
-  // Firestore operations
-  CollectionReference<Map<String, dynamic>> collection(String path) {
-    return _firestore.collection(path);
-  }
-
-  DocumentReference<Map<String, dynamic>> document(String path) {
-    return _firestore.doc(path);
-  }
-
-  // Batch operations
-  WriteBatch batch() {
-    return _firestore.batch();
-  }
-
-  // Transaction
-  Future<T> runTransaction<T>(
-    Future<T> Function(Transaction transaction) updateFunction,
-  ) {
-    return _firestore.runTransaction(updateFunction);
-  }
 }
