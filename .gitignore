@@ -5,41 +5,130 @@
 *.swp
 .DS_Store
 .atom/
-.build/
 .buildlog/
 .history
 .svn/
-.swiftpm/
-migrate_working_dir/
-
-# IntelliJ related
+# IntelliJ
+.idea/
 *.iml
 *.ipr
 *.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
+out/
+# Visual Studio Code
+.vscode/
+# Flutter
 .flutter-plugins
 .flutter-plugins-dependencies
+.packages
 .pub-cache/
 .pub/
 /build/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/App.framework
+/ios/Flutter/Flutter.framework
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/podfile.lock
+/ios/Runner/GeneratedPluginRegistrant.*
+/ios/Runner.xcworkspace/xcshareddata/
+/ios/Runner.xcworkspace/xcuserdata/
+/ios/pods_symlinks_in_build_folder/
+# Android
+#/android/
+android/app/src/main/assets/flutter_assets/
+android/app/src/main/java/io/flutter/plugins/
+android/gen/
+android/local.properties
+android/key.properties
+android/app/build/
+android/app/src/main/jniLibs/
+#android/.gradle/
+#android/gradlew
+#android/gradlew.bat
+# Xcode
+#/.idea/
+#/*.xcodeproj/
+#/*.xcworkspace/
+/ios/build/
+/ios/DerivedData/
+/ios/Flutter/Debug.xcconfig
+/ios/Flutter/Release.xcconfig
+/ios/Runner/Assets.xcassets/
+/ios/Runner/Info.plist
+/ios/Runner/main.m
+/ios/Runner.xcodeproj/project.xcworkspace/
+/ios/Runner.xcodeproj/xcuserdata/
+/ios/ServiceDefinitions.json
+/ios/Runner/GoogleService-Info.plist
+#/.symlinks/
+#app.framework
+#flutter.framework
+# Misc
+*.lock
+*.snapshot
+*.a
+*.d
+*.gcno
+*.gcda
+*.gcov
+*.jar
+# Packages files
+# These are specific to your project, so you may need to customize them.
+# For example, if you use a different package manager or have other generated files.
+#
+# If you are using `flutter create` to create your project, then you should
+# not need to edit this file.
+#
+#
+# Flutter
+#
+# This file is used to store the dependencies of your project.
+# It is recommended to check this file into your source control system.
+#
+# For more information, see:
+# https://flutter.dev/docs/development/tools/sdk/upgrading#the-flutter-tool
+#
+#
+# Dart
+#
+# The following section is for Dart-specific files.
+#
+# The .dart_tool/ directory is used by the Dart SDK to store build artifacts and other temporary files.
+# It is recommended to add this directory to your .gitignore file.
+#
+# For more information, see:
+# https://dart.dev/guides/writing-command-line-apps/dependencies-and-packages#the-dart_tool-directory
+.dart_tool/
+# Build directory
+build/
+# Generated files
+lib/generated_plugin_registrant.dart
+lib/firebase_options.dart
+# Pubspec lock file
+pubspec.lock
+# IDE-specific files
+.idea/
+.vscode/
+# Secrets
+!/secrets/
+secrets.json
+# Environment files
+.env
+# Other
+*.iml
+*.ipr
+*.iws
+*.swp
+*.bak
+*.tmp
+*.orig
+*~
+*#
+*.log
+*.DS_Store
+/android/app/google-services.json
+.firebase/
+.firebaserc
+firebase.json
+/ios/Runner/GoogleService-Info.plist
+/lib/firebase_options.dart
