@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../models/user_model.dart';
@@ -59,7 +60,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return userEntity;
     } catch (e) {
-      print('❌ Error en signInWithGoogle: $e');
+      debugPrint('❌ Error en signInWithGoogle: $e');
       rethrow;
     }
   }
@@ -69,7 +70,7 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _firebaseService.signOut();
     } catch (e) {
-      print('❌ Error en signOut: $e');
+      debugPrint('❌ Error en signOut: $e');
       rethrow;
     }
   }
@@ -97,7 +98,7 @@ class AuthRepositoryImpl implements AuthRepository {
         'id': firebaseUser.uid,
       });
     } catch (e) {
-      print('❌ Error en getCurrentUser: $e');
+      debugPrint('❌ Error en getCurrentUser: $e');
       return null;
     }
   }
@@ -124,7 +125,7 @@ class AuthRepositoryImpl implements AuthRepository {
           'id': firebaseUser.uid,
         });
       } catch (e) {
-        print('❌ Error en authStateChanges: $e');
+        debugPrint('❌ Error en authStateChanges: $e');
         return null;
       }
     });
@@ -142,7 +143,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return user;
     } catch (e) {
-      print('❌ Error en createUser: $e');
+      debugPrint('❌ Error en createUser: $e');
       rethrow;
     }
   }
@@ -161,7 +162,7 @@ class AuthRepositoryImpl implements AuthRepository {
 
       return userModel;
     } catch (e) {
-      print('❌ Error en updateUser: $e');
+      debugPrint('❌ Error en updateUser: $e');
       rethrow;
     }
   }
@@ -174,7 +175,7 @@ class AuthRepositoryImpl implements AuthRepository {
           .doc(userId)
           .delete();
     } catch (e) {
-      print('❌ Error en deleteUser: $e');
+      debugPrint('❌ Error en deleteUser: $e');
       rethrow;
     }
   }

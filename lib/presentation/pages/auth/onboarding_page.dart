@@ -97,7 +97,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             end: Alignment.bottomCenter,
             colors: [
               AppTheme.backgroundColor,
-              AppTheme.backgroundColor.withOpacity(0.8),
+              AppTheme.backgroundColor.withValues(alpha: 0.8),
             ],
           ),
         ),
@@ -155,7 +155,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: AppTheme.primaryColor.withOpacity(0.3),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -213,7 +213,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                   borderRadius: BorderRadius.circular(60),
                   boxShadow: [
                     BoxShadow(
-                      color: data.gradient.colors.first.withOpacity(0.3),
+                      color: data.gradient.colors.first.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -271,7 +271,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           decoration: BoxDecoration(
             color: currentIndex == index
                 ? AppTheme.primaryColor
-                : AppTheme.textTertiary.withOpacity(0.3),
+                : AppTheme.textTertiary.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(4),
           ),
         ),

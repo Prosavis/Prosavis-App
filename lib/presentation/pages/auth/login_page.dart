@@ -96,9 +96,9 @@ class _LoginPageState extends State<LoginPage>
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppTheme.primaryColor.withOpacity(0.1),
+                  AppTheme.primaryColor.withValues(alpha: 0.1),
                   AppTheme.backgroundColor,
-                  AppTheme.secondaryColor.withOpacity(0.1),
+                  AppTheme.secondaryColor.withValues(alpha: 0.1),
                 ],
               ),
             ),
@@ -167,7 +167,7 @@ class _LoginPageState extends State<LoginPage>
             borderRadius: BorderRadius.circular(60),
             boxShadow: [
               BoxShadow(
-                color: AppTheme.primaryColor.withOpacity(0.3),
+                color: AppTheme.primaryColor.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 8),
               ),
@@ -251,7 +251,7 @@ class _LoginPageState extends State<LoginPage>
             backgroundColor: Colors.white,
             foregroundColor: AppTheme.textPrimary,
             elevation: 2,
-            shadowColor: Colors.black.withOpacity(0.1),
+            shadowColor: Colors.black.withValues(alpha: 0.1),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
               side: BorderSide(

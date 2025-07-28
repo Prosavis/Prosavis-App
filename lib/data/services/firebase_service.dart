@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -52,9 +53,9 @@ class FirebaseService {
         cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       );
 
-      print('✅ Firebase inicializado correctamente');
+      debugPrint('✅ Firebase inicializado correctamente');
     } catch (e) {
-      print('❌ Error al inicializar Firebase: $e');
+      debugPrint('❌ Error al inicializar Firebase: $e');
       rethrow;
     }
   }
@@ -78,7 +79,7 @@ class FirebaseService {
 
       return await _auth.signInWithCredential(credential);
     } catch (e) {
-      print('❌ Error en Google Sign In: $e');
+      debugPrint('❌ Error en Google Sign In: $e');
       rethrow;
     }
   }
@@ -91,7 +92,7 @@ class FirebaseService {
         _googleSignIn.signOut(),
       ]);
     } catch (e) {
-      print('❌ Error al cerrar sesión: $e');
+      debugPrint('❌ Error al cerrar sesión: $e');
       rethrow;
     }
   }
