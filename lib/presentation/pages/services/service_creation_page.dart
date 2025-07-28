@@ -24,10 +24,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
 
   String? _selectedCategory;
   String? _priceType = 'fixed';
-  List<String> _selectedImages = [];
-  List<String> _selectedSkills = [];
+  final List<String> _selectedImages = [];
+  final List<String> _selectedSkills = [];
   bool _isAvailableNow = true;
-  List<String> _availableDays = [];
+  final List<String> _availableDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
 
@@ -87,7 +87,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -223,12 +223,12 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       ),
       items: AppConstants.serviceCategories.map((category) {
         return DropdownMenuItem<String>(
-          value: category['name'] as String,
+          value: category,
           child: Row(
             children: [
-              Icon(category['icon'] as IconData, size: 20),
+              Icon(_getCategoryIcon(category), size: 20),
               const SizedBox(width: 8),
-              Text(category['name'] as String),
+              Text(category),
             ],
           ),
         );
@@ -569,7 +569,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             width: double.infinity,
             height: 100,
             decoration: BoxDecoration(
-              color: AppTheme.backgroundLight,
+              color: AppTheme.backgroundColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Colors.grey.shade300,
@@ -678,6 +678,31 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     );
   }
 
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'plomería':
+        return Symbols.plumbing;
+      case 'electricidad':
+        return Symbols.electrical_services;
+      case 'limpieza':
+        return Symbols.cleaning_services;
+      case 'jardinería':
+        return Symbols.yard;
+      case 'carpintería':
+        return Symbols.construction;
+      case 'pintura':
+        return Symbols.format_paint;
+      case 'mecánica':
+        return Symbols.build;
+      case 'tecnología':
+        return Symbols.computer;
+      case 'tutoría':
+        return Symbols.school;
+      default:
+        return Symbols.home_repair_service;
+    }
+  }
+
   String _getPriceTypeName(String type) {
     switch (type) {
       case 'fixed':
@@ -735,7 +760,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   }
 
   void _addImage() {
-    // TODO: Implement image picker
+    // Implementar selector de imágenes en próximas actualizaciones
     setState(() {
       _selectedImages.add('work_image_${_selectedImages.length + 1}');
     });
@@ -760,7 +785,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         return;
       }
 
-      // TODO: Implement actual submission logic
+      // Implementar lógica de envío en próximas actualizaciones
       _showSuccessDialog();
     }
   }
