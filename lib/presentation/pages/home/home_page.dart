@@ -10,6 +10,13 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/category_card.dart';
 import '../../widgets/common/service_card.dart';
+import '../../widgets/common/filters_bottom_sheet.dart';
+import '../notifications/notifications_page.dart';
+import '../services/service_request_page.dart';
+import '../services/service_creation_page.dart';
+import '../categories/categories_page.dart';
+import '../services/category_services_page.dart';
+import '../services/service_details_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -167,7 +174,12 @@ class _HomePageState extends State<HomePage>
             // Notifications
             IconButton(
               onPressed: () {
-                // TODO: Navigate to notifications
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
               },
               icon: const Icon(
                 Symbols.notifications,
@@ -237,7 +249,19 @@ class _HomePageState extends State<HomePage>
             prefixIcon: const Icon(Symbols.search),
             suffixIcon: IconButton(
               onPressed: () {
-                // TODO: Open filters
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (context) => FiltersBottomSheet(
+                    onFiltersApplied: (filters) {
+                      // Handle filters applied
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Filtros aplicados')),
+                      );
+                    },
+                  ),
+                );
               },
               icon: const Icon(Symbols.tune),
             ),
@@ -260,7 +284,12 @@ class _HomePageState extends State<HomePage>
                 icon: Symbols.search,
                 gradient: AppTheme.primaryGradient,
                 onTap: () {
-                  // TODO: Navigate to service request
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ServiceRequestPage(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -272,7 +301,12 @@ class _HomePageState extends State<HomePage>
                 icon: Symbols.work,
                 gradient: AppTheme.secondaryGradient,
                 onTap: () {
-                  // TODO: Navigate to service creation
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ServiceCreationPage(),
+                    ),
+                  );
                 },
               ),
             ),
@@ -354,7 +388,12 @@ class _HomePageState extends State<HomePage>
                 ),
                 TextButton(
                   onPressed: () {
-                    // TODO: Navigate to all categories
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CategoriesPage(),
+                      ),
+                    );
                   },
                   child: Text(
                     'Ver todas',
@@ -379,7 +418,14 @@ class _HomePageState extends State<HomePage>
                   child: CategoryCard(
                     category: AppConstants.serviceCategories[index],
                     onTap: () {
-                      // TODO: Navigate to category services
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryServicesPage(
+                            category: AppConstants.serviceCategories[index],
+                          ),
+                        ),
+                      );
                     },
                   ),
                 );
@@ -422,7 +468,24 @@ class _HomePageState extends State<HomePage>
                     price: 50.0 + (index * 10),
                     rating: 4.5 + (index * 0.1),
                     onTap: () {
-                      // TODO: Navigate to service details
+                      final mockService = ServiceItem(
+                        id: 'featured_$index',
+                        title: 'Servicio ${index + 1}',
+                        provider: 'Proveedor ${index + 1}',
+                        price: 50.0 + (index * 10),
+                        rating: 4.5 + (index * 0.1),
+                        category: 'General',
+                        description: 'Servicio profesional destacado con años de experiencia.',
+                        isAvailable: true,
+                        distance: 2.5 + index,
+                      );
+                      
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ServiceDetailsPage(service: mockService),
+                        ),
+                      );
                     },
                   ),
                 );
@@ -462,7 +525,24 @@ class _HomePageState extends State<HomePage>
                   rating: 4.0 + (index * 0.2),
                   isHorizontal: true,
                   onTap: () {
-                    // TODO: Navigate to service details
+                    final mockService = ServiceItem(
+                      id: 'nearby_$index',
+                      title: 'Servicio Cercano ${index + 1}',
+                      provider: 'Proveedor Local ${index + 1}',
+                      price: 30.0 + (index * 15),
+                      rating: 4.0 + (index * 0.2),
+                      category: 'Local',
+                      description: 'Servicio local cercano a tu ubicación.',
+                      isAvailable: true,
+                      distance: 0.5 + (index * 0.3),
+                    );
+                    
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ServiceDetailsPage(service: mockService),
+                      ),
+                    );
                   },
                 ),
               ),
