@@ -8,9 +8,9 @@ class ServiceCard extends StatelessWidget {
   final String provider;
   final double price;
   final double rating;
-  final String? imageUrl;
   final bool isHorizontal;
   final VoidCallback onTap;
+  final String? imageUrl;
 
   const ServiceCard({
     super.key,
@@ -18,9 +18,9 @@ class ServiceCard extends StatelessWidget {
     required this.provider,
     required this.price,
     required this.rating,
-    this.imageUrl,
     this.isHorizontal = false,
     required this.onTap,
+    this.imageUrl,
   });
 
   @override
@@ -35,15 +35,15 @@ class ServiceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 200,
+        width: 180,
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -55,24 +55,16 @@ class ServiceCard extends StatelessWidget {
               height: 120,
               width: double.infinity,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                color: AppTheme.primaryColor.withOpacity(0.1),
               ),
               child: imageUrl != null
                   ? ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
-                      ),
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       child: Image.network(
                         imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImage();
-                        },
+                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                       ),
                     )
                   : _buildPlaceholderImage(),
@@ -84,51 +76,55 @@ class ServiceCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.textPrimary,
                     ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
                   const SizedBox(height: 4),
                   
-                  // Provider
                   Text(
                     provider,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       color: AppTheme.textSecondary,
                     ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
                   const SizedBox(height: 8),
                   
-                  // Rating and Price
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Icon(
-                        Symbols.star,
-                        size: 16,
-                        color: Colors.amber[600],
+                      // Rating
+                      Row(
+                        children: [
+                          const Icon(
+                            Symbols.star,
+                            size: 16,
+                            color: Colors.amber,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: GoogleFonts.inter(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                      const Spacer(),
+                      
+                      // Price
                       Text(
                         '\$${price.toStringAsFixed(0)}',
                         style: GoogleFonts.inter(
@@ -152,15 +148,14 @@ class ServiceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.1),
               blurRadius: 8,
-              offset: const Offset(0, 4),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -171,86 +166,89 @@ class ServiceCard extends StatelessWidget {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
+                color: AppTheme.primaryColor.withOpacity(0.1),
               ),
               child: imageUrl != null
                   ? ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
                       child: Image.network(
                         imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return _buildPlaceholderImageSmall();
-                        },
+                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                       ),
                     )
-                  : _buildPlaceholderImageSmall(),
+                  : _buildPlaceholderImage(),
             ),
-            
-            const SizedBox(width: 12),
             
             // Content
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Title
-                  Text(
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  
-                  const SizedBox(height: 4),
-                  
-                  // Provider
-                  Text(
-                    provider,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
+                    
+                    const SizedBox(height: 4),
+                    
+                    Text(
+                      provider,
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ),
-                  
-                  const SizedBox(height: 8),
-                  
-                  // Rating and Price
-                  Row(
-                    children: [
-                      Icon(
-                        Symbols.star,
-                        size: 16,
-                        color: Colors.amber[600],
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        rating.toStringAsFixed(1),
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
+                    
+                    const SizedBox(height: 8),
+                    
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Rating
+                        Row(
+                          children: [
+                            const Icon(
+                              Symbols.star,
+                              size: 14,
+                              color: Colors.amber,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              rating.toStringAsFixed(1),
+                              style: GoogleFonts.inter(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                          ],
                         ),
-                      ),
-                      const Spacer(),
-                      Text(
-                        '\$${price.toStringAsFixed(0)}',
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                        
+                        // Price
+                        Text(
+                          '\$${price.toStringAsFixed(0)}',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -262,33 +260,16 @@ class ServiceCard extends StatelessWidget {
   Widget _buildPlaceholderImage() {
     return Container(
       decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
-        ),
+        color: AppTheme.primaryColor.withOpacity(0.1),
+        borderRadius: isHorizontal 
+            ? const BorderRadius.horizontal(left: Radius.circular(16))
+            : const BorderRadius.vertical(top: Radius.circular(16)),
       ),
       child: const Center(
         child: Icon(
-          Symbols.handyman,
-          size: 48,
-          color: Colors.white,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholderImageSmall() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: AppTheme.primaryGradient,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: const Center(
-        child: Icon(
-          Symbols.handyman,
+          Symbols.home_repair_service,
           size: 32,
-          color: Colors.white,
+          color: AppTheme.primaryColor,
         ),
       ),
     );

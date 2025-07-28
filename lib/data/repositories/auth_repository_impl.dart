@@ -1,9 +1,8 @@
-import 'package:flutter/foundation.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
-import '../models/user_model.dart';
 import '../services/firebase_service.dart';
-import '../../core/constants/app_constants.dart';
+import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final FirebaseService _firebaseService;
@@ -11,57 +10,32 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl(this._firebaseService);
 
   @override
+  Future<UserEntity?> getCurrentUser() async {
+    try {
+      final firebaseUser = _firebaseService.getCurrentUser();
+      if (firebaseUser == null) return null;
+
+      return _mapFirebaseUserToEntity(firebaseUser);
+    } catch (e) {
+      throw Exception('Error al obtener usuario actual: $e');
+    }
+  }
+
+  @override
   Future<UserEntity?> signInWithGoogle() async {
     try {
       final userCredential = await _firebaseService.signInWithGoogle();
-      
-      if (userCredential?.user == null) {
-        return null;
-      }
+      if (userCredential?.user == null) return null;
 
       final firebaseUser = userCredential!.user!;
       
-      // Verificar si el usuario ya existe en Firestore
-      final userDoc = await _firebaseService
-          .collection(AppConstants.usersCollection)
-          .doc(firebaseUser.uid)
-          .get();
-
-      UserEntity userEntity;
-
-      if (userDoc.exists) {
-        // Usuario existente
-        userEntity = UserModel.fromJson({
-          ...userDoc.data()!,
-          'id': firebaseUser.uid,
-        });
-      } else {
-        // Nuevo usuario - crear en Firestore
-        userEntity = UserModel(
-          id: firebaseUser.uid,
-          email: firebaseUser.email ?? '',
-          name: firebaseUser.displayName ?? '',
-          photoUrl: firebaseUser.photoURL,
-          phoneNumber: firebaseUser.phoneNumber,
-          userType: UserType.client, // Por defecto cliente
-          isActive: true,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-          bio: null,
-          skills: [],
-          rating: 0.0,
-          reviewCount: 0,
-          address: null,
-          location: null,
-        );
-
-        await createUser(userEntity);
-      }
-
+      // Crear o actualizar usuario en Firestore
+      final userEntity = _mapFirebaseUserToEntity(firebaseUser);
+      await _saveUserToFirestore(userEntity);
+      
       return userEntity;
     } catch (e) {
-      debugPrint('❌ Error en signInWithGoogle: $e');
-      rethrow;
+      throw Exception('Error al iniciar sesión con Google: $e');
     }
   }
 
@@ -70,113 +44,40 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _firebaseService.signOut();
     } catch (e) {
-      debugPrint('❌ Error en signOut: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<UserEntity?> getCurrentUser() async {
-    try {
-      final firebaseUser = _firebaseService.getCurrentUser();
-      
-      if (firebaseUser == null) {
-        return null;
-      }
-
-      final userDoc = await _firebaseService
-          .collection(AppConstants.usersCollection)
-          .doc(firebaseUser.uid)
-          .get();
-
-      if (!userDoc.exists) {
-        return null;
-      }
-
-      return UserModel.fromJson({
-        ...userDoc.data()!,
-        'id': firebaseUser.uid,
-      });
-    } catch (e) {
-      debugPrint('❌ Error en getCurrentUser: $e');
-      return null;
+      throw Exception('Error al cerrar sesión: $e');
     }
   }
 
   @override
   Stream<UserEntity?> get authStateChanges {
-    return _firebaseService.authStateChanges.asyncMap((firebaseUser) async {
-      if (firebaseUser == null) {
-        return null;
-      }
-
-      try {
-        final userDoc = await _firebaseService
-            .collection(AppConstants.usersCollection)
-            .doc(firebaseUser.uid)
-            .get();
-
-        if (!userDoc.exists) {
-          return null;
-        }
-
-        return UserModel.fromJson({
-          ...userDoc.data()!,
-          'id': firebaseUser.uid,
-        });
-      } catch (e) {
-        debugPrint('❌ Error en authStateChanges: $e');
-        return null;
-      }
+    return _firebaseService.authStateChanges.map((firebaseUser) {
+      if (firebaseUser == null) return null;
+      return _mapFirebaseUserToEntity(firebaseUser);
     });
   }
 
-  @override
-  Future<UserEntity> createUser(UserEntity user) async {
+  UserEntity _mapFirebaseUserToEntity(User firebaseUser) {
+    return UserEntity(
+      id: firebaseUser.uid,
+      name: firebaseUser.displayName ?? '',
+      email: firebaseUser.email ?? '',
+      photoUrl: firebaseUser.photoURL,
+      phoneNumber: firebaseUser.phoneNumber,
+      createdAt: firebaseUser.metadata.creationTime ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+  }
+
+  Future<void> _saveUserToFirestore(UserEntity user) async {
     try {
       final userModel = UserModel.fromEntity(user);
-      
       await _firebaseService
-          .collection(AppConstants.usersCollection)
+          .collection('users')
           .doc(user.id)
-          .set(userModel.toJson());
-
-      return user;
+          .set(userModel.toJson(), SetOptions(merge: true));
     } catch (e) {
-      debugPrint('❌ Error en createUser: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<UserEntity> updateUser(UserEntity user) async {
-    try {
-      final userModel = UserModel.fromEntity(
-        user.copyWith(updatedAt: DateTime.now()),
-      );
-      
-      await _firebaseService
-          .collection(AppConstants.usersCollection)
-          .doc(user.id)
-          .update(userModel.toJson());
-
-      return userModel;
-    } catch (e) {
-      debugPrint('❌ Error en updateUser: $e');
-      rethrow;
-    }
-  }
-
-  @override
-  Future<void> deleteUser(String userId) async {
-    try {
-      await _firebaseService
-          .collection(AppConstants.usersCollection)
-          .doc(userId)
-          .delete();
-    } catch (e) {
-      debugPrint('❌ Error en deleteUser: $e');
-      rethrow;
+      // Log error but don't throw - user can still be authenticated
+      print('Error al guardar usuario en Firestore: $e');
     }
   }
 } 

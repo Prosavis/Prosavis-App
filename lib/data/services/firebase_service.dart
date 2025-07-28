@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+import '../../firebase_options.dart';
 
 class FirebaseService {
   static final FirebaseService _instance = FirebaseService._internal();
@@ -24,16 +24,8 @@ class FirebaseService {
   // Initialize Firebase
   Future<void> initializeFirebase() async {
     try {
-      // Load environment variables
-      await dotenv.load(fileName: ".env");
-      
       _app = await Firebase.initializeApp(
-        options: FirebaseOptions(
-          apiKey: dotenv.env['FIREBASE_API_KEY'] ?? '',
-          appId: dotenv.env['FIREBASE_APP_ID'] ?? '',
-          messagingSenderId: dotenv.env['FIREBASE_MESSAGING_SENDER_ID'] ?? '',
-          projectId: dotenv.env['FIREBASE_PROJECT_ID'] ?? '',
-        ),
+        options: DefaultFirebaseOptions.currentPlatform,
       );
 
       _auth = FirebaseAuth.instanceFor(app: _app);
