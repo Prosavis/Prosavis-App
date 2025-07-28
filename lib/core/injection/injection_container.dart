@@ -15,16 +15,19 @@ Future<void> init() async {
   sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
   
   sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(firebaseService: sl()),
+    () => AuthRepositoryImpl(sl()),
   );
 
   // Use cases
   sl.registerLazySingleton<SignInWithGoogleUseCase>(
-    () => SignInWithGoogleUseCase(authRepository: sl()),
+    () => SignInWithGoogleUseCase(sl()),
   );
 
   // BLoC
   sl.registerFactory(
-    () => AuthBloc(signInWithGoogleUseCase: sl()),
+    () => AuthBloc(
+      authRepository: sl(),
+      signInWithGoogleUseCase: sl(),
+    ),
   );
 }
