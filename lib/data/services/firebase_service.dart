@@ -12,37 +12,48 @@ class FirebaseService {
   }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email'],
-  );
+  // Usar GoogleSignIn.instance en lugar de crear nueva instancia
+  final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
 
   FirebaseService();
 
-  // 2) Método de login con Google
+  // 2) Método de login con Google - implementación simplificada
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // 2.1 Dispara el flujo de Google Sign‑In
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      // 2.1 Para la nueva API, intentamos authenticate() si está disponible
+      GoogleSignInAccount? googleUser;
+      
+      if (_googleSignIn.supportsAuthenticate()) {
+        googleUser = await _googleSignIn.authenticate();
+      } else {
+        // Fallback para plataformas que no soportan authenticate()
+        // Esto podría ser necesario en versiones de transición
+        throw UnsupportedError('La plataforma actual no soporta authenticate()');
+      }
+
       if (googleUser == null) return null; // usuario canceló
 
-      // 2.2 Obtiene los tokens
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      // 2.2 Obtener los tokens directamente del usuario autenticado
+      // Para Firebase, necesitamos idToken y accessToken
+      final scopes = ['email', 'profile'];
+      final authorization = await googleUser.authorizationClient.authorizeScopes(scopes);
 
-      // 2.3 Construye credencial de Firebase
+      // 2.3 Construir credencial de Firebase
       final credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-        accessToken: googleAuth.accessToken,
+        idToken: authorization.idToken,
+        accessToken: authorization.accessToken,
       );
 
-      // 2.4 Hace sign‑in en Firebase
+      // 2.4 Hacer sign-in en Firebase
       return await _auth.signInWithCredential(credential);
     } catch (e) {
       // Log del error pero no lanzar excepción para manejar errores gracefully
+      print('Error en signInWithGoogle: $e');
       return null;
     }
   }
 
-  // …otros métodos de tu servicio (logout, observables, etc.)
+  // 3) Método de logout
   Future<void> signOut() async {
     await Future.wait([
       _auth.signOut(),
@@ -50,9 +61,11 @@ class FirebaseService {
     ]);
   }
 
+  // 4) Obtener usuario actual
   User? getCurrentUser() {
     return _auth.currentUser;
   }
 
+  // 5) Stream de cambios de estado de autenticación
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 }
