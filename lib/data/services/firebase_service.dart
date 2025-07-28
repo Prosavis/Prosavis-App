@@ -40,7 +40,6 @@ class FirebaseService {
       _firestore = FirebaseFirestore.instanceFor(app: _app);
       
       _googleSignIn = GoogleSignIn(
-        clientId: dotenv.env['GOOGLE_CLIENT_ID'],
         scopes: [
           'email',
           'profile',
@@ -125,4 +124,4 @@ class FirebaseService {
   ) {
     return _firestore.runTransaction(updateFunction);
   }
-} 
+}
