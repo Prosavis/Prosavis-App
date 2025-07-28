@@ -13,145 +13,104 @@ class CategoryCard extends StatelessWidget {
     required this.onTap,
   });
 
+  IconData _getCategoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'plomería':
+        return Symbols.plumbing;
+      case 'electricidad':
+        return Symbols.electrical_services;
+      case 'limpieza':
+        return Symbols.cleaning_services;
+      case 'jardinería':
+        return Symbols.yard;
+      case 'carpintería':
+        return Symbols.construction;
+      case 'pintura':
+        return Symbols.format_paint;
+      case 'mecánica':
+        return Symbols.build;
+      case 'tecnología':
+        return Symbols.computer;
+      case 'tutoría':
+        return Symbols.school;
+      default:
+        return Symbols.home_repair_service;
+    }
+  }
+
+  Color _getCategoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'plomería':
+        return const Color(0xFF3B82F6);
+      case 'electricidad':
+        return const Color(0xFFF59E0B);
+      case 'limpieza':
+        return const Color(0xFF10B981);
+      case 'jardinería':
+        return const Color(0xFF059669);
+      case 'carpintería':
+        return const Color(0xFF92400E);
+      case 'pintura':
+        return const Color(0xFFDC2626);
+      case 'mecánica':
+        return const Color(0xFF374151);
+      case 'tecnología':
+        return const Color(0xFF7C3AED);
+      case 'tutoría':
+        return const Color(0xFFDB2777);
+      default:
+        return AppTheme.primaryColor;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final color = _getCategoryColor(category);
+    final icon = _getCategoryIcon(category);
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 100,
+        width: 80,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: AppTheme.surfaceColor,
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.shade200,
+            color: color.withOpacity(0.2),
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 48,
-              height: 48,
+              padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                gradient: _getCategoryGradient(category),
-                borderRadius: BorderRadius.circular(24),
+                color: color.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
-                _getCategoryIcon(category),
-                color: Colors.white,
+                icon,
                 size: 24,
+                color: color,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               category,
               textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
               style: GoogleFonts.inter(
-                fontSize: 12,
+                fontSize: 10,
                 fontWeight: FontWeight.w600,
                 color: AppTheme.textPrimary,
               ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
     );
-  }
-
-  LinearGradient _getCategoryGradient(String category) {
-    switch (category) {
-      case 'Plomería':
-        return const LinearGradient(
-          colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Electricidad':
-        return const LinearGradient(
-          colors: [Color(0xFFF59E0B), Color(0xFFD97706)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Limpieza':
-        return const LinearGradient(
-          colors: [Color(0xFF10B981), Color(0xFF059669)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Jardinería':
-        return const LinearGradient(
-          colors: [Color(0xFF22C55E), Color(0xFF16A34A)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Carpintería':
-        return const LinearGradient(
-          colors: [Color(0xFFA16207), Color(0xFF92400E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Pintura':
-        return const LinearGradient(
-          colors: [Color(0xFFEC4899), Color(0xFFDB2777)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Mecánica':
-        return const LinearGradient(
-          colors: [Color(0xFF6B7280), Color(0xFF4B5563)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Tecnología':
-        return const LinearGradient(
-          colors: [Color(0xFF8B5CF6), Color(0xFF7C3AED)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      case 'Tutoría':
-        return const LinearGradient(
-          colors: [Color(0xFF06B6D4), Color(0xFF0891B2)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        );
-      default:
-        return AppTheme.primaryGradient;
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category) {
-      case 'Plomería':
-        return Symbols.plumbing;
-      case 'Electricidad':
-        return Symbols.electrical_services;
-      case 'Limpieza':
-        return Symbols.cleaning_services;
-      case 'Jardinería':
-        return Symbols.yard;
-      case 'Carpintería':
-        return Symbols.construction;
-      case 'Pintura':
-        return Symbols.format_paint;
-      case 'Mecánica':
-        return Symbols.build;
-      case 'Tecnología':
-        return Symbols.computer;
-      case 'Tutoría':
-        return Symbols.school;
-      default:
-        return Symbols.handyman;
-    }
   }
 } 
