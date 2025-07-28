@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,7 +18,7 @@ void main() async {
   try {
     // Setup dependency injection (Firebase se inicializa aquí)
     await setupDependencyInjection();
-    
+
     debugPrint('✅ Aplicación inicializada correctamente');
   } catch (e) {
     debugPrint('❌ Error al inicializar la aplicación: $e');
@@ -141,8 +140,8 @@ class _SplashWrapperState extends State<SplashWrapper>
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              AppTheme.primaryColor.withValues(alpha: 0.8),
-              AppTheme.secondaryColor.withValues(alpha: 0.6),
+              AppTheme.primaryColor.withOpacity(0.8),
+              AppTheme.secondaryColor.withOpacity(0.6),
             ],
           ),
         ),
@@ -161,7 +160,7 @@ class _SplashWrapperState extends State<SplashWrapper>
                     borderRadius: BorderRadius.circular(60),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
+                        color: Colors.black.withOpacity(0.2),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -196,7 +195,7 @@ class _SplashWrapperState extends State<SplashWrapper>
                 child: Text(
                   'Conectando servicios de calidad',
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: Colors.white.withOpacity(0.9),
                       ),
                 ),
               ),

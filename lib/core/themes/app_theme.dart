@@ -195,8 +195,9 @@ class AppTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         brightness: Brightness.dark,
+        surface: const Color(0xFF1E293B),
       ),
       scaffoldBackgroundColor: const Color(0xFF0F172A),
     );
   }
-} 
+}
