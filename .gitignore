@@ -102,7 +102,6 @@ android/app/src/main/jniLibs/
 # Build directory
 build/
 # Generated files
-lib/generated_plugin_registrant.dart
 lib/firebase_options.dart
 # Pubspec lock file
 pubspec.lock

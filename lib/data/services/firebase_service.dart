@@ -1,55 +1,34 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:myapp/firebase_options.dart';
 import 'dart:developer' as developer;
 
 class FirebaseService {
-  // 1) Inicialización de Firebase
+  // 1) Inicialización de Firebase - simplificada para MVP
   static Future<void> initializeFirebase() async {
-    await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-    );
+    await Firebase.initializeApp();
   }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  // Usar GoogleSignIn.instance en lugar de crear nueva instancia
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   FirebaseService();
 
-  // 2) Método de login con Google - implementación simplificada
-  Future<UserCredential?> signInWithGoogle() async {
+  // 2) Método de login simplificado para MVP - sin Google Sign-In por ahora
+  Future<UserCredential?> signInAnonymously() async {
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-
-      if (googleUser == null) return null; // usuario canceló
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Once signed in, return the UserCredential
-      return await _auth.signInWithCredential(credential);
+      return await _auth.signInAnonymously();
     } catch (e) {
-      // Log del error pero no lanzar excepción para manejar errores gracefully
-      developer.log('Error en signInWithGoogle: $e');
+      developer.log('Error en signInAnonymously: $e');
       return null;
     }
   }
 
   // 3) Método de logout
   Future<void> signOut() async {
-    await Future.wait([
-      _auth.signOut(),
-      _googleSignIn.signOut(),
-    ]);
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      developer.log('Error en signOut: $e');
+    }
   }
 
   // 4) Obtener usuario actual
@@ -59,4 +38,10 @@ class FirebaseService {
 
   // 5) Stream de cambios de estado de autenticación
   Stream<User?> get authStateChanges => _auth.authStateChanges();
+
+  // TODO: Implementar Google Sign-In cuando se configure correctamente
+  Future<UserCredential?> signInWithGoogle() async {
+    developer.log('Google Sign-In no implementado aún - usando signInAnonymously para MVP');
+    return await signInAnonymously();
+  }
 }

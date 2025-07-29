@@ -222,13 +222,14 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         prefixIcon: Icon(Symbols.category),
       ),
       items: AppConstants.serviceCategories.map((category) {
+        final categoryName = AppConstants.getCategoryName(category);
         return DropdownMenuItem<String>(
-          value: category,
+          value: categoryName,
           child: Row(
             children: [
-              Icon(_getCategoryIcon(category), size: 20),
+              Icon(_getCategoryIcon(categoryName), size: 20),
               const SizedBox(width: 8),
-              Text(category),
+              Text(categoryName),
             ],
           ),
         );

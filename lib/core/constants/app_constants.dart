@@ -35,6 +35,15 @@ class AppConstants {
     {'name': 'Tutoría', 'icon': Symbols.school, 'id': 9},
     {'name': 'Otros', 'icon': Symbols.more_horiz, 'id': 10}
   ];
+
+  // Métodos auxiliares para trabajar con categorías
+  static List<String> get serviceCategoryNames {
+    return serviceCategories.map((category) => category['name'] as String).toList();
+  }
+
+  static String getCategoryName(Map<String, dynamic> category) {
+    return category['name'] as String;
+  }
   
   // API Endpoints
   static const String baseUrl = 'https://tu-api.com/api/v1';

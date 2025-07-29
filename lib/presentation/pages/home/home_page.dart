@@ -416,7 +416,7 @@ class _HomePageState extends State<HomePage>
                 return Padding(
                   padding: const EdgeInsets.only(right: 12),
                   child: CategoryCard(
-                    category: AppConstants.serviceCategories[index],
+                    category: AppConstants.getCategoryName(AppConstants.serviceCategories[index]),
                     onTap: () {
                       Navigator.push(
                         context,
