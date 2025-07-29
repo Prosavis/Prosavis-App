@@ -47,9 +47,13 @@ class _LoginPageState extends State<LoginPage>
 
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 300));
-    _fadeController.forward();
+    if (mounted) {
+      _fadeController.forward();
+    }
     await Future.delayed(const Duration(milliseconds: 500));
-    _scaleController.forward();
+    if (mounted) {
+      _scaleController.forward();
+    }
   }
 
   @override

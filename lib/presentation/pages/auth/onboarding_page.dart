@@ -73,9 +73,13 @@ class _OnboardingPageState extends State<OnboardingPage>
 
   void _startAnimations() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    _fadeController.forward();
+    if (mounted) {
+      _fadeController.forward();
+    }
     await Future.delayed(const Duration(milliseconds: 200));
-    _slideController.forward();
+    if (mounted) {
+      _slideController.forward();
+    }
   }
 
   @override
@@ -115,8 +119,10 @@ class _OnboardingPageState extends State<OnboardingPage>
                     setState(() {
                       currentIndex = index;
                     });
-                    _slideController.reset();
-                    _slideController.forward();
+                    if (mounted) {
+                      _slideController.reset();
+                      _slideController.forward();
+                    }
                   },
                   itemCount: onboardingData.length,
                   itemBuilder: (context, index) {
@@ -339,21 +345,10 @@ class _OnboardingPageState extends State<OnboardingPage>
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.firstTimeKey, false);
     
-    // Navigate using the BuildContext that has access to the BLoC
-    // This will trigger AppNavigator to rebuild and show LoginPage
+    // Simply pop the onboarding page
+    // AppNavigator will automatically detect the change and show LoginPage
     if (mounted) {
-      // Force a rebuild by calling setState on a parent widget
-      // The AppNavigator will detect the change and navigate to LoginPage
-      setState(() {
-        // This will cause the widget to rebuild and the AppNavigator
-        // will check isFirstTime again and navigate to LoginPage
-      });
-      
-      // Alternative: Use Navigator but maintain the BLoC context
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/',
-        (route) => false,
-      );
+      Navigator.of(context).pop();
     }
   }
 }
