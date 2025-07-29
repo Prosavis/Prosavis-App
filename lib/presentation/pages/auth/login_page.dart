@@ -2,13 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:animations/animations.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
-import '../home/home_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,19 +62,9 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocConsumer<AuthBloc, AuthState>(
+      body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          if (state is AuthAuthenticated) {
-            Navigator.of(context).pushReplacement(
-              PageRouteBuilder(
-                pageBuilder: (context, animation, _) => const HomePage(),
-                transitionsBuilder: (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                transitionDuration: AppConstants.mediumAnimation,
-              ),
-            );
-          } else if (state is AuthError) {
+          if (state is AuthError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
@@ -89,69 +77,71 @@ class _LoginPageState extends State<LoginPage>
             );
           }
         },
-        builder: (context, state) {
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppTheme.primaryColor.withValues(alpha: 0.1),
-                  AppTheme.backgroundColor,
-                  AppTheme.secondaryColor.withValues(alpha: 0.1),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                child: Column(
-                  children: [
-                    const Spacer(),
-                    
-                    // Logo and Title
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: _buildHeader(),
-                      ),
-                    ),
-                    
-                    const Spacer(),
-                    
-                    // Welcome Message
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildWelcomeMessage(),
-                    ),
-                    
-                    const SizedBox(height: AppConstants.paddingLarge * 2),
-                    
-                    // Google Sign In Button
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: ScaleTransition(
-                        scale: _scaleAnimation,
-                        child: _buildGoogleSignInButton(state),
-                      ),
-                    ),
-                    
-                    const SizedBox(height: AppConstants.paddingLarge),
-                    
-                    // Terms and Privacy
-                    FadeTransition(
-                      opacity: _fadeAnimation,
-                      child: _buildTermsAndPrivacy(),
-                    ),
-                    
-                    const Spacer(),
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, state) {
+            return Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.primaryColor.withValues(alpha: 0.1),
+                    AppTheme.backgroundColor,
+                    AppTheme.secondaryColor.withValues(alpha: 0.1),
                   ],
                 ),
               ),
-            ),
-          );
-        },
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppConstants.paddingLarge),
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      
+                      // Logo and Title
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: _buildHeader(),
+                        ),
+                      ),
+                      
+                      const Spacer(),
+                      
+                      // Welcome Message
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildWelcomeMessage(),
+                      ),
+                      
+                      const SizedBox(height: AppConstants.paddingLarge * 2),
+                      
+                      // Google Sign In Button
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: ScaleTransition(
+                          scale: _scaleAnimation,
+                          child: _buildGoogleSignInButton(state),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: AppConstants.paddingLarge),
+                      
+                      // Terms and Privacy
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: _buildTermsAndPrivacy(),
+                      ),
+                      
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -236,71 +226,63 @@ class _LoginPageState extends State<LoginPage>
     
     return SizedBox(
       width: double.infinity,
-      child: OpenContainer(
-        transitionType: ContainerTransitionType.fade,
-        openBuilder: (context, _) => const HomePage(),
-        closedElevation: 0,
-        closedShape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        closedBuilder: (context, openContainer) => ElevatedButton(
-          onPressed: isLoading ? null : () {
-            context.read<AuthBloc>().add(AuthSignInWithGoogleRequested());
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: AppTheme.textPrimary,
-            elevation: 2,
-            shadowColor: Colors.black.withValues(alpha: 0.1),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: Colors.grey.shade300,
-                width: 1,
-              ),
-            ),
-            padding: const EdgeInsets.symmetric(
-              horizontal: 24,
-              vertical: 16,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : () {
+          context.read<AuthBloc>().add(AuthSignInWithGoogleRequested());
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppTheme.textPrimary,
+          elevation: 2,
+          shadowColor: Colors.black.withValues(alpha: 0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Colors.grey.shade300,
+              width: 1,
             ),
           ),
-          child: isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.primaryColor,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 16,
+          ),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    AppTheme.primaryColor,
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Image.asset(
+                    'assets/images/google_logo.png',
+                    height: 24,
+                    width: 24,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Symbols.account_circle,
+                        size: 24,
+                        color: AppTheme.primaryColor,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Continuar con Google',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/images/google_logo.png',
-                      height: 24,
-                      width: 24,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Symbols.account_circle,
-                          size: 24,
-                          color: AppTheme.primaryColor,
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      'Continuar con Google',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
+                ],
+              ),
       ),
     );
   }

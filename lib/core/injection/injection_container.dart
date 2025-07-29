@@ -4,6 +4,7 @@ import 'package:myapp/data/services/firebase_service.dart';
 import 'package:myapp/domain/repositories/auth_repository.dart';
 import 'package:myapp/domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'package:myapp/presentation/blocs/auth/auth_bloc.dart';
+import 'dart:developer' as developer;
 
 final sl = GetIt.instance;
 
@@ -11,26 +12,45 @@ final sl = GetIt.instance;
 Future<void> setupDependencyInjection() async => await init();
 
 Future<void> init() async {
-  // 1) Initialize Firebase before registering services that use it
-  await FirebaseService.initializeFirebase();
+  try {
+    developer.log('🔧 Iniciando configuración de dependencias...');
+    
+    // 1) Initialize Firebase before registering services that use it
+    await FirebaseService.initializeFirebase();
+    developer.log('✅ Firebase inicializado: ${FirebaseService.isInitialized}');
+    
+    if (FirebaseService.isDevelopmentMode) {
+      developer.log('⚠️ Ejecutando en modo desarrollo (sin Firebase real)');
+    }
 
-  // 2) Register your service and repositories
-  sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
-  
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(sl()),
-  );
+    // 2) Register your service and repositories
+    sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
+    developer.log('✅ FirebaseService registrado');
+    
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(sl()),
+    );
+    developer.log('✅ AuthRepository registrado');
 
-  // Use cases
-  sl.registerLazySingleton<SignInWithGoogleUseCase>(
-    () => SignInWithGoogleUseCase(sl()),
-  );
+    // Use cases
+    sl.registerLazySingleton<SignInWithGoogleUseCase>(
+      () => SignInWithGoogleUseCase(sl()),
+    );
+    developer.log('✅ SignInWithGoogleUseCase registrado');
 
-  // BLoC
-  sl.registerFactory(
-    () => AuthBloc(
-      authRepository: sl(),
-      signInWithGoogleUseCase: sl(),
-    ),
-  );
+    // BLoC
+    sl.registerFactory(
+      () => AuthBloc(
+        authRepository: sl(),
+        signInWithGoogleUseCase: sl(),
+      ),
+    );
+    developer.log('✅ AuthBloc registrado');
+    
+    developer.log('🎉 Todas las dependencias configuradas correctamente');
+  } catch (e, stackTrace) {
+    developer.log('❌ Error crítico al configurar dependencias: $e');
+    developer.log('Stack trace: $stackTrace');
+    rethrow; // Re-lanzar el error para que main.dart lo pueda manejar
+  }
 }

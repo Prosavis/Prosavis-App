@@ -24,18 +24,9 @@ class DefaultFirebaseOptions {
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
-        return windows;
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       default:
         throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
+          'Esta aplicación solo soporta Android, iOS y Web.',
         );
     }
   }
@@ -66,21 +57,5 @@ class DefaultFirebaseOptions {
     iosBundleId: 'com.example.myapp',
   );
 
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'tu-api-key-ios',
-    appId: '1:123456789:ios:abcdef',
-    messagingSenderId: '123456789',
-    projectId: 'tu-proyecto-firebase',
-    storageBucket: 'tu-proyecto-firebase.appspot.com',
-    iosBundleId: 'com.example.myapp',
-  );
 
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'tu-api-key-web',
-    appId: '1:123456789:web:abcdef',
-    messagingSenderId: '123456789',
-    projectId: 'tu-proyecto-firebase',
-    authDomain: 'tu-proyecto-firebase.firebaseapp.com',
-    storageBucket: 'tu-proyecto-firebase.appspot.com',
-  );
 } 

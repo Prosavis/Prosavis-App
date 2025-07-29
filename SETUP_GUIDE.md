@@ -2,41 +2,25 @@
 
 ## 🚀 Instalación de Flutter
 
-### Windows
+**Nota**: Esta aplicación está optimizada para desarrollo en **Android**, **iOS** y **Web** únicamente.
+
+### Instalación General
 
 1. **Descargar Flutter:**
-   - Ve a https://flutter.dev/docs/get-started/install/windows
-   - Descarga el Flutter SDK
-   - Extrae el archivo en `C:\flutter`
+   - Ve a https://flutter.dev/docs/get-started/install
+   - Selecciona tu sistema operativo y sigue las instrucciones
+   - Asegúrate de configurar el PATH correctamente
 
-2. **Configurar PATH:**
-   - Busca "Variables de entorno" en el menú de Windows
-   - Edita las variables de entorno del sistema
-   - Agrega `C:\flutter\bin` al PATH
-
-3. **Verificar instalación:**
-   ```powershell
+2. **Verificar instalación:**
+   ```bash
    flutter doctor
    ```
 
-### macOS
-
-1. **Usar Homebrew:**
+3. **Configurar para las plataformas objetivo:**
    ```bash
-   brew install flutter
-   ```
-
-2. **O descargar manualmente:**
-   - Descarga desde https://flutter.dev/docs/get-started/install/macos
-   - Agrega al PATH en `~/.zshrc` o `~/.bash_profile`
-
-### Linux
-
-1. **Descargar Flutter:**
-   ```bash
-   wget https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.16.0-stable.tar.xz
-   tar xf flutter_linux_3.16.0-stable.tar.xz
-   export PATH="$PATH:`pwd`/flutter/bin"
+   # Para Android - instalar Android Studio
+   # Para iOS - instalar Xcode (solo en macOS)
+   # Para Web - Chrome está incluido por defecto
    ```
 
 ## 🔥 Configuración de Firebase
@@ -60,7 +44,7 @@
    flutterfire configure
    ```
    - Selecciona tu proyecto
-   - Elige las plataformas (Android, iOS, Web, etc.)
+   - Elige las plataformas: **Android**, **iOS** y **Web**
    - Esto creará `firebase_options.dart` con la configuración correcta
 
 ### 3. Configurar Google Sign-In

@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:animations/animations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import 'login_page.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -287,7 +286,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           // Skip button
           if (currentIndex < onboardingData.length - 1)
             TextButton(
-              onPressed: () => _navigateToLogin(),
+              onPressed: () => _completeOnboarding(),
               child: Text(
                 'Saltar',
                 style: GoogleFonts.inter(
@@ -302,32 +301,24 @@ class _OnboardingPageState extends State<OnboardingPage>
           const Spacer(),
           
           // Next/Get Started button
-          OpenContainer(
-            transitionType: ContainerTransitionType.fadeThrough,
-            openBuilder: (context, _) => const LoginPage(),
-            closedElevation: 0,
-            closedShape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          ElevatedButton.icon(
+            onPressed: currentIndex == onboardingData.length - 1
+                ? _completeOnboarding
+                : _nextPage,
+            icon: Icon(
+              currentIndex == onboardingData.length - 1
+                  ? Symbols.login
+                  : Symbols.arrow_forward,
             ),
-            closedBuilder: (context, openContainer) => ElevatedButton.icon(
-              onPressed: currentIndex == onboardingData.length - 1
-                  ? openContainer
-                  : _nextPage,
-              icon: Icon(
-                currentIndex == onboardingData.length - 1
-                    ? Symbols.login
-                    : Symbols.arrow_forward,
-              ),
-              label: Text(
-                currentIndex == onboardingData.length - 1
-                    ? 'Comenzar'
-                    : 'Siguiente',
-              ),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
+            label: Text(
+              currentIndex == onboardingData.length - 1
+                  ? 'Comenzar'
+                  : 'Siguiente',
+            ),
+            style: ElevatedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 16,
               ),
             ),
           ),
@@ -343,16 +334,27 @@ class _OnboardingPageState extends State<OnboardingPage>
     );
   }
 
-  void _navigateToLogin() {
-    Navigator.of(context).pushReplacement(
-      PageRouteBuilder(
-        pageBuilder: (context, animation, _) => const LoginPage(),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          return FadeTransition(opacity: animation, child: child);
-        },
-        transitionDuration: AppConstants.mediumAnimation,
-      ),
-    );
+  Future<void> _completeOnboarding() async {
+    // Mark onboarding as completed
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(AppConstants.firstTimeKey, false);
+    
+    // Navigate using the BuildContext that has access to the BLoC
+    // This will trigger AppNavigator to rebuild and show LoginPage
+    if (mounted) {
+      // Force a rebuild by calling setState on a parent widget
+      // The AppNavigator will detect the change and navigate to LoginPage
+      setState(() {
+        // This will cause the widget to rebuild and the AppNavigator
+        // will check isFirstTime again and navigate to LoginPage
+      });
+      
+      // Alternative: Use Navigator but maintain the BLoC context
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/',
+        (route) => false,
+      );
+    }
   }
 }
 
