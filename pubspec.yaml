@@ -1,5 +1,5 @@
-name: myapp
-description: "A new Flutter project."
+name: prosavis
+description: "Prosavis - La plataforma de confianza para contratar servicios locales en Colombia."
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -58,3 +58,9 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/animations/
+    - assets/fonts/
+  fonts:
+    - family: Archivo
+      fonts:
+        - asset: assets/fonts/Archivo Black.ttf
+          weight: 900

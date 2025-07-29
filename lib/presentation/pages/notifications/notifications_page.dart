@@ -84,7 +84,7 @@ class _NotificationsPageState extends State<NotificationsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -229,7 +229,7 @@ class _NotificationsPageState extends State<NotificationsPage>
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const SizedBox(height: 100),
-          Icon(
+          const Icon(
             Symbols.notifications_off,
             size: 64,
             color: AppTheme.textTertiary,
@@ -336,7 +336,7 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   void _markAllAsRead() {
     setState(() {
-      for (var notification in _notifications) {
+      for (final notification in _notifications) {
         notification.isRead = true;
       }
     });

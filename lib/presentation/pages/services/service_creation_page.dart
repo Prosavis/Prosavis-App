@@ -580,7 +580,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Symbols.add_a_photo,
                   size: 32,
                   color: AppTheme.textTertiary,
@@ -617,7 +617,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 ),
                 child: Stack(
                   children: [
-                    Center(
+                    const Center(
                       child: Icon(
                         Symbols.image,
                         color: AppTheme.textTertiary,

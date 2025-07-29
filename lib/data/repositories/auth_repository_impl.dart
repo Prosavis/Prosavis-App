@@ -78,9 +78,7 @@ class AuthRepositoryImpl implements AuthRepository {
           .set(userModel.toJson(), SetOptions(merge: true));
     } catch (e) {
       // Log error but don't throw - user can still be authenticated
-      // TODO: Implementar un sistema de logging apropiado
-      // ignore: avoid_print
-      // print('Error al guardar usuario en Firestore: $e');
+      // Funcionalidad pendiente: Implementar un sistema de logging apropiado
     }
   }
 } 

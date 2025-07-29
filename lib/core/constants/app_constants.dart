@@ -2,8 +2,9 @@ import 'package:material_symbols_icons/material_symbols_icons.dart';
 
 class AppConstants {
   // App Info
-  static const String appName = 'ServicioConecta';
+  static const String appName = 'Prosavis';
   static const String appVersion = '1.0.0';
+  static const String appDescription = 'La plataforma de confianza para contratar servicios locales en Colombia';
   
   // Firebase Collections
   static const String usersCollection = 'users';

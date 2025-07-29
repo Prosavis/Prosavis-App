@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '123456789',
     projectId: 'tu-proyecto-firebase',
     storageBucket: 'tu-proyecto-firebase.appspot.com',
-    iosBundleId: 'com.example.myapp',
+    iosBundleId: 'com.example.prosavis',
   );
 
 

@@ -4,9 +4,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/brand_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../widgets/brand/prosavis_logo.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -153,24 +155,21 @@ class _LoginPageState extends State<LoginPage>
   Widget _buildHeader() {
     return Column(
       children: [
+        // Logo de Prosavis con sombra y efectos
         Container(
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            gradient: AppTheme.primaryGradient,
+            color: BrandConstants.backgroundPrimary,
             borderRadius: BorderRadius.circular(60),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 8),
-              ),
-            ],
+            boxShadow: BrandConstants.shadowLg,
           ),
-          child: const Icon(
-            Symbols.handshake,
-            size: 64,
-            color: Colors.white,
+          child: const Padding(
+            padding: EdgeInsets.all(16.0),
+            child: ProsavisLogo(
+              type: ProsavisLogoType.color,
+              adaptive: true,
+            ),
           ),
         ),
         
@@ -178,21 +177,19 @@ class _LoginPageState extends State<LoginPage>
         
         Text(
           AppConstants.appName,
-          style: GoogleFonts.inter(
+          style: BrandConstants.headlineLarge.copyWith(
             fontSize: 32,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
           ),
         ),
         
         const SizedBox(height: AppConstants.paddingSmall),
         
         Text(
-          'Conectando servicios de calidad',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            color: AppTheme.textSecondary,
+          AppConstants.appDescription,
+          style: BrandConstants.bodyLarge.copyWith(
+            color: BrandConstants.textSecondary,
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -307,7 +304,7 @@ class _LoginPageState extends State<LoginPage>
           children: [
             TextButton(
               onPressed: () {
-                // TODO: Navigate to Terms of Service
+                // Funcionalidad pendiente: Navegar a Términos de Servicio
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
@@ -332,7 +329,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             TextButton(
               onPressed: () {
-                // TODO: Navigate to Privacy Policy
+                // Funcionalidad pendiente: Navegar a Política de Privacidad
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

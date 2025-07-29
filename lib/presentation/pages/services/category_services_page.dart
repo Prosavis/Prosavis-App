@@ -56,7 +56,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -222,7 +222,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Symbols.search_off,
             size: 64,
             color: AppTheme.textTertiary,

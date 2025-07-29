@@ -64,7 +64,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -262,7 +262,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
         prefixIcon: const Icon(Symbols.location_on),
         suffixIcon: IconButton(
           onPressed: () {
-            // TODO: Implement location picker
+            // Funcionalidad pendiente: Implementar selector de ubicación
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Selector de ubicación próximamente')),
             );
@@ -420,7 +420,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
             width: double.infinity,
             height: 100,
             decoration: BoxDecoration(
-              color: AppTheme.backgroundLight,
+              color: AppTheme.backgroundColor,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: Colors.grey.shade300,
@@ -430,7 +430,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Symbols.add_a_photo,
                   size: 32,
                   color: AppTheme.textTertiary,
@@ -463,7 +463,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
                 ),
                 child: Stack(
                   children: [
-                    Center(
+                    const Center(
                       child: Icon(
                         Symbols.image,
                         color: AppTheme.textTertiary,
@@ -554,7 +554,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
   }
 
   void _addImage() {
-    // TODO: Implement image picker
+    // Funcionalidad pendiente: Implementar selector de imágenes
     setState(() {
       _selectedImages.add('image_${_selectedImages.length + 1}');
     });
@@ -586,7 +586,7 @@ class _ServiceRequestPageState extends State<ServiceRequestPage>
         return;
       }
 
-      // TODO: Implement actual submission logic
+      // Funcionalidad pendiente: Implementar lógica de envío real
       _showSuccessDialog();
     }
   }

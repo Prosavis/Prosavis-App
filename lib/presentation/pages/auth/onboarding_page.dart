@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../widgets/brand/prosavis_logo.dart';
 
 class OnboardingPage extends StatefulWidget {
   const OnboardingPage({super.key});
@@ -148,52 +149,12 @@ class _OnboardingPageState extends State<OnboardingPage>
   Widget _buildHeader() {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingLarge),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                gradient: AppTheme.primaryGradient,
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Symbols.handshake,
-                color: Colors.white,
-                size: 32,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  AppConstants.appName,
-                  style: GoogleFonts.inter(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                Text(
-                  'Conectando servicios',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
-                    color: AppTheme.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
+      child: const Padding(
+        padding: EdgeInsets.all(AppConstants.paddingLarge),
+        child: ProsavisBrand.standard(
+          logoType: ProsavisLogoType.color,
+          direction: Axis.horizontal,
+          adaptive: true,
         ),
       ),
     );

@@ -1,9 +1,9 @@
 import 'package:get_it/get_it.dart';
-import 'package:myapp/data/repositories/auth_repository_impl.dart';
-import 'package:myapp/data/services/firebase_service.dart';
-import 'package:myapp/domain/repositories/auth_repository.dart';
-import 'package:myapp/domain/usecases/auth/sign_in_with_google_usecase.dart';
-import 'package:myapp/presentation/blocs/auth/auth_bloc.dart';
+import 'package:prosavis/data/repositories/auth_repository_impl.dart';
+import 'package:prosavis/data/services/firebase_service.dart';
+import 'package:prosavis/domain/repositories/auth_repository.dart';
+import 'package:prosavis/domain/usecases/auth/sign_in_with_google_usecase.dart';
+import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'dart:developer' as developer;
 
 final sl = GetIt.instance;

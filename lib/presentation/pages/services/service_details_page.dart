@@ -79,7 +79,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundLight,
+      backgroundColor: AppTheme.backgroundColor,
       body: FadeTransition(
         opacity: _fadeAnimation,
         child: CustomScrollView(
@@ -107,11 +107,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         onPressed: () => Navigator.pop(context),
         icon: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.9),
-            shape: BoxShape.circle,
-          ),
-          child: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+                      decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
         ),
       ),
       actions: [
@@ -228,7 +228,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             Row(
               children: [
-                Icon(
+                const Icon(
                   Symbols.person,
                   size: 20,
                   color: AppTheme.textSecondary,
@@ -248,7 +248,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             Row(
               children: [
-                Icon(
+                const Icon(
                   Symbols.location_on,
                   size: 20,
                   color: AppTheme.textSecondary,
@@ -270,7 +270,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               children: [
                 Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Symbols.star,
                       size: 20,
                       color: Colors.orange,
@@ -347,7 +347,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.grey.shade200,
                     ),
-                    child: Center(
+                    child: const Center(
                       child: Icon(
                         Symbols.image,
                         size: 64,
@@ -440,7 +440,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           padding: const EdgeInsets.only(bottom: 4),
           child: Row(
             children: [
-              Icon(
+              const Icon(
                 Symbols.check_circle,
                 size: 16,
                 color: Colors.green,
@@ -592,7 +592,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             children: [
               CircleAvatar(
                 radius: 16,
-                backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                 child: Text(
                   review.name[0].toUpperCase(),
                   style: GoogleFonts.inter(
@@ -686,7 +686,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     width: 200,
                     margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
-                      color: AppTheme.backgroundLight,
+                      color: AppTheme.backgroundColor,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade200),
                     ),
