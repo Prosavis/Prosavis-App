@@ -6,33 +6,33 @@ class BrandConstants {
   // Prevenir instanciación
   BrandConstants._();
 
-  // ========== COLORES DE MARCA ==========
+  // ========== COLORES DE MARCA PROSAVIS ==========
   
-  /// Color primario de Prosavis - Azul profesional
-  static const Color primaryColor = Color(0xFF2563EB);
+  /// Color primario de Prosavis - Azul marino del logo
+  static const Color primaryColor = Color(0xFF002446);
   
-  /// Color secundario - Verde confianza
-  static const Color secondaryColor = Color(0xFF059669);
+  /// Color secundario - Azul intermedio
+  static const Color secondaryColor = Color(0xFF00355F);
   
-  /// Color de acento - Naranja energía
-  static const Color accentColor = Color(0xFFF59E0B);
+  /// Color de acento - Naranja energía del logo
+  static const Color accentColor = Color(0xFFFF7700);
   
   /// Variaciones del color primario
-  static const Color primaryLight = Color(0xFF3B82F6);
-  static const Color primaryDark = Color(0xFF1D4ED8);
+  static const Color primaryLight = Color(0xFF004D7F);
+  static const Color primaryDark = Color(0xFF001A33);
   
-  /// Variaciones del color secundario
-  static const Color secondaryLight = Color(0xFF10B981);
-  static const Color secondaryDark = Color(0xFF047857);
+  /// Variaciones del color de acento
+  static const Color accentLight = Color(0xFFFF8C1A);
+  static const Color accentDark = Color(0xFFE66A00);
   
   /// Colores de estado
   static const Color successColor = Color(0xFF22C55E);
-  static const Color warningColor = Color(0xFFF59E0B);
+  static const Color warningColor = Color(0xFFFF7700); // Usando el naranja del logo
   static const Color errorColor = Color(0xFFEF4444);
-  static const Color infoColor = Color(0xFF3B82F6);
+  static const Color infoColor = Color(0xFF004D7F);
   
   /// Colores de texto
-  static const Color textPrimary = Color(0xFF111827);
+  static const Color textPrimary = Color(0xFF002446); // Usando el azul del logo
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
   static const Color textLight = Color(0xFFFFFFFF);
@@ -46,28 +46,28 @@ class BrandConstants {
   static const Color surfacePrimary = Color(0xFFFFFFFF);
   static const Color surfaceSecondary = Color(0xFFF8FAFC);
   static const Color surfaceTertiary = Color(0xFFE2E8F0);
-  
-  // ========== GRADIENTES ==========
+
+  // ========== GRADIENTES DE PROSAVIS ==========
   
   /// Gradiente principal de Prosavis
   static const LinearGradient primaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [primaryColor, primaryDark],
+    colors: [primaryColor, primaryLight],
   );
   
-  /// Gradiente secundario
+  /// Gradiente secundario - naranja
   static const LinearGradient secondaryGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [secondaryColor, secondaryDark],
+    colors: [accentColor, accentLight],
   );
   
-  /// Gradiente de éxito
-  static const LinearGradient successGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [successColor, secondaryColor],
+  /// Gradiente de bienvenida
+  static const LinearGradient welcomeGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [primaryColor, primaryLight, Color(0xFF4A8BC2)],
   );
 
   // ========== TIPOGRAFÍA ==========
@@ -177,16 +177,18 @@ class BrandConstants {
     color: textTertiary,
   );
 
-  // ========== ASSETS DE LOGO ==========
+  // ========== ASSETS DE LOGO PROSAVIS ==========
   
-  /// Rutas de los logos
+  /// Logo principal SVG de Prosavis
+  static const String logoColorSvg = 'assets/images/logo-color.svg';
+  
+  /// Rutas de los logos PNG (fallback)
   static const String logoColor = 'assets/images/logo-color.png';
   static const String logoGrayscale = 'assets/images/logo-grayscale.png';
   static const String logoGrayscaleInverted = 'assets/images/logo-grayscale-inverted.png';
   static const String logoNoBackground = 'assets/images/logo-no-background.png';
   
   /// Rutas de los logos SVG
-  static const String logoColorSvg = 'assets/images/logo-color.svg';
   static const String logoGrayscaleSvg = 'assets/images/logo-grayscale.svg';
   static const String logoGrayscaleInvertedSvg = 'assets/images/logo-grayscale-inverted.svg';
   static const String logoNoBackgroundSvg = 'assets/images/logo-no-background.svg';
@@ -257,11 +259,11 @@ class BrandConstants {
 
   // ========== UTILIDADES ==========
   
-  /// Obtiene el logo adecuado según el tema
+  /// Obtiene el logo adecuado según el tema (prioriza SVG)
   static String getLogoForTheme(Brightness brightness) {
     return brightness == Brightness.dark 
-        ? logoGrayscaleInverted 
-        : logoColor;
+        ? logoGrayscaleInvertedSvg 
+        : logoColorSvg;
   }
   
   /// Obtiene el color de texto adecuado según el fondo

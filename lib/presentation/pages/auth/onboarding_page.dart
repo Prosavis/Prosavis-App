@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/brand_constants.dart';
 import '../../widgets/brand/prosavis_logo.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -41,7 +42,7 @@ class _OnboardingPageState extends State<OnboardingPage>
       title: 'Seguridad garantizada',
       description: 'Todos nuestros prestadores están verificados. Trabaja con confianza y tranquilidad.',
       gradient: const LinearGradient(
-        colors: [AppTheme.accentColor, Colors.orange],
+        colors: [AppTheme.accentColor, Color(0xFFFF8C1A)],
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
       ),
@@ -95,15 +96,8 @@ class _OnboardingPageState extends State<OnboardingPage>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              AppTheme.backgroundColor,
-              AppTheme.backgroundColor.withValues(alpha: 0.8),
-            ],
-          ),
+        decoration: const BoxDecoration(
+          gradient: AppTheme.welcomeGradient,
         ),
         child: SafeArea(
           child: Column(
@@ -149,12 +143,53 @@ class _OnboardingPageState extends State<OnboardingPage>
   Widget _buildHeader() {
     return FadeTransition(
       opacity: _fadeAnimation,
-      child: const Padding(
-        padding: EdgeInsets.all(AppConstants.paddingLarge),
-        child: ProsavisBrand.standard(
-          logoType: ProsavisLogoType.color,
-          direction: Axis.horizontal,
-          adaptive: true,
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingLarge),
+        child: Column(
+          children: [
+            // Logo de Prosavis
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(40),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 15,
+                    offset: const Offset(0, 5),
+                  ),
+                ],
+              ),
+              child: const Padding(
+                padding: EdgeInsets.all(12.0),
+                child: ProsavisLogo(
+                  type: ProsavisLogoType.color,
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: AppConstants.paddingMedium),
+            
+            Text(
+              AppConstants.appName,
+              style: BrandConstants.headlineMedium.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            
+            const SizedBox(height: AppConstants.paddingSmall / 2),
+            
+            Text(
+              'Conectando servicios de calidad',
+              style: BrandConstants.bodyMedium.copyWith(
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
       ),
     );
@@ -201,7 +236,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: Colors.white,
                 ),
               ),
               
@@ -213,7 +248,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AppTheme.textSecondary,
+                  color: Colors.white.withValues(alpha: 0.8),
                   height: 1.5,
                 ),
               ),
@@ -236,8 +271,8 @@ class _OnboardingPageState extends State<OnboardingPage>
           height: 8,
           decoration: BoxDecoration(
             color: currentIndex == index
-                ? AppTheme.primaryColor
-                : AppTheme.textTertiary.withValues(alpha: 0.3),
+                ? AppTheme.accentColor
+                : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -257,7 +292,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 'Saltar',
                 style: GoogleFonts.inter(
-                  color: AppTheme.textSecondary,
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -283,9 +318,14 @@ class _OnboardingPageState extends State<OnboardingPage>
                   : 'Siguiente',
             ),
             style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accentColor,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(
                 horizontal: 24,
                 vertical: 16,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
             ),
           ),

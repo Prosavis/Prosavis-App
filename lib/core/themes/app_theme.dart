@@ -2,33 +2,44 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  // Colores principales
-  static const Color primaryColor = Color(0xFF2563EB); // Azul moderno
-  static const Color secondaryColor = Color(0xFF10B981); // Verde
-  static const Color accentColor = Color(0xFFFF6B6B); // Coral
+  // Colores principales de Prosavis basados en el logo
+  static const Color primaryColor = Color(0xFF002446); // Azul marino del logo
+  static const Color secondaryColor = Color(0xFF00355F); // Azul más claro
+  static const Color accentColor = Color(0xFFFF7700); // Naranja del logo
   static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color backgroundLight = Color(0xFFF8FAFC); // Alias para backgroundColor
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color errorColor = Color(0xFFEF4444);
-  static const Color warningColor = Color(0xFFF59E0B);
+  static const Color warningColor = Color(0xFFFF7700); // Usando el naranja del logo
   static const Color successColor = Color(0xFF10B981);
   
   // Colores de texto
-  static const Color textPrimary = Color(0xFF1F2937);
+  static const Color textPrimary = Color(0xFF002446); // Usando el azul del logo
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
   
-  // Gradientes
+  // Gradientes actualizados con los colores de Prosavis
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [primaryColor, Color(0xFF3B82F6)],
+    colors: [primaryColor, secondaryColor],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
   
   static const LinearGradient secondaryGradient = LinearGradient(
-    colors: [secondaryColor, Color(0xFF059669)],
+    colors: [accentColor, Color(0xFFFF8C1A)], // Variaciones del naranja
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
+  );
+
+  // Gradiente de bienvenida para el onboarding/login
+  static const LinearGradient welcomeGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF002446), // Azul marino
+      Color(0xFF00355F), // Azul intermedio
+      Color(0xFF004D7F), // Azul más claro
+    ],
   );
 
   static ThemeData get lightTheme {

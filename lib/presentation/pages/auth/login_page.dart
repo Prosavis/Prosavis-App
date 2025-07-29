@@ -86,16 +86,8 @@ class _LoginPageState extends State<LoginPage>
         child: BlocBuilder<AuthBloc, AuthState>(
           builder: (context, state) {
             return Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.primaryColor.withValues(alpha: 0.1),
-                    AppTheme.backgroundColor,
-                    AppTheme.secondaryColor.withValues(alpha: 0.1),
-                  ],
-                ),
+              decoration: const BoxDecoration(
+                gradient: AppTheme.welcomeGradient,
               ),
               child: SafeArea(
                 child: Padding(
@@ -160,15 +152,20 @@ class _LoginPageState extends State<LoginPage>
           width: 120,
           height: 120,
           decoration: BoxDecoration(
-            color: BrandConstants.backgroundPrimary,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(60),
-            boxShadow: BrandConstants.shadowLg,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 8),
+              ),
+            ],
           ),
           child: const Padding(
             padding: EdgeInsets.all(16.0),
-            child: ProsavisLogo(
+            child: ProsavisLogo.large(
               type: ProsavisLogoType.color,
-              adaptive: true,
             ),
           ),
         ),
@@ -179,15 +176,18 @@ class _LoginPageState extends State<LoginPage>
           AppConstants.appName,
           style: BrandConstants.headlineLarge.copyWith(
             fontSize: 32,
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
           ),
         ),
         
         const SizedBox(height: AppConstants.paddingSmall),
         
         Text(
-          AppConstants.appDescription,
+          'Conectando servicios de calidad',
           style: BrandConstants.bodyLarge.copyWith(
-            color: BrandConstants.textSecondary,
+            color: Colors.white.withValues(alpha: 0.9),
+            fontSize: 16,
           ),
           textAlign: TextAlign.center,
         ),
@@ -203,7 +203,7 @@ class _LoginPageState extends State<LoginPage>
           style: GoogleFonts.inter(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: Colors.white,
           ),
         ),
         
@@ -214,7 +214,7 @@ class _LoginPageState extends State<LoginPage>
           textAlign: TextAlign.center,
           style: GoogleFonts.inter(
             fontSize: 16,
-            color: AppTheme.textSecondary,
+            color: Colors.white.withValues(alpha: 0.8),
             height: 1.5,
           ),
         ),

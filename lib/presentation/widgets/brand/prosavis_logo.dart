@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/brand_constants.dart';
 
 /// Widget reutilizable para mostrar el logo de Prosavis
@@ -64,27 +65,52 @@ class ProsavisLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final logoPath = _getLogoPath(brightness);
+    final logoSize = height ?? width ?? 48.0;
 
+    // Verificar si es un archivo SVG
+    if (logoPath.endsWith('.svg')) {
+      return SvgPicture.asset(
+        logoPath,
+        height: height,
+        width: width,
+        fit: fit,
+        placeholderBuilder: (context) => _buildFallbackLogo(logoSize),
+      );
+    }
+
+    // Fallback para archivos PNG
     return Image.asset(
       logoPath,
       height: height,
       width: width,
       fit: fit,
       errorBuilder: (context, error, stackTrace) {
-        // Fallback en caso de error al cargar la imagen
-        return Container(
-          height: height ?? 48,
-          width: width,
-          decoration: BoxDecoration(
-            color: BrandConstants.primaryColor,
-            borderRadius: BorderRadius.circular(BrandConstants.radiusMd),
-          ),
-          child: const Icon(
-            Icons.business,
-            color: BrandConstants.textLight,
-          ),
-        );
+        return _buildFallbackLogo(logoSize);
       },
+    );
+  }
+
+  /// Widget de fallback en caso de error al cargar el logo
+  Widget _buildFallbackLogo(double size) {
+    return Container(
+      height: size,
+      width: size,
+      decoration: BoxDecoration(
+        gradient: BrandConstants.primaryGradient,
+        borderRadius: BorderRadius.circular(size * 0.15),
+        boxShadow: BrandConstants.shadowMd,
+      ),
+      child: Center(
+        child: Text(
+          'P',
+          style: TextStyle(
+            color: BrandConstants.textLight,
+            fontSize: size * 0.5,
+            fontWeight: FontWeight.w900,
+            fontFamily: BrandConstants.primaryFontFamily,
+          ),
+        ),
+      ),
     );
   }
 
@@ -96,13 +122,13 @@ class ProsavisLogo extends StatelessWidget {
 
     switch (type) {
       case ProsavisLogoType.color:
-        return BrandConstants.logoColor;
+        return BrandConstants.logoColorSvg;
       case ProsavisLogoType.grayscale:
-        return BrandConstants.logoGrayscale;
+        return BrandConstants.logoGrayscaleSvg;
       case ProsavisLogoType.grayscaleInverted:
-        return BrandConstants.logoGrayscaleInverted;
+        return BrandConstants.logoGrayscaleInvertedSvg;
       case ProsavisLogoType.noBackground:
-        return BrandConstants.logoNoBackground;
+        return BrandConstants.logoNoBackgroundSvg;
     }
   }
 }
