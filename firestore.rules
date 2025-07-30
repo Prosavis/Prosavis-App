@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // === USUARIOS ===
+    // Permitir a los usuarios autenticados leer y escribir solo sus propios datos
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // === SERVICIOS ===
+    // Permitir a todos los usuarios autenticados leer servicios
+    // Solo el propietario puede modificar sus servicios
+    match /services/{serviceId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && 
+                   request.auth.uid == resource.data.providerId;
+      allow update, delete: if request.auth != null && 
+                           request.auth.uid == resource.data.providerId;
+    }
+    
+    // === RESERVAS ===
+    // Los usuarios pueden ver sus propias reservas (como cliente o proveedor)
+    match /bookings/{bookingId} {
+      allow read, write: if request.auth != null && 
+                        (request.auth.uid == resource.data.clientId || 
+                         request.auth.uid == resource.data.providerId);
+    }
+    
+    // === CATEGORÍAS ===
+    // Solo lectura para todos los usuarios autenticados
+    match /categories/{categoryId} {
+      allow read: if request.auth != null;
+      // Las categorías solo pueden ser modificadas por administradores
+      allow write: if false; // Por ahora deshabilitar escritura
+    }
+    
+    // === MENSAJES/CHAT ===
+    // Los usuarios pueden leer/escribir solo en conversaciones donde participan
+    match /conversations/{conversationId} {
+      allow read, write: if request.auth != null && 
+                        request.auth.uid in resource.data.participants;
+      
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && 
+                          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      }
+    }
+    
+    // === NOTIFICACIONES ===
+    // Los usuarios solo pueden leer sus propias notificaciones
+    match /notifications/{notificationId} {
+      allow read: if request.auth != null && 
+                 request.auth.uid == resource.data.userId;
+      // Las notificaciones se crean desde el backend
+      allow write: if false;
+    }
+    
+    // === CONFIGURACIÓN GLOBAL ===
+    // Solo lectura para configuraciones globales de la app
+    match /app_config/{configId} {
+      allow read: if request.auth != null;
+      allow write: if false; // Solo administradores desde backend
+    }
+    
+    // Denegar acceso a todo lo demás por defecto
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

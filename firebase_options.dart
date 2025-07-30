@@ -47,28 +47,28 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'YOUR_WEB_API_KEY',
-    appId: 'YOUR_WEB_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    authDomain: 'YOUR_AUTH_DOMAIN',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
+    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
+    appId: '1:967024953650:web:abcdef123456',
+    messagingSenderId: '967024953650',
+    projectId: 'prosavis',
+    authDomain: 'prosavis.firebaseapp.com',
+    storageBucket: 'prosavis.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'YOUR_ANDROID_API_KEY',
-    appId: 'YOUR_ANDROID_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
+    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
+    appId: '1:967024953650:android:1fe7d2346bfbf313af2f2b',
+    messagingSenderId: '967024953650',
+    projectId: 'prosavis',
+    storageBucket: 'prosavis.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'YOUR_IOS_API_KEY',
-    appId: 'YOUR_IOS_APP_ID',
-    messagingSenderId: 'YOUR_MESSAGING_SENDER_ID',
-    projectId: 'YOUR_PROJECT_ID',
-    storageBucket: 'YOUR_STORAGE_BUCKET',
-    iosBundleId: 'YOUR_IOS_BUNDLE_ID',
+    apiKey: 'AIzaSyBPpEb_XZIdZTPhJbJTffv0bNb-gmaUVpo',
+    appId: '1:967024953650:ios:c0927334cc143facaf2f2b',
+    messagingSenderId: '967024953650',
+    projectId: 'prosavis',
+    storageBucket: 'prosavis.firebasestorage.app',
+    iosBundleId: 'com.example.myapp',
   );
 }

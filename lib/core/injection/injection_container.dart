@@ -28,7 +28,7 @@ Future<void> init() async {
     developer.log('✅ FirebaseService registrado');
     
     sl.registerLazySingleton<AuthRepository>(
-      () => AuthRepositoryImpl(sl()),
+      () => AuthRepositoryImpl(),
     );
     developer.log('✅ AuthRepository registrado');
 

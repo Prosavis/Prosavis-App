@@ -1,5 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:developer' as developer;
 import 'package:prosavis/firebase_options.dart';
 
@@ -67,11 +68,18 @@ class FirebaseService {
   Future<void> signOut() async {
     if (_isDevelopmentMode) {
       developer.log('🔧 Modo desarrollo: Simulando logout');
+      _mockUser = null;
       return;
     }
 
     try {
+      // Cerrar sesión en Google Sign-In
+      await GoogleSignIn.instance.signOut();
+      
+      // Cerrar sesión en Firebase
       await _auth?.signOut();
+      
+      developer.log('✅ Logout exitoso');
     } catch (e) {
       developer.log('Error en signOut: $e');
     }
@@ -119,8 +127,10 @@ class FirebaseService {
     try {
       developer.log('🔧 Intentando autenticación anónima como alternativa a Google Sign-In');
       return await signInAnonymously();
+      
     } catch (e) {
-      developer.log('⚠️ Error en autenticación, activando modo desarrollo: $e');
+      developer.log('⚠️ Error en Google Sign-In: $e');
+      // En caso de error, activar modo desarrollo como fallback
       _isDevelopmentMode = true;
       _simulateSuccessfulLogin();
       return _createMockUserCredential();
