@@ -157,7 +157,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -186,7 +186,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             Text(
               'Conectando servicios de calidad',
               style: BrandConstants.bodyMedium.copyWith(
-                color: Colors.white.withOpacity(0.9),
+                color: Colors.white.withValues(alpha: 0.9),
               ),
               textAlign: TextAlign.center,
             ),
@@ -215,7 +215,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                   borderRadius: BorderRadius.circular(60),
                   boxShadow: [
                     BoxShadow(
-                      color: data.gradient.colors.first.withOpacity(0.3),
+                      color: data.gradient.colors.first.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -249,7 +249,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   height: 1.5,
                 ),
               ),
@@ -273,7 +273,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           decoration: BoxDecoration(
             color: currentIndex == index
                 ? AppTheme.accentColor
-                : Colors.white.withOpacity(0.4),
+                : Colors.white.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -293,7 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 'Saltar',
                 style: GoogleFonts.inter(
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -369,10 +369,10 @@ class OnboardingData {
 extension ColorValues on Color {
   Color withValues({double? alpha, double? red, double? green, double? blue}) {
     return Color.fromARGB(
-      (alpha != null ? (alpha * 255).round() : this.alpha),
-      (red != null ? (red * 255).round() : this.red),
-      (green != null ? (green * 255).round() : this.green),
-      (blue != null ? (blue * 255).round() : this.blue),
+      (alpha != null ? (alpha * 255).round() : (a * 255.0).round()),
+      (red != null ? (red * 255).round() : (r * 255.0).round()),
+      (green != null ? (green * 255).round() : (g * 255.0).round()),
+      (blue != null ? (blue * 255).round() : (b * 255.0).round()),
     );
   }
 }
