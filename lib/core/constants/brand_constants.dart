@@ -179,19 +179,19 @@ class BrandConstants {
 
   // ========== ASSETS DE LOGO PROSAVIS ==========
   
-  /// Logo principal SVG de Prosavis
-  static const String logoColorSvg = 'assets/images/logo-color.svg';
+  /// Logo principal - Siempre sin fondo (PNG)
+  static const String logoColorSvg = 'assets/images/logo-no-background.png';
   
-  /// Rutas de los logos PNG (fallback)
-  static const String logoColor = 'assets/images/logo-color.png';
-  static const String logoGrayscale = 'assets/images/logo-grayscale.png';
-  static const String logoGrayscaleInverted = 'assets/images/logo-grayscale-inverted.png';
+  /// Rutas de los logos PNG - Todas unificadas a sin fondo
+  static const String logoColor = 'assets/images/logo-no-background.png';
+  static const String logoGrayscale = 'assets/images/logo-no-background.png';
+  static const String logoGrayscaleInverted = 'assets/images/logo-no-background.png';
   static const String logoNoBackground = 'assets/images/logo-no-background.png';
   
-  /// Rutas de los logos SVG
-  static const String logoGrayscaleSvg = 'assets/images/logo-grayscale.svg';
-  static const String logoGrayscaleInvertedSvg = 'assets/images/logo-grayscale-inverted.svg';
-  static const String logoNoBackgroundSvg = 'assets/images/logo-no-background.svg';
+  /// Rutas de los logos SVG - Todas unificadas a sin fondo (PNG)
+  static const String logoGrayscaleSvg = 'assets/images/logo-no-background.png';
+  static const String logoGrayscaleInvertedSvg = 'assets/images/logo-no-background.png';
+  static const String logoNoBackgroundSvg = 'assets/images/logo-no-background.png';
 
   // ========== ESPACIADO ==========
   
@@ -259,11 +259,9 @@ class BrandConstants {
 
   // ========== UTILIDADES ==========
   
-  /// Obtiene el logo adecuado según el tema (prioriza SVG)
+  /// Obtiene el logo adecuado según el tema (siempre sin fondo PNG)
   static String getLogoForTheme(Brightness brightness) {
-    return brightness == Brightness.dark 
-        ? logoGrayscaleInvertedSvg 
-        : logoColorSvg;
+    return logoNoBackground; // Siempre usar logo sin fondo
   }
   
   /// Obtiene el color de texto adecuado según el fondo

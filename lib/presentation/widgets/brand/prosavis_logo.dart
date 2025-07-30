@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../../../core/constants/brand_constants.dart';
 
 /// Widget reutilizable para mostrar el logo de Prosavis
@@ -67,18 +66,7 @@ class ProsavisLogo extends StatelessWidget {
     final logoPath = _getLogoPath(brightness);
     final logoSize = height ?? width ?? 48.0;
 
-    // Verificar si es un archivo SVG
-    if (logoPath.endsWith('.svg')) {
-      return SvgPicture.asset(
-        logoPath,
-        height: height,
-        width: width,
-        fit: fit,
-        placeholderBuilder: (context) => _buildFallbackLogo(logoSize),
-      );
-    }
-
-    // Fallback para archivos PNG
+    // Siempre usar PNG - logo sin fondo
     return Image.asset(
       logoPath,
       height: height,
@@ -115,21 +103,10 @@ class ProsavisLogo extends StatelessWidget {
   }
 
   /// Obtiene la ruta del logo según el tipo y tema
+  /// Siempre devuelve logo-no-background.png independientemente del tipo
   String _getLogoPath(Brightness brightness) {
-    if (adaptive && type == ProsavisLogoType.color) {
-      return BrandConstants.getLogoForTheme(brightness);
-    }
-
-    switch (type) {
-      case ProsavisLogoType.color:
-        return BrandConstants.logoColorSvg;
-      case ProsavisLogoType.grayscale:
-        return BrandConstants.logoGrayscaleSvg;
-      case ProsavisLogoType.grayscaleInverted:
-        return BrandConstants.logoGrayscaleInvertedSvg;
-      case ProsavisLogoType.noBackground:
-        return BrandConstants.logoNoBackgroundSvg;
-    }
+    // Siempre usar logo sin fondo PNG
+    return BrandConstants.logoNoBackground;
   }
 }
 

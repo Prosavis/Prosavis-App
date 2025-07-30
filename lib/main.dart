@@ -11,6 +11,7 @@ import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/pages/auth/onboarding_page.dart';
 import 'presentation/pages/auth/login_page.dart';
 import 'presentation/pages/home/home_page.dart';
+import 'presentation/widgets/brand/prosavis_logo.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -196,10 +197,9 @@ class _SplashScreenState extends State<SplashScreen>
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.handshake,
-                    size: 64,
-                    color: AppTheme.primaryColor,
+                  child: const Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: ProsavisLogo.large(),
                   ),
                 ),
               ),
