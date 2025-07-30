@@ -90,50 +90,60 @@ class _LoginPageState extends State<LoginPage>
                 gradient: AppTheme.welcomeGradient,
               ),
               child: SafeArea(
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.paddingLarge),
-                  child: Column(
-                    children: [
-                      const Spacer(),
-                      
-                      // Logo and Title
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: _buildHeader(),
-                        ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: MediaQuery.of(context).size.height - 
+                          MediaQuery.of(context).padding.top - 
+                          MediaQuery.of(context).padding.bottom - 
+                          (AppConstants.paddingLarge * 2),
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          const SizedBox(height: AppConstants.paddingLarge),
+                          
+                          // Logo and Title
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: _buildHeader(),
+                            ),
+                          ),
+                          
+                          const Spacer(),
+                          
+                          // Welcome Message
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: _buildWelcomeMessage(),
+                          ),
+                          
+                          const SizedBox(height: AppConstants.paddingLarge * 2),
+                          
+                          // Google Sign In Button
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: ScaleTransition(
+                              scale: _scaleAnimation,
+                              child: _buildGoogleSignInButton(state),
+                            ),
+                          ),
+                          
+                          const SizedBox(height: AppConstants.paddingLarge),
+                          
+                          // Terms and Privacy
+                          FadeTransition(
+                            opacity: _fadeAnimation,
+                            child: _buildTermsAndPrivacy(),
+                          ),
+                          
+                          const SizedBox(height: AppConstants.paddingLarge),
+                        ],
                       ),
-                      
-                      const Spacer(),
-                      
-                      // Welcome Message
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: _buildWelcomeMessage(),
-                      ),
-                      
-                      const SizedBox(height: AppConstants.paddingLarge * 2),
-                      
-                      // Google Sign In Button
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: ScaleTransition(
-                          scale: _scaleAnimation,
-                          child: _buildGoogleSignInButton(state),
-                        ),
-                      ),
-                      
-                      const SizedBox(height: AppConstants.paddingLarge),
-                      
-                      // Terms and Privacy
-                      FadeTransition(
-                        opacity: _fadeAnimation,
-                        child: _buildTermsAndPrivacy(),
-                      ),
-                      
-                      const Spacer(),
-                    ],
+                    ),
                   ),
                 ),
               ),

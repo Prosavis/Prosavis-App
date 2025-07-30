@@ -32,29 +32,30 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'tu-api-key-web',
-    appId: '1:123456789:web:abcdef',
+    apiKey: 'AIzaSyDemoApiKeyForDevelopment',
+    appId: '1:123456789:web:abcdef123456',
     messagingSenderId: '123456789',
-    projectId: 'tu-proyecto-firebase',
-    authDomain: 'tu-proyecto-firebase.firebaseapp.com',
-    storageBucket: 'tu-proyecto-firebase.appspot.com',
+    projectId: 'prosavis-demo',
+    authDomain: 'prosavis-demo.firebaseapp.com',
+    storageBucket: 'prosavis-demo.appspot.com',
+    measurementId: 'G-1234567890',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'tu-api-key-android',
-    appId: '1:123456789:android:abcdef',
+    apiKey: 'AIzaSyDemoApiKeyForAndroidDevelopment',
+    appId: '1:123456789:android:abcdef123456',
     messagingSenderId: '123456789',
-    projectId: 'tu-proyecto-firebase',
-    storageBucket: 'tu-proyecto-firebase.appspot.com',
+    projectId: 'prosavis-demo',
+    storageBucket: 'prosavis-demo.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'tu-api-key-ios',
-    appId: '1:123456789:ios:abcdef',
+    apiKey: 'AIzaSyDemoApiKeyForIOSDevelopment',
+    appId: '1:123456789:ios:abcdef123456',
     messagingSenderId: '123456789',
-    projectId: 'tu-proyecto-firebase',
-    storageBucket: 'tu-proyecto-firebase.appspot.com',
-    iosBundleId: 'com.example.prosavis',
+    projectId: 'prosavis-demo',
+    storageBucket: 'prosavis-demo.appspot.com',
+    iosBundleId: 'com.prosavis.app',
   );
 
 

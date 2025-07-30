@@ -1,16 +1,19 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
+import 'package:prosavis/firebase_options.dart';
 
 class FirebaseService {
   static bool _isInitialized = false;
   static bool _isDevelopmentMode = false;
 
-  // Inicialización mejorada de Firebase con modo desarrollo
+  // Inicialización mejorada de Firebase con opciones correctas
   static Future<void> initializeFirebase() async {
     try {
-      // Intentar inicializar Firebase sin opciones específicas por ahora
-      await Firebase.initializeApp();
+      developer.log('🔧 Iniciando configuración de Firebase...');
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
       _isInitialized = true;
       _isDevelopmentMode = false;
       developer.log('✅ Firebase inicializado correctamente');
