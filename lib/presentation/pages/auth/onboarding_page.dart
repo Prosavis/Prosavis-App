@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -156,7 +157,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 borderRadius: BorderRadius.circular(40),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 15,
                     offset: const Offset(0, 5),
                   ),
@@ -185,7 +186,7 @@ class _OnboardingPageState extends State<OnboardingPage>
             Text(
               'Conectando servicios de calidad',
               style: BrandConstants.bodyMedium.copyWith(
-                color: Colors.white.withValues(alpha: 0.9),
+                color: Colors.white.withOpacity(0.9),
               ),
               textAlign: TextAlign.center,
             ),
@@ -214,7 +215,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                   borderRadius: BorderRadius.circular(60),
                   boxShadow: [
                     BoxShadow(
-                      color: data.gradient.colors.first.withValues(alpha: 0.3),
+                      color: data.gradient.colors.first.withOpacity(0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -248,7 +249,7 @@ class _OnboardingPageState extends State<OnboardingPage>
                 textAlign: TextAlign.center,
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Colors.white.withOpacity(0.8),
                   height: 1.5,
                 ),
               ),
@@ -272,7 +273,7 @@ class _OnboardingPageState extends State<OnboardingPage>
           decoration: BoxDecoration(
             color: currentIndex == index
                 ? AppTheme.accentColor
-                : Colors.white.withValues(alpha: 0.4),
+                : Colors.white.withOpacity(0.4),
             borderRadius: BorderRadius.circular(4),
           ),
         ),
@@ -292,7 +293,7 @@ class _OnboardingPageState extends State<OnboardingPage>
               child: Text(
                 'Saltar',
                 style: GoogleFonts.inter(
-                  color: Colors.white.withValues(alpha: 0.8),
+                  color: Colors.white.withOpacity(0.8),
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -342,14 +343,11 @@ class _OnboardingPageState extends State<OnboardingPage>
   }
 
   Future<void> _completeOnboarding() async {
-    // Mark onboarding as completed
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(AppConstants.firstTimeKey, false);
     
-    // Simply pop the onboarding page
-    // AppNavigator will automatically detect the change and show LoginPage
     if (mounted) {
-      Navigator.of(context).pop();
+      context.go('/login');
     }
   }
 }
@@ -366,4 +364,15 @@ class OnboardingData {
     required this.description,
     required this.gradient,
   });
-} 
+}
+
+extension ColorValues on Color {
+  Color withValues({double? alpha, double? red, double? green, double? blue}) {
+    return Color.fromARGB(
+      (alpha != null ? (alpha * 255).round() : this.alpha),
+      (red != null ? (red * 255).round() : this.red),
+      (green != null ? (green * 255).round() : this.green),
+      (blue != null ? (blue * 255).round() : this.blue),
+    );
+  }
+}
