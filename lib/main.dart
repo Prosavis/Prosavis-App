@@ -13,8 +13,7 @@ import 'domain/repositories/auth_repository.dart';
 import 'domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
-import 'presentation/pages/auth/login_page.dart';
-import 'presentation/pages/auth/onboarding_page.dart';
+import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/home/home_page.dart';
 
 void main() async {
@@ -47,11 +46,7 @@ final _router = GoRouter(
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const OnboardingPage(),
-    ),
-    GoRoute(
-      path: '/login',
-      builder: (context, state) => const LoginPage(),
+      builder: (context, state) => const SplashPage(),
     ),
     GoRoute(
       path: '/home',

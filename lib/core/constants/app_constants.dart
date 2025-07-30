@@ -20,7 +20,6 @@ class AppConstants {
   // SharedPreferences Keys
   static const String userTokenKey = 'user_token';
   static const String userIdKey = 'user_id';
-  static const String firstTimeKey = 'first_time';
   static const String themeKey = 'theme_mode';
   
   // Service Categories
