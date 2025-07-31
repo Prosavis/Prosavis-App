@@ -5,6 +5,7 @@ import '../home/home_page.dart';
 import '../search/search_page.dart';
 import '../saved/saved_page.dart';
 import '../profile/profile_page.dart';
+import '../services/service_creation_page.dart';
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -19,6 +20,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
 
   final List<Widget> _pages = [
     const HomePage(),
+    const ServiceCreationPage(),
     const SearchPage(),
     const SavedPage(),
     const ProfilePage(),
@@ -97,6 +99,11 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             icon: Icon(Symbols.home),
             activeIcon: Icon(Symbols.home, fill: 1),
             label: 'Inicio',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Symbols.work),
+            activeIcon: Icon(Symbols.work, fill: 1),
+            label: 'Ofrecer',
           ),
           BottomNavigationBarItem(
             icon: Icon(Symbols.search),

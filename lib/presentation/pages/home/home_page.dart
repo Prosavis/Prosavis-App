@@ -12,8 +12,6 @@ import '../../widgets/common/category_card.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
 import '../notifications/notifications_page.dart';
-import '../services/service_request_page.dart';
-import '../services/service_creation_page.dart';
 import '../categories/categories_page.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
@@ -76,7 +74,6 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBar(state),
             _buildSearchBar(),
-            _buildQuickActions(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -94,7 +91,6 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBarAnonymous(),
             _buildSearchBar(),
-            _buildQuickActions(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -278,102 +274,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildQuickActions() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Row(
-          children: [
-            Expanded(
-              child: _buildQuickActionCard(
-                title: 'Solicitar Servicio',
-                subtitle: 'Encuentra profesionales',
-                icon: Symbols.search,
-                gradient: AppTheme.primaryGradient,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ServiceRequestPage(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildQuickActionCard(
-                title: 'Ofrecer Servicio',
-                subtitle: 'Comparte tus habilidades',
-                icon: Symbols.work,
-                gradient: AppTheme.secondaryGradient,
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ServiceCreationPage(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildQuickActionCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required LinearGradient gradient,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: gradient.colors.first.withValues(alpha: 0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(
-              icon,
-              color: Colors.white,
-              size: 32,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            Text(
-              subtitle,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                color: Colors.white.withValues(alpha: 0.8),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildCategoriesSection() {
     return SliverToBoxAdapter(
