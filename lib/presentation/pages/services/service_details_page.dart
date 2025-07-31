@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import 'category_services_page.dart';
@@ -717,42 +718,37 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           top: BorderSide(color: Colors.grey.shade200),
         ),
       ),
-      child: Row(
-        children: [
-          Expanded(
-            child: OutlinedButton.icon(
-              onPressed: _contactProvider,
-              icon: const Icon(Symbols.chat),
-              label: Text(
-                'Mensaje',
-                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _contactProvider,
+          icon: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '💬',
+                style: GoogleFonts.inter(fontSize: 18),
               ),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+              const SizedBox(width: 4),
+            ],
+          ),
+          label: Text(
+            'Contactar por WhatsApp',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 2,
-            child: ElevatedButton.icon(
-              onPressed: _bookService,
-              icon: const Icon(Symbols.calendar_add_on),
-              label: Text(
-                'Contratar',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryColor,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF25D366), // WhatsApp green
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -776,44 +772,40 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
-  void _contactProvider() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Chat próximamente')),
+  void _contactProvider() async {
+    // Número de teléfono del proveedor (simulado por ahora)
+    const phoneNumber = '+573001234567'; // Número colombiano simulado
+    final message = Uri.encodeComponent(
+      'Hola! Estoy interesado en tu servicio: ${widget.service.title}. ¿Podrías darme más información?'
     );
+    
+    final whatsappUrl = 'https://wa.me/$phoneNumber?text=$message';
+    final uri = Uri.parse(whatsappUrl);
+    
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al intentar abrir WhatsApp.'),
+          ),
+        );
+      }
+    }
   }
 
-  void _bookService() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        icon: const Icon(
-          Symbols.check_circle,
-          color: Colors.green,
-          size: 48,
-        ),
-        title: Text(
-          '¡Solicitud enviada!',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'Tu solicitud ha sido enviada a ${widget.service.provider}. Te notificaremos cuando responda.',
-          style: GoogleFonts.inter(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Entendido',
-              style: GoogleFonts.inter(
-                color: AppTheme.primaryColor,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   void _viewAllReviews() {
     ScaffoldMessenger.of(context).showSnackBar(

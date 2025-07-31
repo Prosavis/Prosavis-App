@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import 'package:shimmer/shimmer.dart';
+
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_event.dart';
+
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/category_card.dart';
 import '../../widgets/common/service_card.dart';
@@ -31,7 +31,6 @@ class _HomePageState extends State<HomePage>
   late Animation<double> _fadeAnimation;
   
   final TextEditingController _searchController = TextEditingController();
-  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -57,16 +56,15 @@ class _HomePageState extends State<HomePage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, state) {
-          if (state is AuthAuthenticated) {
-            return _buildHomeContent(state);
-          }
-          return _buildLoadingContent();
-        },
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is AuthAuthenticated) {
+          return _buildHomeContent(state);
+        } else {
+          // Mostrar home sin autenticación (usuario anónimo)
+          return _buildHomeContentAnonymous();
+        }
+      },
     );
   }
 
@@ -88,36 +86,25 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildLoadingContent() {
+  Widget _buildHomeContentAnonymous() {
     return SafeArea(
-      child: Shimmer.fromColors(
-        baseColor: Colors.grey.shade300,
-        highlightColor: Colors.grey.shade100,
-        child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          child: Column(
-            children: [
-              Container(
-                height: 100,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                height: 50,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ],
-          ),
+      child: FadeTransition(
+        opacity: _fadeAnimation,
+        child: CustomScrollView(
+          slivers: [
+            _buildAppBarAnonymous(),
+            _buildSearchBar(),
+            _buildQuickActions(),
+            _buildCategoriesSection(),
+            _buildFeaturedServicesSection(),
+            _buildNearbyServicesSection(),
+          ],
         ),
       ),
     );
   }
+
+
 
   Widget _buildAppBar(AuthAuthenticated state) {
     return SliverToBoxAdapter(
@@ -186,49 +173,69 @@ class _HomePageState extends State<HomePage>
                 color: AppTheme.textSecondary,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBarAnonymous() {
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        child: Row(
+          children: [
+            // User Avatar for anonymous user
+            CircleAvatar(
+              radius: 24,
+              backgroundColor: AppTheme.primaryColor,
+              child: Text(
+                'U',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
             
-            // Menu
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'logout') {
-                  context.read<AuthBloc>().add(AuthSignOutRequested());
-                }
+            const SizedBox(width: 12),
+            
+            // Welcome Message for anonymous user
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '¡Hola!',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    '¿Qué servicio necesitas hoy?',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Notifications
+            IconButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const NotificationsPage(),
+                  ),
+                );
               },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'profile',
-                  child: Row(
-                    children: [
-                      Icon(Symbols.person, size: 20),
-                      SizedBox(width: 8),
-                      Text('Mi Perfil'),
-                    ],
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'settings',
-                  child: Row(
-                    children: [
-                      Icon(Symbols.settings, size: 20),
-                      SizedBox(width: 8),
-                      Text('Configuración'),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      Icon(Symbols.logout, size: 20),
-                      SizedBox(width: 8),
-                      Text('Cerrar Sesión'),
-                    ],
-                  ),
-                ),
-              ],
-              child: const Icon(
-                Symbols.more_vert,
+              icon: const Icon(
+                Symbols.notifications,
                 color: AppTheme.textSecondary,
               ),
             ),
@@ -553,41 +560,5 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildBottomNavigationBar() {
-    return BottomNavigationBar(
-      currentIndex: _selectedIndex,
-      onTap: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
-      },
-      type: BottomNavigationBarType.fixed,
-      backgroundColor: Colors.white,
-      selectedItemColor: AppTheme.primaryColor,
-      unselectedItemColor: AppTheme.textTertiary,
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Symbols.home),
-          label: 'Inicio',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Symbols.search),
-          label: 'Buscar',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Symbols.bookmark),
-          label: 'Guardados',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Symbols.chat),
-          label: 'Mensajes',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Symbols.person),
-          label: 'Perfil',
-        ),
-      ],
-    );
-  }
+
 } 

@@ -13,8 +13,18 @@ import 'domain/repositories/auth_repository.dart';
 import 'domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
+import 'presentation/blocs/theme/theme_bloc.dart';
+import 'presentation/blocs/theme/theme_state.dart';
 import 'presentation/pages/splash/splash_page.dart';
-import 'presentation/pages/home/home_page.dart';
+import 'presentation/pages/main/main_navigation_page.dart';
+import 'presentation/pages/auth/login_page.dart';
+import 'presentation/pages/settings/notifications_settings_page.dart';
+import 'presentation/pages/settings/language_settings_page.dart';
+import 'presentation/pages/settings/edit_profile_page.dart';
+import 'presentation/pages/settings/privacy_settings_page.dart';
+import 'presentation/pages/settings/terms_conditions_page.dart';
+import 'presentation/pages/search/search_page.dart';
+import 'presentation/pages/categories/categories_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -49,8 +59,40 @@ final _router = GoRouter(
       builder: (context, state) => const SplashPage(),
     ),
     GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
       path: '/home',
-      builder: (context, state) => const HomePage(),
+      builder: (context, state) => const MainNavigationPage(),
+    ),
+    GoRoute(
+      path: '/settings/notifications',
+      builder: (context, state) => const NotificationsSettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/language',
+      builder: (context, state) => const LanguageSettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/edit-profile',
+      builder: (context, state) => const EditProfilePage(),
+    ),
+    GoRoute(
+      path: '/settings/privacy',
+      builder: (context, state) => const PrivacySettingsPage(),
+    ),
+    GoRoute(
+      path: '/settings/terms',
+      builder: (context, state) => const TermsConditionsPage(),
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const SearchPage(),
+    ),
+    GoRoute(
+      path: '/categories',
+      builder: (context, state) => const CategoriesPage(),
     ),
   ],
 );
@@ -76,14 +118,21 @@ class MyApp extends StatelessWidget {
             signInWithGoogleUseCase: context.read<SignInWithGoogleUseCase>(),
           )..add(AuthStarted()),
         ),
+        BlocProvider<ThemeBloc>(
+          create: (context) => ThemeBloc(),
+        ),
       ],
-      child: MaterialApp.router(
-        title: AppConstants.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
-        routerConfig: _router,
+      child: BlocBuilder<ThemeBloc, ThemeState>(
+        builder: (context, themeState) {
+          return MaterialApp.router(
+            title: AppConstants.appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.lightTheme,
+            darkTheme: AppTheme.darkTheme,
+            themeMode: themeState.themeMode,
+            routerConfig: _router,
+          );
+        },
       ),
     );
   }

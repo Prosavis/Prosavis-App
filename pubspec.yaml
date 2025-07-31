@@ -47,6 +47,14 @@ dependencies:
   intl: ^0.20.2
   firebase_ai: ^3.0.0
   lottie: ^3.3.1
+  url_launcher: ^6.2.2
+  
+  # File and sharing
+  share_plus: ^10.1.1
+  path_provider: ^2.1.4
+  pdf: ^3.11.1
+  image_picker: ^1.1.2
+  permission_handler: ^11.3.1
 
 
 dev_dependencies:
@@ -54,6 +62,7 @@ dev_dependencies:
     sdk: flutter
 
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.1
 
 flutter:
   uses-material-design: true
@@ -62,8 +71,15 @@ flutter:
     - assets/icons/
     - assets/animations/
     - assets/fonts/
+
   fonts:
     - family: Archivo
       fonts:
         - asset: assets/fonts/Archivo Black.ttf
           weight: 900
+
+# Configuración para generar iconos de la app
+flutter_launcher_icons:
+  android: "ic_launcher"
+  image_path: "assets/images/logo-color.png"
+  min_sdk_android: 21

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:developer' as developer;
 import '../../../core/themes/app_theme.dart';
 
 class SplashPage extends StatefulWidget {
@@ -86,6 +87,9 @@ class _SplashPageState extends State<SplashPage>
     await Future.delayed(const Duration(milliseconds: 300));
     
     if (mounted) {
+      // Reproducir sonido de bienvenida
+      _playWelcomeSound();
+      
       // Iniciar fade y escala del logo simultáneamente
       _fadeController.forward();
       _scaleController.forward();
@@ -96,13 +100,42 @@ class _SplashPageState extends State<SplashPage>
       if (mounted) {
         _textController.forward();
         
-        // Esperar 4 segundos en total antes de navegar
-        await Future.delayed(const Duration(milliseconds: 3000));
+        // Sonido adicional cuando aparece el texto
+        await Future.delayed(const Duration(milliseconds: 200));
+        if (mounted) {
+          _playTextSound();
+        }
+        
+        // Esperar 4 segundos en total antes de navegar al home
+        await Future.delayed(const Duration(milliseconds: 2800));
         
         if (mounted) {
           context.go('/home');
         }
       }
+    }
+  }
+
+  void _playWelcomeSound() {
+    try {
+      // Sonido de éxito/bienvenida
+      SystemSound.play(SystemSoundType.alert);
+      
+      // Vibración sutil para dispositivos móviles
+      HapticFeedback.lightImpact();
+    } catch (e) {
+      // Si hay error, continuar sin sonido
+      developer.log('Error reproduciendo sonido: $e');
+    }
+  }
+
+  void _playTextSound() {
+    try {
+      // Sonido más sutil para la aparición del texto
+      HapticFeedback.selectionClick();
+    } catch (e) {
+      // Si hay error, continuar sin sonido
+      developer.log('Error reproduciendo vibración: $e');
     }
   }
 
@@ -166,11 +199,11 @@ class _SplashPageState extends State<SplashPage>
 
   Widget _buildLogo() {
     return Container(
-      width: 160,
-      height: 160,
+      width: 200,
+      height: 200,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(80),
+        borderRadius: BorderRadius.circular(100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.15),
@@ -187,14 +220,10 @@ class _SplashPageState extends State<SplashPage>
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: SvgPicture.asset(
-          'assets/images/logo-no-background.svg',
+        padding: const EdgeInsets.all(30.0),
+        child: Image.asset(
+          'assets/images/logo-no-background.png',
           fit: BoxFit.contain,
-          colorFilter: const ColorFilter.mode(
-            AppTheme.accentColor,
-            BlendMode.srcIn,
-          ),
         ),
       ),
     );

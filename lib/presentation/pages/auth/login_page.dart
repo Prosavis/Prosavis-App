@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/brand_constants.dart';
@@ -81,6 +82,9 @@ class _LoginPageState extends State<LoginPage>
                 ),
               ),
             );
+          } else if (state is AuthAuthenticated) {
+            // Navegar al home cuando el usuario se autentica exitosamente
+            context.go('/home');
           }
         },
         child: BlocBuilder<AuthBloc, AuthState>(
