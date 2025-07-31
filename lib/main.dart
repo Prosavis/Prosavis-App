@@ -25,6 +25,7 @@ import 'presentation/pages/settings/privacy_settings_page.dart';
 import 'presentation/pages/settings/terms_conditions_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
+import 'presentation/pages/notifications/notifications_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -93,6 +94,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/categories',
       builder: (context, state) => const CategoriesPage(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsPage(),
     ),
   ],
 );

@@ -201,7 +201,7 @@ class _ProfilePageState extends State<ProfilePage>
               icon: Symbols.notifications,
               title: 'Notificaciones',
               subtitle: 'Configura tus notificaciones',
-              onTap: () => context.go('/settings/notifications'),
+              onTap: () => context.push('/settings/notifications'),
               showArrow: true,
             ),
             
@@ -211,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage>
               icon: Symbols.language,
               title: 'Idioma',
               subtitle: 'Español',
-              onTap: () => context.go('/settings/language'),
+              onTap: () => context.push('/settings/language'),
               showArrow: true,
             ),
 
@@ -225,7 +225,7 @@ class _ProfilePageState extends State<ProfilePage>
                 icon: Symbols.edit,
                 title: 'Editar Perfil',
                 subtitle: 'Actualiza tu información personal',
-                onTap: () => context.go('/settings/edit-profile'),
+                onTap: () => context.push('/settings/edit-profile'),
                 showArrow: true,
               ),
               
@@ -235,7 +235,7 @@ class _ProfilePageState extends State<ProfilePage>
                 icon: Symbols.security,
                 title: 'Privacidad y Seguridad',
                 subtitle: 'Gestiona la privacidad de tu cuenta',
-                onTap: () => context.go('/settings/privacy'),
+                onTap: () => context.push('/settings/privacy'),
                 showArrow: true,
               ),
               
@@ -274,7 +274,7 @@ class _ProfilePageState extends State<ProfilePage>
               icon: Symbols.description,
               title: 'Términos y Condiciones',
               subtitle: 'Lee nuestros términos de uso',
-              onTap: () => context.go('/settings/terms'),
+              onTap: () => context.push('/settings/terms'),
               showArrow: true,
             ),
             

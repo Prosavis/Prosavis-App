@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../home/home_page.dart';
-import '../search/search_page.dart';
 import '../saved/saved_page.dart';
 import '../profile/profile_page.dart';
 import '../services/service_creation_page.dart';
@@ -21,7 +20,6 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const ServiceCreationPage(),
-    const SearchPage(),
     const SavedPage(),
     const ProfilePage(),
   ];
@@ -106,14 +104,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Ofrecer',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Symbols.search),
-            activeIcon: Icon(Symbols.search, fill: 1),
-            label: 'Buscar',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Symbols.bookmark),
-            activeIcon: Icon(Symbols.bookmark, fill: 1),
-            label: 'Guardados',
+            icon: Icon(Symbols.favorite),
+            activeIcon: Icon(Symbols.favorite, fill: 1),
+            label: 'Favoritos',
           ),
           BottomNavigationBarItem(
             icon: Icon(Symbols.person),

@@ -203,13 +203,166 @@ class AppTheme {
   }
   
   static ThemeData get darkTheme {
-    return lightTheme.copyWith(
+    return ThemeData(
+      useMaterial3: true,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         brightness: Brightness.dark,
+        primary: primaryColor,
+        secondary: secondaryColor,
+        error: errorColor,
         surface: const Color(0xFF1E293B),
+        onSurface: Colors.white,
+        onPrimary: Colors.white,
+        onSecondary: Colors.white,
       ),
       scaffoldBackgroundColor: const Color(0xFF0F172A),
+      fontFamily: GoogleFonts.inter().fontFamily,
+      
+      // AppBar Theme para modo oscuro
+      appBarTheme: AppBarTheme(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        centerTitle: true,
+        titleTextStyle: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white, // Texto blanco en modo oscuro
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
+      ),
+      
+      // Card Theme para modo oscuro
+      cardTheme: CardThemeData(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        color: const Color(0xFF1E293B),
+      ),
+      
+      // Elevated Button Theme para modo oscuro
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryColor,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          textStyle: GoogleFonts.inter(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+      
+      // Text Theme con colores ajustados para modo oscuro
+      textTheme: TextTheme(
+        displayLarge: GoogleFonts.inter(
+          fontSize: 32,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        displayMedium: GoogleFonts.inter(
+          fontSize: 28,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        displaySmall: GoogleFonts.inter(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        headlineLarge: GoogleFonts.inter(
+          fontSize: 22,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        headlineMedium: GoogleFonts.inter(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        headlineSmall: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        titleLarge: GoogleFonts.inter(
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        titleMedium: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        titleSmall: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+        ),
+        bodyLarge: GoogleFonts.inter(
+          fontSize: 16,
+          fontWeight: FontWeight.normal,
+          color: const Color(0xFFE2E8F0), // Gris claro para mejor contraste
+        ),
+        bodyMedium: GoogleFonts.inter(
+          fontSize: 14,
+          fontWeight: FontWeight.normal,
+          color: const Color(0xFFCBD5E1), // Gris medio para texto secundario
+        ),
+        bodySmall: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.normal,
+          color: const Color(0xFF94A3B8), // Gris más suave para texto terciario
+        ),
+      ),
+      
+      // Input Decoration Theme para modo oscuro
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFF1E293B),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade700),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.grey.shade700),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: primaryColor, width: 2),
+        ),
+        hintStyle: GoogleFonts.inter(
+          color: const Color(0xFF94A3B8),
+          fontSize: 16,
+        ),
+        labelStyle: GoogleFonts.inter(
+          color: Colors.white,
+          fontSize: 16,
+        ),
+      ),
+      
+      // BottomNavigationBar Theme para modo oscuro
+      bottomNavigationBarTheme: BottomNavigationBarThemeData(
+        backgroundColor: const Color(0xFF1E293B),
+        selectedItemColor: primaryColor,
+        unselectedItemColor: const Color(0xFF94A3B8),
+        selectedLabelStyle: GoogleFonts.inter(
+          fontWeight: FontWeight.w600,
+          fontSize: 12,
+        ),
+        unselectedLabelStyle: GoogleFonts.inter(
+          fontWeight: FontWeight.w500,
+          fontSize: 12,
+        ),
+      ),
     );
   }
 }

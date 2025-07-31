@@ -1,4 +1,23 @@
+import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/material_symbols_icons.dart';
+
+// Navegación Helper
+class NavigationHelper {
+  static bool canPop(BuildContext context) {
+    return Navigator.canPop(context) || GoRouter.of(context).canPop();
+  }
+  
+  static void safePop(BuildContext context) {
+    if (canPop(context)) {
+      if (GoRouter.of(context).canPop()) {
+        context.pop();
+      } else if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+    }
+  }
+}
 
 class AppConstants {
   // App Info
@@ -22,18 +41,16 @@ class AppConstants {
   static const String userIdKey = 'user_id';
   static const String themeKey = 'theme_mode';
   
-  // Service Categories
+  // Service Categories - 8 categorías principales en orden específico
   static const List<Map<String, dynamic>> serviceCategories = [
-    {'name': 'Plomería', 'icon': Symbols.plumbing, 'id': 1},
-    {'name': 'Electricidad', 'icon': Symbols.electrical_services, 'id': 2},
-    {'name': 'Limpieza', 'icon': Symbols.cleaning_services, 'id': 3},
-    {'name': 'Jardinería', 'icon': Symbols.local_florist, 'id': 4},
-    {'name': 'Carpintería', 'icon': Symbols.construction, 'id': 5},
-    {'name': 'Pintura', 'icon': Symbols.format_paint, 'id': 6},
-    {'name': 'Mecánica', 'icon': Symbols.car_repair, 'id': 7},
-    {'name': 'Tecnología', 'icon': Symbols.computer, 'id': 8},
-    {'name': 'Tutoría', 'icon': Symbols.school, 'id': 9},
-    {'name': 'Otros', 'icon': Symbols.more_horiz, 'id': 10}
+    {'name': 'Limpieza', 'icon': Symbols.cleaning_services, 'id': 1},
+    {'name': 'Belleza y Bienestar', 'icon': Symbols.spa, 'id': 2},
+    {'name': 'Plomería', 'icon': Symbols.plumbing, 'id': 3},
+    {'name': 'Electricidad', 'icon': Symbols.electrical_services, 'id': 4},
+    {'name': 'Pintura', 'icon': Symbols.format_paint, 'id': 5},
+    {'name': 'Carpintería', 'icon': Symbols.construction, 'id': 6},
+    {'name': 'Jardinería', 'icon': Symbols.local_florist, 'id': 7},
+    {'name': 'Mecánica', 'icon': Symbols.car_repair, 'id': 8}
   ];
 
   // Métodos auxiliares para trabajar con categorías

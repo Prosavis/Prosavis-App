@@ -45,7 +45,7 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
   Future<void> _loadTheme() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final themeMode = prefs.getString(_themeKey) ?? 'system';
+      final themeMode = prefs.getString(_themeKey) ?? 'light'; // Cambio a light por defecto
       
       switch (themeMode) {
         case 'light':
@@ -56,11 +56,11 @@ class ThemeBloc extends Bloc<ThemeEvent, ThemeState> {
           break;
         case 'system':
         default:
-          add(ThemeSystemChanged());
+          add(ThemeChanged(false)); // Por defecto usar light en lugar de system
           break;
       }
     } catch (e) {
-      add(ThemeSystemChanged());
+      add(ThemeChanged(false)); // En caso de error, usar light por defecto
     }
   }
 

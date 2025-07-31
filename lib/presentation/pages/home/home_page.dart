@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
-
 import '../../blocs/auth/auth_state.dart';
-import '../../widgets/common/category_card.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
-import '../notifications/notifications_page.dart';
-import '../categories/categories_page.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
 
@@ -74,6 +71,7 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBar(state),
             _buildSearchBar(),
+            _buildRecentSearches(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -91,6 +89,7 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBarAnonymous(),
             _buildSearchBar(),
+            _buildRecentSearches(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -157,12 +156,7 @@ class _HomePageState extends State<HomePage>
             // Notifications
             IconButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsPage(),
-                  ),
-                );
+                context.push('/notifications');
               },
               icon: const Icon(
                 Symbols.notifications,
@@ -223,12 +217,7 @@ class _HomePageState extends State<HomePage>
             // Notifications
             IconButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const NotificationsPage(),
-                  ),
-                );
+                context.push('/notifications');
               },
               icon: const Icon(
                 Symbols.notifications,
@@ -274,75 +263,201 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  Widget _buildRecentSearches() {
+    // Mock data para búsquedas recientes
+    final List<String> recentSearches = ['Limpieza', 'Plomería urgente', 'Belleza'];
+    
+    if (recentSearches.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(AppConstants.paddingMedium, 0, AppConstants.paddingMedium, AppConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Búsquedas recientes',
+              style: GoogleFonts.inter(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 36,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: recentSearches.length,
+                itemBuilder: (context, index) {
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: _buildRecentSearchChip(recentSearches[index]),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
+  Widget _buildRecentSearchChip(String search) {
+    return GestureDetector(
+      onTap: () {
+        _searchController.text = search;
+        // Aquí podrías agregar lógica para ejecutar la búsqueda
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: AppTheme.primaryColor.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Symbols.history,
+              size: 16,
+              color: AppTheme.primaryColor,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              search,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildCategoriesSection() {
     return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Categorías',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CategoriesPage(),
-                      ),
-                    );
-                  },
-                  child: Text(
-                    'Ver todas',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Categorías',
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
             ),
-          ),
-          SizedBox(
-            height: 120,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+            const SizedBox(height: 16),
+            // Grid de categorías 4x2
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.85, // Proporción de aspecto para las tarjetas
+              ),
               itemCount: AppConstants.serviceCategories.length,
               itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: CategoryCard(
-                    category: AppConstants.getCategoryName(AppConstants.serviceCategories[index]),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryServicesPage(
-                            category: AppConstants.serviceCategories[index],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                );
+                final category = AppConstants.serviceCategories[index];
+                return _buildCategoryGridItem(category);
               },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
+  }
+
+  Widget _buildCategoryGridItem(Map<String, dynamic> category) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CategoryServicesPage(category: category),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: _getCategoryColor(category['name']),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                category['icon'],
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              category['name'],
+              style: GoogleFonts.inter(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: AppTheme.textPrimary,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Color _getCategoryColor(String categoryName) {
+    switch (categoryName.toLowerCase()) {
+      case 'limpieza':
+        return const Color(0xFF10B981);
+      case 'belleza y bienestar':
+        return const Color(0xFFDB2777);
+      case 'plomería':
+        return const Color(0xFF3B82F6);
+      case 'electricidad':
+        return const Color(0xFFF59E0B);
+      case 'pintura':
+        return const Color(0xFFDC2626);
+      case 'carpintería':
+        return const Color(0xFF92400E);
+      case 'jardinería':
+        return const Color(0xFF059669);
+      case 'mecánica':
+        return const Color(0xFF374151);
+      default:
+        return AppTheme.primaryColor;
+    }
   }
 
   Widget _buildFeaturedServicesSection() {

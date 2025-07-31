@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 
@@ -89,7 +90,7 @@ class _NotificationsPageState extends State<NotificationsPage>
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => context.pop(),
           icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
         ),
         title: Text(
