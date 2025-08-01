@@ -40,6 +40,7 @@ class AppConstants {
   static const String userTokenKey = 'user_token';
   static const String userIdKey = 'user_id';
   static const String themeKey = 'theme_mode';
+  static const String recentSearchesKey = 'recent_searches';
   
   // Service Categories - 8 categorías principales en orden específico
   static const List<Map<String, dynamic>> serviceCategories = [

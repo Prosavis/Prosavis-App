@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../domain/usecases/services/create_service_usecase.dart';
+import '../../../data/models/service_model.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_state.dart';
 
 class ServiceCreationPage extends StatefulWidget {
-  const ServiceCreationPage({super.key});
+  final CreateServiceUseCase createServiceUseCase;
+  
+  const ServiceCreationPage({super.key, required this.createServiceUseCase});
 
   @override
   State<ServiceCreationPage> createState() => _ServiceCreationPageState();
@@ -30,6 +37,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final List<String> _availableDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
+  bool _isCreatingService = false;
 
   final List<String> _priceTypes = [
     'fixed',
@@ -662,19 +670,42 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         ),
       ),
       child: ElevatedButton(
-        onPressed: _submitService,
+        onPressed: _isCreatingService ? null : _submitService,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.primaryColor,
           padding: const EdgeInsets.symmetric(vertical: 16),
         ),
-        child: Text(
-          'Publicar Servicio',
-          style: GoogleFonts.inter(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        child: _isCreatingService
+            ? Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Publicando...',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              )
+            : Text(
+                'Publicar Servicio',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
       ),
     );
   }
@@ -777,7 +808,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     });
   }
 
-  void _submitService() {
+  Future<void> _submitService() async {
     if (_formKey.currentState!.validate()) {
       if (_availableDays.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -786,14 +817,72 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         return;
       }
 
-      // Implementar lógica de envío en próximas actualizaciones
-      _showSuccessDialog();
+      setState(() {
+        _isCreatingService = true;
+      });
+
+      try {
+        // Obtener información del usuario autenticado
+        final authState = context.read<AuthBloc>().state;
+        if (authState is! AuthAuthenticated) {
+          throw Exception('Usuario no autenticado');
+        }
+
+        // Crear el rango de tiempo
+        String? timeRange;
+        if (_startTime != null && _endTime != null) {
+          timeRange = '${_startTime!.format(context)}-${_endTime!.format(context)}';
+        }
+
+        // Crear el servicio
+        final serviceModel = ServiceModel.createNew(
+          title: _titleController.text.trim(),
+          description: _descriptionController.text.trim(),
+          category: _selectedCategory!,
+          price: _priceType == 'negotiable' ? 0.0 : double.parse(_priceController.text),
+          priceType: _priceType!,
+          providerId: authState.user.id,
+          providerName: authState.user.name,
+          providerPhotoUrl: authState.user.photoUrl,
+          images: _selectedImages,
+          tags: _selectedSkills,
+          availableDays: _availableDays,
+          timeRange: timeRange,
+        );
+
+        // Crear el servicio usando el caso de uso
+        final serviceId = await widget.createServiceUseCase(
+          CreateServiceParams(service: serviceModel),
+        );
+
+        setState(() {
+          _isCreatingService = false;
+        });
+
+        if (mounted) {
+          _showSuccessDialog(serviceId);
+        }
+      } catch (e) {
+        setState(() {
+          _isCreatingService = false;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al crear el servicio: ${e.toString()}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
-  void _showSuccessDialog() {
+  void _showSuccessDialog(String serviceId) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         icon: const Icon(
           Symbols.check_circle,
@@ -805,7 +894,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           style: GoogleFonts.inter(fontWeight: FontWeight.bold),
         ),
         content: Text(
-          'Tu servicio ha sido publicado exitosamente. Los clientes podrán encontrarte y contactarte pronto.',
+          'Tu servicio "${_titleController.text}" ha sido publicado exitosamente con ID: $serviceId. Los clientes podrán encontrarte y contactarte pronto.',
           style: GoogleFonts.inter(),
         ),
         actions: [

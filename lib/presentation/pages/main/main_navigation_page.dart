@@ -5,6 +5,9 @@ import '../home/home_page.dart';
 import '../saved/saved_page.dart';
 import '../profile/profile_page.dart';
 import '../services/service_creation_page.dart';
+import '../../../domain/usecases/services/create_service_usecase.dart';
+import '../../../core/injection/injection_container.dart' as di;
+
 
 class MainNavigationPage extends StatefulWidget {
   const MainNavigationPage({super.key});
@@ -17,17 +20,22 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
   late PageController _pageController;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const ServiceCreationPage(),
-    const SavedPage(),
-    const ProfilePage(),
-  ];
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+    _pages = [
+      HomePage(onProfileTapped: _goToProfile),
+      ServiceCreationPage(createServiceUseCase: di.sl<CreateServiceUseCase>()),
+      const SavedPage(),
+      const ProfilePage(),
+    ];
+  }
+
+  void _goToProfile() {
+    _onItemTapped(3); // Índice 3 corresponde a ProfilePage
   }
 
   @override

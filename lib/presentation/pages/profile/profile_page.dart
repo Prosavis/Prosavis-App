@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +12,10 @@ import '../../blocs/auth/auth_state.dart';
 import '../../blocs/theme/theme_bloc.dart';
 import '../../blocs/theme/theme_event.dart';
 import '../../blocs/theme/theme_state.dart';
+import '../../blocs/profile/profile_bloc.dart';
+import '../../blocs/profile/profile_event.dart';
+import '../../blocs/profile/profile_state.dart';
+import '../../widgets/common/image_picker_bottom_sheet.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -43,6 +48,21 @@ class _ProfilePageState extends State<ProfilePage>
   void dispose() {
     _fadeController.dispose();
     super.dispose();
+  }
+
+  /// Determina si usar FileImage o NetworkImage
+  ImageProvider? _getImageProvider(String? photoUrl) {
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return null;
+    }
+    
+    // Si es una ruta local (archivo), usar FileImage
+    if (photoUrl.startsWith('/') || photoUrl.contains('Documents')) {
+      return FileImage(File(photoUrl));
+    }
+    
+    // Si es una URL, usar NetworkImage
+    return NetworkImage(photoUrl);
   }
 
   @override
@@ -91,24 +111,91 @@ class _ProfilePageState extends State<ProfilePage>
           children: [
             // Avatar y información del usuario
             if (authState is AuthAuthenticated) ...[
-              CircleAvatar(
-                radius: 50,
-                backgroundImage: authState.user.photoUrl != null
-                    ? NetworkImage(authState.user.photoUrl!)
-                    : null,
-                backgroundColor: AppTheme.primaryColor,
-                child: authState.user.photoUrl == null
-                    ? Text(
-                        authState.user.name.isNotEmpty 
-                            ? authState.user.name[0].toUpperCase()
-                            : 'U',
-                        style: GoogleFonts.inter(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 32,
+              BlocConsumer<ProfileBloc, ProfileState>(
+                listener: (context, state) {
+                  if (state is ProfileError) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: AppTheme.errorColor,
+                      ),
+                    );
+                  } else if (state is ProfilePhotoUpdated) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Foto de perfil actualizada'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  } else if (state is ProfilePhotoRemoved) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Foto de perfil eliminada'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+                builder: (context, profileState) {
+                  return Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _showImagePicker(context, authState.user.photoUrl),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: _getImageProvider(authState.user.photoUrl),
+                          backgroundColor: AppTheme.primaryColor,
+                          child: authState.user.photoUrl == null
+                              ? const Icon(
+                                  Symbols.person,
+                                  color: Colors.white,
+                                  size: 50,
+                                )
+                              : null,
                         ),
-                      )
-                    : null,
+                      ),
+                      // Indicador de carga
+                      if (profileState is ProfileUpdating)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.5),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                strokeWidth: 3,
+                              ),
+                            ),
+                          ),
+                        ),
+                      // Indicador de edición
+                      if (profileState is! ProfileUpdating)
+                        Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Container(
+                            width: 32,
+                            height: 32,
+                            decoration: BoxDecoration(
+                              color: AppTheme.primaryColor,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 2,
+                              ),
+                            ),
+                            child: const Icon(
+                              Symbols.edit,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                          ),
+                        ),
+                    ],
+                  );
+                },
               ),
               const SizedBox(height: 16),
               Text(
@@ -574,6 +661,21 @@ class _ProfilePageState extends State<ProfilePage>
           ),
         ),
       ],
+    );
+  }
+
+  void _showImagePicker(BuildContext context, String? currentPhotoUrl) {
+    ImagePickerBottomSheet.show(
+      context,
+      onImageSelected: (imageFile) {
+        context.read<ProfileBloc>().add(UpdateProfilePhoto(imageFile));
+      },
+      onRemoveImage: currentPhotoUrl != null && currentPhotoUrl.isNotEmpty
+          ? () {
+              context.read<ProfileBloc>().add(RemoveProfilePhoto());
+            }
+          : null,
+      hasCurrentImage: currentPhotoUrl != null && currentPhotoUrl.isNotEmpty,
     );
   }
 }

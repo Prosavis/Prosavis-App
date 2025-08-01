@@ -4,14 +4,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/auth/auth_event.dart';
+import '../../blocs/profile/profile_bloc.dart';
+import '../../blocs/profile/profile_event.dart';
+import '../../blocs/profile/profile_state.dart';
+import '../../../domain/entities/user_entity.dart';
+import '../../../data/services/firestore_service.dart';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -33,7 +37,6 @@ class _EditProfilePageState extends State<EditProfilePage>
   final _locationController = TextEditingController();
 
   bool _isLoading = false;
-  File? _imageFile;
   String? _profileImageUrl;
   final ImagePicker _picker = ImagePicker();
 
@@ -54,45 +57,8 @@ class _EditProfilePageState extends State<EditProfilePage>
   }
 
   void _loadUserData() async {
-    final authState = context.read<AuthBloc>().state;
-    if (authState is AuthAuthenticated) {
-      _nameController.text = authState.user.name;
-      _emailController.text = authState.user.email;
-      
-      try {
-        // Cargar datos adicionales del perfil desde Firestore
-        final user = FirebaseAuth.instance.currentUser;
-        if (user != null) {
-          final doc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .get();
-
-          if (doc.exists) {
-            final data = doc.data()!;
-            setState(() {
-              _phoneController.text = data['phone'] ?? '';
-              _bioController.text = data['bio'] ?? '';
-              _locationController.text = data['location'] ?? '';
-              _profileImageUrl = data['profileImageUrl'];
-            });
-          }
-        }
-      } catch (e) {
-        debugPrint('Error cargando datos del perfil: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Error al cargar datos del perfil',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
-      }
-    }
+    // Cargar datos del perfil usando el ProfileBloc
+    context.read<ProfileBloc>().add(LoadProfile());
   }
 
   @override
@@ -109,14 +75,42 @@ class _EditProfilePageState extends State<EditProfilePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: CustomScrollView(
-            slivers: [
-              _buildAppBar(),
-              _buildContent(),
-            ],
+      body: BlocListener<ProfileBloc, ProfileState>(
+        listener: (context, state) {
+          if (state is ProfileLoaded) {
+            // Llenar los controladores con los datos cargados
+            setState(() {
+              _nameController.text = state.user.name;
+              _emailController.text = state.user.email;
+              _phoneController.text = state.user.phoneNumber ?? '';
+              // Agregar otros campos cuando estén disponibles en UserEntity
+              _profileImageUrl = state.user.photoUrl;
+            });
+          } else if (state is ProfileError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  state.message,
+                  style: GoogleFonts.inter(),
+                ),
+                backgroundColor: AppTheme.errorColor,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            );
+          }
+        },
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: CustomScrollView(
+              slivers: [
+                _buildAppBar(),
+                _buildContent(),
+              ],
+            ),
           ),
         ),
       ),
@@ -503,7 +497,8 @@ class _EditProfilePageState extends State<EditProfilePage>
 
       if (image != null) {
         setState(() {
-          _imageFile = File(image.path);
+          // TODO: Implementar subida de imagen a Firebase Storage
+          _profileImageUrl = image.path; // Temporalmente usar la ruta local
         });
 
         if (mounted) {
@@ -556,7 +551,8 @@ class _EditProfilePageState extends State<EditProfilePage>
 
       if (image != null) {
         setState(() {
-          _imageFile = File(image.path);
+          // TODO: Implementar subida de imagen a Firebase Storage
+          _profileImageUrl = image.path; // Temporalmente usar la ruta local
         });
 
         if (mounted) {
@@ -590,7 +586,6 @@ class _EditProfilePageState extends State<EditProfilePage>
 
   void _deletePhoto() {
     setState(() {
-      _imageFile = null;
       _profileImageUrl = null;
     });
 
@@ -653,61 +648,63 @@ class _EditProfilePageState extends State<EditProfilePage>
     });
 
     try {
-      // Implementar guardado de perfil en Firestore
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      // Obtener usuario actual del AuthBloc
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
         throw Exception('Usuario no autenticado');
       }
 
-      // Preparar los datos del perfil
-      final profileData = {
-        'name': _nameController.text.trim(),
-        'email': _emailController.text.trim(),
-        'phone': _phoneController.text.trim(),
-        'bio': _bioController.text.trim(),
-        'location': _locationController.text.trim(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      };
+      final currentUser = authState.user;
 
-      // Si hay una nueva imagen, la gestionaríamos aquí
-      // Por ahora, mantenemos la imagen existente o la eliminamos si se solicitó
-      if (_imageFile == null && _profileImageUrl == null) {
-        profileData['profileImageUrl'] = FieldValue.delete();
-      } else if (_profileImageUrl != null) {
-        profileData['profileImageUrl'] = _profileImageUrl!;
-      }
+      // Crear usuario actualizado con los nuevos datos
+      final updatedUser = UserEntity(
+        id: currentUser.id,
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(), // Email no se puede cambiar por seguridad
+        phoneNumber: _phoneController.text.trim().isNotEmpty 
+            ? _phoneController.text.trim() 
+            : null,
+        photoUrl: _profileImageUrl,
+        createdAt: currentUser.createdAt,
+        updatedAt: DateTime.now(),
+      );
 
-      // Guardar en Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .update(profileData);
+      // Capturar referencias al context antes de operaciones asíncronas
+      final authBloc = context.read<AuthBloc>();
+      final navigator = Navigator.of(context);
+      final scaffoldMessenger = ScaffoldMessenger.of(context);
+      final firestoreService = FirestoreService();
+      
+      await firestoreService.createOrUpdateUser(updatedUser);
 
-      // Nota: Los cambios de email requieren reautenticación y verificación
-      // Por seguridad, esta funcionalidad se debe implementar por separado
+      // Verificar que el widget esté montado antes de continuar
+      if (!mounted) return;
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Perfil actualizado exitosamente',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
+      // Actualizar el AuthBloc con el usuario actualizado
+      authBloc.add(AuthUserUpdated(updatedUser));
+
+      // Mostrar mensaje de éxito y navegar
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Perfil actualizado exitosamente',
+            style: GoogleFonts.inter(),
           ),
-        );
-        context.pop();
-      }
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      );
+      navigator.pop();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
+        final scaffoldMessenger = ScaffoldMessenger.of(context);
+        scaffoldMessenger.showSnackBar(
           SnackBar(
             content: Text(
-              'Error al actualizar el perfil',
+              'Error al actualizar el perfil: $e',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: AppTheme.errorColor,

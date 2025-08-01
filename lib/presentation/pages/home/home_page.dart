@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -8,13 +9,17 @@ import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+
+
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final VoidCallback? onProfileTapped;
+  
+  const HomePage({super.key, this.onProfileTapped});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -49,6 +54,21 @@ class _HomePageState extends State<HomePage>
     super.dispose();
   }
 
+  /// Determina si usar FileImage o NetworkImage
+  ImageProvider? _getImageProvider(String? photoUrl) {
+    if (photoUrl == null || photoUrl.isEmpty) {
+      return null;
+    }
+    
+    // Si es una ruta local (archivo), usar FileImage
+    if (photoUrl.startsWith('/') || photoUrl.contains('Documents')) {
+      return FileImage(File(photoUrl));
+    }
+    
+    // Si es una URL, usar NetworkImage
+    return NetworkImage(photoUrl);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
@@ -71,7 +91,6 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBar(state),
             _buildSearchBar(),
-            _buildRecentSearches(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -89,7 +108,6 @@ class _HomePageState extends State<HomePage>
           slivers: [
             _buildAppBarAnonymous(),
             _buildSearchBar(),
-            _buildRecentSearches(),
             _buildCategoriesSection(),
             _buildFeaturedServicesSection(),
             _buildNearbyServicesSection(),
@@ -107,24 +125,23 @@ class _HomePageState extends State<HomePage>
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Row(
           children: [
-            // User Avatar
-            CircleAvatar(
-              radius: 24,
-              backgroundImage: state.user.photoUrl != null
-                  ? NetworkImage(state.user.photoUrl!)
-                  : null,
-              backgroundColor: AppTheme.primaryColor,
-              child: state.user.photoUrl == null
-                  ? Text(
-                      state.user.name.isNotEmpty 
-                          ? state.user.name[0].toUpperCase()
-                          : 'U',
-                      style: GoogleFonts.inter(
+            // User Avatar - Clickeable para ir al perfil
+            GestureDetector(
+              onTap: () {
+                widget.onProfileTapped?.call();
+              },
+              child: CircleAvatar(
+                radius: 24,
+                backgroundImage: _getImageProvider(state.user.photoUrl),
+                backgroundColor: AppTheme.primaryColor,
+                child: state.user.photoUrl == null
+                    ? const Icon(
+                        Symbols.person,
                         color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    )
-                  : null,
+                        size: 28,
+                      )
+                    : null,
+              ),
             ),
             
             const SizedBox(width: 12),
@@ -175,15 +192,18 @@ class _HomePageState extends State<HomePage>
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Row(
           children: [
-            // User Avatar for anonymous user
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: AppTheme.primaryColor,
-              child: Text(
-                'U',
-                style: GoogleFonts.inter(
+            // User Avatar for anonymous user - Clickeable para ir al perfil
+            GestureDetector(
+              onTap: () {
+                widget.onProfileTapped?.call();
+              },
+              child: const CircleAvatar(
+                radius: 24,
+                backgroundColor: AppTheme.primaryColor,
+                child: Icon(
+                  Symbols.person,
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  size: 28,
                 ),
               ),
             ),
@@ -234,28 +254,49 @@ class _HomePageState extends State<HomePage>
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
-        child: TextField(
-          controller: _searchController,
-          decoration: InputDecoration(
-            hintText: 'Buscar servicios...',
-            prefixIcon: const Icon(Symbols.search),
-            suffixIcon: IconButton(
-              onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  isScrollControlled: true,
-                  backgroundColor: Colors.transparent,
-                  builder: (context) => FiltersBottomSheet(
-                    onFiltersApplied: (filters) {
-                      // Handle filters applied
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Filtros aplicados')),
-                      );
-                    },
+        child: GestureDetector(
+          onTap: () {
+            // Navegar a la página de búsqueda independiente
+            context.push('/search');
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: Row(
+              children: [
+                const Icon(Symbols.search, color: AppTheme.textTertiary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Buscar servicios...',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: AppTheme.textTertiary,
+                    ),
                   ),
-                );
-              },
-              icon: const Icon(Symbols.tune),
+                ),
+                IconButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (context) => FiltersBottomSheet(
+                        onFiltersApplied: (filters) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Filtros aplicados')),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                  icon: const Icon(Symbols.tune, color: AppTheme.textTertiary),
+                ),
+              ],
             ),
           ),
         ),
@@ -263,85 +304,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildRecentSearches() {
-    // Mock data para búsquedas recientes
-    final List<String> recentSearches = ['Limpieza', 'Plomería urgente', 'Belleza'];
-    
-    if (recentSearches.isEmpty) {
-      return const SliverToBoxAdapter(child: SizedBox.shrink());
-    }
-    
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(AppConstants.paddingMedium, 0, AppConstants.paddingMedium, AppConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Búsquedas recientes',
-              style: GoogleFonts.inter(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 36,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: recentSearches.length,
-                itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: _buildRecentSearchChip(recentSearches[index]),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
-  Widget _buildRecentSearchChip(String search) {
-    return GestureDetector(
-      onTap: () {
-        _searchController.text = search;
-        // Aquí podrías agregar lógica para ejecutar la búsqueda
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: AppTheme.primaryColor.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: AppTheme.primaryColor.withValues(alpha: 0.3),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Symbols.history,
-              size: 16,
-              color: AppTheme.primaryColor,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              search,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.primaryColor,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildCategoriesSection() {
     return SliverToBoxAdapter(

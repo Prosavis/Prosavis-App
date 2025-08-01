@@ -1,6 +1,8 @@
 import 'package:get_it/get_it.dart';
 import 'package:prosavis/data/repositories/auth_repository_impl.dart';
 import 'package:prosavis/data/services/firebase_service.dart';
+import 'package:prosavis/data/services/firestore_service.dart';
+import 'package:prosavis/data/services/local_image_storage_service.dart';
 import 'package:prosavis/domain/repositories/auth_repository.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_email_usecase.dart';
@@ -8,7 +10,13 @@ import 'package:prosavis/domain/usecases/auth/sign_up_with_email_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_phone_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/verify_phone_code_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/password_reset_usecase.dart';
+import 'package:prosavis/domain/repositories/service_repository.dart';
+import 'package:prosavis/data/repositories/service_repository_impl.dart';
+import 'package:prosavis/domain/usecases/services/create_service_usecase.dart';
+import 'package:prosavis/domain/usecases/services/search_services_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
+import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
+
 import 'dart:developer' as developer;
 
 final sl = GetIt.instance;
@@ -32,55 +40,84 @@ Future<void> init() async {
     sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
     developer.log('✅ FirebaseService registrado');
     
+    sl.registerLazySingleton<FirestoreService>(() => FirestoreService());
+    developer.log('✅ FirestoreService registrado');
+    
+    sl.registerLazySingleton<LocalImageStorageService>(() => LocalImageStorageService());
+    developer.log('✅ LocalImageStorageService registrado');
+    
     sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(),
     );
     developer.log('✅ AuthRepository registrado');
+    
+    sl.registerLazySingleton<ServiceRepository>(
+      () => ServiceRepositoryImpl(sl<FirestoreService>()),
+    );
+    developer.log('✅ ServiceRepository registrado');
 
     // Use cases
     sl.registerLazySingleton<SignInWithGoogleUseCase>(
-      () => SignInWithGoogleUseCase(sl()),
+      () => SignInWithGoogleUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ SignInWithGoogleUseCase registrado');
 
     sl.registerLazySingleton<SignInWithEmailUseCase>(
-      () => SignInWithEmailUseCase(sl()),
+      () => SignInWithEmailUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ SignInWithEmailUseCase registrado');
 
     sl.registerLazySingleton<SignUpWithEmailUseCase>(
-      () => SignUpWithEmailUseCase(sl()),
+      () => SignUpWithEmailUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ SignUpWithEmailUseCase registrado');
 
     sl.registerLazySingleton<SignInWithPhoneUseCase>(
-      () => SignInWithPhoneUseCase(sl()),
+      () => SignInWithPhoneUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ SignInWithPhoneUseCase registrado');
 
     sl.registerLazySingleton<VerifyPhoneCodeUseCase>(
-      () => VerifyPhoneCodeUseCase(sl()),
+      () => VerifyPhoneCodeUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ VerifyPhoneCodeUseCase registrado');
 
     sl.registerLazySingleton<PasswordResetUseCase>(
-      () => PasswordResetUseCase(sl()),
+      () => PasswordResetUseCase(sl<AuthRepository>()),
     );
     developer.log('✅ PasswordResetUseCase registrado');
 
-    // BLoC
+    sl.registerLazySingleton<CreateServiceUseCase>(
+      () => CreateServiceUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ CreateServiceUseCase registrado');
+
+    sl.registerLazySingleton<SearchServicesUseCase>(
+      () => SearchServicesUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ SearchServicesUseCase registrado');
+
+    // BLoCs
     sl.registerFactory(
       () => AuthBloc(
-        authRepository: sl(),
-        signInWithGoogleUseCase: sl(),
-        signInWithEmailUseCase: sl(),
-        signUpWithEmailUseCase: sl(),
-        signInWithPhoneUseCase: sl(),
-        verifyPhoneCodeUseCase: sl(),
-        passwordResetUseCase: sl(),
+        authRepository: sl<AuthRepository>(),
+        signInWithGoogleUseCase: sl<SignInWithGoogleUseCase>(),
+        signInWithEmailUseCase: sl<SignInWithEmailUseCase>(),
+        signUpWithEmailUseCase: sl<SignUpWithEmailUseCase>(),
+        signInWithPhoneUseCase: sl<SignInWithPhoneUseCase>(),
+        verifyPhoneCodeUseCase: sl<VerifyPhoneCodeUseCase>(),
+        passwordResetUseCase: sl<PasswordResetUseCase>(),
       ),
     );
     developer.log('✅ AuthBloc registrado');
+
+    sl.registerFactory(
+      () => SearchBloc(sl<SearchServicesUseCase>()),
+    );
+    developer.log('✅ SearchBloc registrado');
+
+    // ProfileBloc se registra directamente en main.dart para acceso al AuthBloc
+    developer.log('✅ ProfileBloc configurado en main.dart');
     
     developer.log('🎉 Todas las dependencias configuradas correctamente');
   } catch (e, stackTrace) {

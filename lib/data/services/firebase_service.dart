@@ -112,7 +112,7 @@ class FirebaseService {
     }
   }
 
-  // Google Sign-In con implementación correcta para Firebase 2025
+  // Google Sign-In con implementación correcta para Firebase 2025 y google_sign_in 7.x
   Future<UserCredential?> signInWithGoogle() async {
     if (_isDevelopmentMode) {
       developer.log('🔧 Modo desarrollo: Simulando Google Sign-In exitoso');
@@ -121,44 +121,62 @@ class FirebaseService {
     }
     
     try {
-      // Iniciar el flujo de Google Sign-In
-      final googleUser = await _googleSignIn.authenticate();
+      developer.log('🚀 Iniciando flujo de Google Sign-In...');
       
-      // ignore: unnecessary_null_comparison
-      if (googleUser == null) {
-        developer.log('❌ Google Sign-In cancelado por el usuario');
-        return null;
+      // Verificar si la plataforma soporta authenticate
+      if (!_googleSignIn.supportsAuthenticate()) {
+        developer.log('❌ La plataforma actual no soporta authenticate()');
+        throw FirebaseAuthException(
+          code: 'unsupported-platform',
+          message: 'Google Sign-In no está soportado en esta plataforma',
+        );
       }
+      
+      // Iniciar el flujo de Google Sign-In con authenticate (API 7.x)
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      
+      developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
 
-      // Obtener los detalles de autenticación de Google
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-
-      // Verificar que tenemos el idToken necesario
+      // Obtener idToken de la autenticación básica
+      final googleAuth = googleUser.authentication;
       if (googleAuth.idToken == null) {
         developer.log('❌ No se pudo obtener el idToken de Google');
         throw FirebaseAuthException(
-          code: 'missing-google-id-token',
+          code: 'missing-id-token',
           message: 'No se pudo obtener el idToken de Google',
         );
       }
 
-      // Para Firebase Auth necesitamos obtener el accessToken del authorizationClient
-      final authScopes = ['openid', 'email', 'profile'];
-      final authorization = await googleUser.authorizationClient.authorizationForScopes(authScopes);
+      // Obtener autorización para los scopes básicos de Firebase para accessToken
+      const List<String> firebaseScopes = ['openid', 'email', 'profile'];
+      final authorization = await googleUser.authorizationClient.authorizationForScopes(firebaseScopes);
       
-      if (authorization?.accessToken == null) {
+      if (authorization == null) {
+        developer.log('❌ No se pudo obtener autorización para los scopes necesarios');
+        throw FirebaseAuthException(
+          code: 'missing-authorization',
+          message: 'No se pudo obtener autorización de Google',
+        );
+      }
+
+      // Verificar que tenemos el accessToken
+      if (authorization.accessToken.isEmpty) {
         developer.log('❌ No se pudo obtener el accessToken de Google');
         throw FirebaseAuthException(
-          code: 'missing-google-access-token',
+          code: 'missing-access-token',
           message: 'No se pudo obtener el accessToken de Google',
         );
       }
 
+      developer.log('✅ Tokens de Google obtenidos correctamente');
+
       // Crear credencial de Firebase con los tokens de Google
       final OAuthCredential credential = GoogleAuthProvider.credential(
-        accessToken: authorization!.accessToken,
+        accessToken: authorization.accessToken,
         idToken: googleAuth.idToken,
       );
+
+      developer.log('🔐 Iniciando sesión en Firebase con credencial de Google...');
 
       // Iniciar sesión en Firebase con la credencial de Google
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
@@ -168,6 +186,39 @@ class FirebaseService {
       
     } catch (e) {
       developer.log('⚠️ Error en Google Sign-In: $e');
+      
+      // Manejar errores específicos
+      if (e is FirebaseAuthException) {
+        switch (e.code) {
+          case 'account-exists-with-different-credential':
+            developer.log('❌ Ya existe una cuenta con este email usando un método diferente');
+            break;
+          case 'invalid-credential':
+            developer.log('❌ Credenciales de Google inválidas');
+            break;
+          case 'operation-not-allowed':
+            developer.log('❌ Google Sign-In no está habilitado en Firebase Console');
+            break;
+          case 'user-disabled':
+            developer.log('❌ Esta cuenta ha sido deshabilitada');
+            break;
+          case 'unsupported-platform':
+            developer.log('❌ Plataforma no soportada para Google Sign-In');
+            break;
+          case 'missing-id-token':
+            developer.log('❌ Fallo al obtener idToken de Google');
+            break;
+          case 'missing-authorization':
+            developer.log('❌ Fallo en la autorización de Google');
+            break;
+          case 'missing-access-token':
+            developer.log('❌ Fallo al obtener accessToken de Google');
+            break;
+          default:
+            developer.log('❌ Error de Firebase Auth: ${e.code} - ${e.message}');
+        }
+      }
+      
       rethrow;
     }
   }

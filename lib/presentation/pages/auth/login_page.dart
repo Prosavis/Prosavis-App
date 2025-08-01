@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/validators.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -25,8 +26,14 @@ class _LoginPageState extends State<LoginPage>
   final _passwordController = TextEditingController();
   final _phoneController = TextEditingController();
   final _nameController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
+  final _loginFormKey = GlobalKey<FormState>();
+  final _signUpFormKey = GlobalKey<FormState>();
+  final _phoneFormKey = GlobalKey<FormState>();
   
   bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
   bool _isSignUp = false;
   bool _isPhoneLogin = false;
 
@@ -306,8 +313,10 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildEmailForm(bool isLoading) {
-    return Column(
-      children: [
+    return Form(
+      key: _isSignUp ? _signUpFormKey : _loginFormKey,
+      child: Column(
+        children: [
         // Campo de nombre (solo en registro)
         if (_isSignUp) ...[
           _buildTextField(
@@ -315,6 +324,7 @@ class _LoginPageState extends State<LoginPage>
             label: 'Nombre completo',
             icon: Symbols.person,
             keyboardType: TextInputType.name,
+            validator: Validators.validateName,
           ),
           const SizedBox(height: 16),
         ],
@@ -325,6 +335,7 @@ class _LoginPageState extends State<LoginPage>
           label: 'Correo electrónico',
           icon: Symbols.email,
           keyboardType: TextInputType.emailAddress,
+          validator: Validators.validateEmail,
         ),
         
         const SizedBox(height: 16),
@@ -336,6 +347,7 @@ class _LoginPageState extends State<LoginPage>
           icon: Symbols.lock,
           isPassword: true,
           obscureText: !_isPasswordVisible,
+          validator: Validators.validatePassword,
           suffixIcon: IconButton(
             icon: Icon(
               _isPasswordVisible ? Symbols.visibility_off : Symbols.visibility,
@@ -344,6 +356,26 @@ class _LoginPageState extends State<LoginPage>
             onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
           ),
         ),
+        
+        // Campo de confirmar contraseña (solo en registro)
+        if (_isSignUp) ...[
+          const SizedBox(height: 16),
+          _buildTextField(
+            controller: _confirmPasswordController,
+            label: 'Confirmar contraseña',
+            icon: Symbols.lock,
+            isPassword: true,
+            obscureText: !_isConfirmPasswordVisible,
+            validator: (value) => Validators.validatePasswordConfirmation(value, _passwordController.text),
+            suffixIcon: IconButton(
+              icon: Icon(
+                _isConfirmPasswordVisible ? Symbols.visibility_off : Symbols.visibility,
+                color: AppTheme.textSecondary,
+              ),
+              onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+            ),
+          ),
+        ],
         
         // Enlace "Olvidé mi contraseña" (solo en login)
         if (!_isSignUp) ...[
@@ -433,19 +465,23 @@ class _LoginPageState extends State<LoginPage>
             ),
           ],
         ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildPhoneForm(bool isLoading) {
-    return Column(
-      children: [
+    return Form(
+      key: _phoneFormKey,
+      child: Column(
+        children: [
         _buildTextField(
           controller: _phoneController,
           label: 'Número de teléfono',
           icon: Symbols.phone,
           keyboardType: TextInputType.phone,
           hintText: '+57 300 123 4567',
+          validator: Validators.validatePhone,
         ),
         
         const SizedBox(height: 24),
@@ -511,7 +547,8 @@ class _LoginPageState extends State<LoginPage>
             ),
           ],
         ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -524,6 +561,7 @@ class _LoginPageState extends State<LoginPage>
     bool obscureText = false,
     Widget? suffixIcon,
     String? hintText,
+    String? Function(String?)? validator,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -537,10 +575,11 @@ class _LoginPageState extends State<LoginPage>
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextFormField(
           controller: controller,
           keyboardType: keyboardType,
           obscureText: obscureText,
+          validator: validator,
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: Icon(icon, color: AppTheme.textSecondary),
@@ -556,6 +595,14 @@ class _LoginPageState extends State<LoginPage>
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: const BorderSide(color: AppTheme.primaryColor),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppTheme.errorColor),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: AppTheme.errorColor),
             ),
             filled: true,
             fillColor: Colors.white,
@@ -776,30 +823,19 @@ class _LoginPageState extends State<LoginPage>
 
   // Métodos de manejo de eventos
   void _handleEmailAuth() {
-    if (_isSignUp) {
-      if (_nameController.text.trim().isEmpty ||
-          _emailController.text.trim().isEmpty ||
-          _passwordController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Por favor completa todos los campos')),
-        );
-        return;
-      }
+    final formKey = _isSignUp ? _signUpFormKey : _loginFormKey;
+    
+    if (!formKey.currentState!.validate()) {
+      return;
+    }
 
+    if (_isSignUp) {
       context.read<AuthBloc>().add(AuthSignUpWithEmailRequested(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
         name: _nameController.text.trim(),
       ));
     } else {
-      if (_emailController.text.trim().isEmpty ||
-          _passwordController.text.trim().isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Por favor completa todos los campos')),
-        );
-        return;
-      }
-
       context.read<AuthBloc>().add(AuthSignInWithEmailRequested(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -808,10 +844,7 @@ class _LoginPageState extends State<LoginPage>
   }
 
   void _handlePhoneAuth() {
-    if (_phoneController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Por favor ingresa tu número de teléfono')),
-      );
+    if (!_phoneFormKey.currentState!.validate()) {
       return;
     }
 

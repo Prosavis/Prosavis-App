@@ -1,25 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
+
 import 'dart:developer' as developer;
 
 import 'core/themes/app_theme.dart';
 import 'core/constants/app_constants.dart';
-import 'data/repositories/auth_repository_impl.dart';
 import 'data/services/firebase_service.dart';
 import 'data/services/firestore_service.dart';
-import 'domain/repositories/auth_repository.dart';
-import 'domain/usecases/auth/sign_in_with_google_usecase.dart';
-import 'domain/usecases/auth/sign_in_with_email_usecase.dart';
-import 'domain/usecases/auth/sign_up_with_email_usecase.dart';
-import 'domain/usecases/auth/sign_in_with_phone_usecase.dart';
-import 'domain/usecases/auth/verify_phone_code_usecase.dart';
-import 'domain/usecases/auth/password_reset_usecase.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/theme/theme_bloc.dart';
 import 'presentation/blocs/theme/theme_state.dart';
+import 'presentation/blocs/search/search_bloc.dart';
+import 'presentation/blocs/search/search_event.dart';
+import 'presentation/blocs/profile/profile_bloc.dart';
+import 'data/services/local_image_storage_service.dart';
 import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/main/main_navigation_page.dart';
 import 'presentation/pages/auth/login_page.dart';
@@ -33,6 +29,10 @@ import 'presentation/pages/settings/terms_conditions_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
 import 'presentation/pages/notifications/notifications_page.dart';
+import 'presentation/pages/profile/profile_page.dart';
+import 'presentation/pages/services/service_creation_page.dart';
+import 'domain/usecases/services/create_service_usecase.dart';
+import 'core/injection/injection_container.dart' as di;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -40,8 +40,8 @@ void main() async {
   try {
     developer.log('🚀 Iniciando aplicación Prosavis...');
     
-    // Inicializar Firebase usando nuestro servicio mejorado
-    await FirebaseService.initializeFirebase();
+    // Inicializar sistema de inyección de dependencias
+    await di.init();
     
     // Configurar Firestore según el modo
     FirestoreService.setDevelopmentMode(FirebaseService.isDevelopmentMode);
@@ -123,6 +123,16 @@ final _router = GoRouter(
       path: '/notifications',
       builder: (context, state) => const NotificationsPage(),
     ),
+    GoRoute(
+      path: '/create-service',
+      builder: (context, state) => ServiceCreationPage(
+        createServiceUseCase: di.sl<CreateServiceUseCase>(),
+      ),
+    ),
+    GoRoute(
+      path: '/profile',
+      builder: (context, state) => const ProfilePage(),
+    ),
   ],
 );
 
@@ -131,54 +141,23 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
+    return MultiBlocProvider(
       providers: [
-        Provider<AuthRepository>(
-          create: (_) => AuthRepositoryImpl(),
-        ),
-        Provider<SignInWithGoogleUseCase>(
-          create: (context) => SignInWithGoogleUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<SignInWithEmailUseCase>(
-          create: (context) => SignInWithEmailUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<SignUpWithEmailUseCase>(
-          create: (context) => SignUpWithEmailUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<SignInWithPhoneUseCase>(
-          create: (context) => SignInWithPhoneUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<VerifyPhoneCodeUseCase>(
-          create: (context) => VerifyPhoneCodeUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
-        Provider<PasswordResetUseCase>(
-          create: (context) => PasswordResetUseCase(
-            context.read<AuthRepository>(),
-          ),
-        ),
         BlocProvider<AuthBloc>(
-          create: (context) => AuthBloc(
-            authRepository: context.read<AuthRepository>(),
-            signInWithGoogleUseCase: context.read<SignInWithGoogleUseCase>(),
-            signInWithEmailUseCase: context.read<SignInWithEmailUseCase>(),
-            signUpWithEmailUseCase: context.read<SignUpWithEmailUseCase>(),
-            signInWithPhoneUseCase: context.read<SignInWithPhoneUseCase>(),
-            verifyPhoneCodeUseCase: context.read<VerifyPhoneCodeUseCase>(),
-            passwordResetUseCase: context.read<PasswordResetUseCase>(),
-          )..add(AuthStarted()),
+          create: (_) => di.sl<AuthBloc>()..add(AuthStarted()),
+        ),
+        BlocProvider<SearchBloc>(
+          create: (_) => di.sl<SearchBloc>()..add(LoadRecentSearches()),
         ),
         BlocProvider<ThemeBloc>(
           create: (context) => ThemeBloc(),
+        ),
+        BlocProvider<ProfileBloc>(
+          create: (context) => ProfileBloc(
+            localImageStorageService: di.sl<LocalImageStorageService>(),
+            firestoreService: di.sl<FirestoreService>(),
+            authBloc: context.read<AuthBloc>(),
+          ),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
