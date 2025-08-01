@@ -59,6 +59,22 @@ class _LoginPageState extends State<LoginPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
+      appBar: AppBar(
+        backgroundColor: AppTheme.backgroundColor,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+          onPressed: () => context.go('/home'),
+        ),
+        title: Text(
+          'Iniciar Sesión',
+          style: GoogleFonts.inter(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppTheme.textPrimary,
+          ),
+        ),
+      ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
@@ -102,7 +118,7 @@ class _LoginPageState extends State<LoginPage>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 10),
                       
                       // Header con logo compacto
                       _buildCompactHeader(),
@@ -573,20 +589,20 @@ class _LoginPageState extends State<LoginPage>
     final isLoading = state is AuthLoading;
     
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Container(
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
         ),
         child: ElevatedButton(
           onPressed: isLoading ? null : () {
@@ -597,53 +613,64 @@ class _LoginPageState extends State<LoginPage>
             foregroundColor: AppTheme.textPrimary,
             elevation: 0,
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(10),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 16),
+            padding: const EdgeInsets.symmetric(vertical: 20),
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/google_logo.png',
-                height: 20,
-                width: 20,
-                errorBuilder: (context, error, stackTrace) {
-                  return const Icon(
-                    Symbols.account_circle,
-                    size: 20,
-                    color: AppTheme.primaryColor,
-                  );
-                },
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Continuar con Google',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+          child: isLoading
+              ? const SizedBox(
+                  height: 24,
+                  width: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppTheme.primaryColor,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(12),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      'assets/images/google_logo.png',
+                      height: 24,
+                      width: 24,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Symbols.account_circle,
+                          size: 24,
+                          color: AppTheme.primaryColor,
+                        );
+                      },
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      'Continuar con Google',
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
+                        ),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Text(
+                        'Recomendado',
+                        style: GoogleFonts.inter(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  'Recomendado',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
