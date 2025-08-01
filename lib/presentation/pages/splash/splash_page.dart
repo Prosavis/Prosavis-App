@@ -30,19 +30,19 @@ class _SplashPageState extends State<SplashPage>
     
     // Controlador para la animación de escala del logo
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 2000),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
     
     // Controlador para el fade general
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 600),
       vsync: this,
     );
     
     // Controlador para la animación del texto
     _textController = AnimationController(
-      duration: const Duration(milliseconds: 1000),
+      duration: const Duration(milliseconds: 500),
       vsync: this,
     );
 
@@ -84,7 +84,7 @@ class _SplashPageState extends State<SplashPage>
 
   void _startAnimations() async {
     // Delay inicial para suavizar el inicio
-    await Future.delayed(const Duration(milliseconds: 300));
+    await Future.delayed(const Duration(milliseconds: 100));
     
     if (mounted) {
       // Reproducir sonido de bienvenida
@@ -95,19 +95,19 @@ class _SplashPageState extends State<SplashPage>
       _scaleController.forward();
       
       // Delay antes de mostrar el texto
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 400));
       
       if (mounted) {
         _textController.forward();
         
         // Sonido adicional cuando aparece el texto
-        await Future.delayed(const Duration(milliseconds: 200));
+        await Future.delayed(const Duration(milliseconds: 100));
         if (mounted) {
           _playTextSound();
         }
         
-        // Esperar 4 segundos en total antes de navegar al home
-        await Future.delayed(const Duration(milliseconds: 2800));
+        // Esperar 2 segundos en total antes de navegar al home
+        await Future.delayed(const Duration(milliseconds: 1400));
         
         if (mounted) {
           context.go('/home');
@@ -198,33 +198,13 @@ class _SplashPageState extends State<SplashPage>
   }
 
   Widget _buildLogo() {
-    return Container(
-      width: 200,
-      height: 200,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 30,
-            offset: const Offset(0, 15),
-            spreadRadius: 5,
-          ),
-          BoxShadow(
-            color: AppTheme.accentColor.withValues(alpha: 0.1),
-            blurRadius: 40,
-            offset: const Offset(0, 10),
-            spreadRadius: 10,
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(30.0),
-        child: Image.asset(
-          'assets/images/logo-no-background.png',
-          fit: BoxFit.contain,
-        ),
+    return SizedBox(
+      width: 280,
+      height: 280,
+      child: Image.asset(
+        'assets/images/logo-no-background.png',
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
       ),
     );
   }

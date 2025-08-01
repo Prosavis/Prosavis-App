@@ -75,7 +75,7 @@ class _SavedPageState extends State<SavedPage>
         style: GoogleFonts.inter(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: AppTheme.textPrimary,
+          color: AppTheme.getTextPrimary(context),
         ),
       ),
     );
@@ -85,7 +85,7 @@ class _SavedPageState extends State<SavedPage>
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: AppTheme.getContainerColor(context),
         borderRadius: BorderRadius.circular(12),
       ),
       child: TabBar(
@@ -97,7 +97,7 @@ class _SavedPageState extends State<SavedPage>
         indicatorSize: TabBarIndicatorSize.tab,
         dividerColor: Colors.transparent,
         labelColor: Colors.white,
-        unselectedLabelColor: AppTheme.textSecondary,
+        unselectedLabelColor: AppTheme.getTextSecondary(context),
         labelStyle: GoogleFonts.inter(
           fontWeight: FontWeight.w600,
           fontSize: 14,
@@ -132,10 +132,10 @@ class _SavedPageState extends State<SavedPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Symbols.favorite_border,
               size: 80,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 24),
             Text(
@@ -143,7 +143,7 @@ class _SavedPageState extends State<SavedPage>
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -152,7 +152,7 @@ class _SavedPageState extends State<SavedPage>
               'Marca como favoritos los servicios que te interesen para encontrarlos fácilmente después.',
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -183,7 +183,7 @@ class _SavedPageState extends State<SavedPage>
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: ListTile(
-            leading: CircleAvatar(
+            leading: const CircleAvatar(
               backgroundColor: AppTheme.primaryColor,
               child: Icon(
                 Symbols.home_repair_service,
@@ -199,7 +199,7 @@ class _SavedPageState extends State<SavedPage>
             subtitle: Text(
               service['provider'] ?? 'Proveedor',
               style: GoogleFonts.inter(
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             trailing: IconButton(
@@ -246,10 +246,10 @@ class _SavedPageState extends State<SavedPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Symbols.history,
               size: 80,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 24),
             Text(
@@ -257,7 +257,7 @@ class _SavedPageState extends State<SavedPage>
               style: GoogleFonts.inter(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -266,7 +266,7 @@ class _SavedPageState extends State<SavedPage>
               'Aquí aparecerán los servicios que hayas contactado.',
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -302,7 +302,7 @@ class _SavedPageState extends State<SavedPage>
                 Text(
                   service['provider'] ?? 'Proveedor',
                   style: GoogleFonts.inter(
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -312,7 +312,7 @@ class _SavedPageState extends State<SavedPage>
                       service['date'] ?? '',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: AppTheme.textTertiary,
+                        color: AppTheme.getTextTertiary(context),
                       ),
                     ),
                     const SizedBox(width: 8),

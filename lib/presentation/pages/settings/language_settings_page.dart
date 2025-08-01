@@ -36,18 +36,6 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
       'nativeName': 'English',
       'flag': '🇺🇸',
     },
-    {
-      'code': 'pt',
-      'name': 'Portugués',
-      'nativeName': 'Português',
-      'flag': '🇧🇷',
-    },
-    {
-      'code': 'fr',
-      'name': 'Francés',
-      'nativeName': 'Français',
-      'flag': '🇫🇷',
-    },
   ];
 
   @override
@@ -97,9 +85,9 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
           children: [
             IconButton(
               onPressed: () => context.pop(),
-              icon: const Icon(
+              icon: Icon(
                 Symbols.arrow_back,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(width: 8),
@@ -108,7 +96,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
               style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
           ],
@@ -128,7 +116,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
               'Selecciona tu idioma preferido',
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             const SizedBox(height: 32),
@@ -183,7 +171,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
                           'El cambio de idioma se aplicará después de reiniciar la aplicación.',
                           style: GoogleFonts.inter(
                             fontSize: 13,
-                            color: AppTheme.textSecondary,
+                            color: AppTheme.getTextSecondary(context),
                           ),
                         ),
                       ],
@@ -273,9 +261,13 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          setState(() {
-            _selectedLanguage = language['code']!;
-          });
+          if (language['code'] == 'en') {
+            _showComingSoonDialog();
+          } else {
+            setState(() {
+              _selectedLanguage = language['code']!;
+            });
+          }
         },
         borderRadius: BorderRadius.circular(12),
         child: Container(
@@ -283,12 +275,12 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
           decoration: BoxDecoration(
             color: isSelected 
                 ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                : AppTheme.surfaceColor,
+                : AppTheme.getSurfaceColor(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: isSelected 
                   ? AppTheme.primaryColor 
-                  : Colors.grey.shade200,
+                  : AppTheme.getBorderColor(context),
               width: isSelected ? 2 : 1,
             ),
           ),
@@ -310,7 +302,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
                         fontWeight: FontWeight.w600,
                         color: isSelected 
                             ? AppTheme.primaryColor
-                            : AppTheme.textPrimary,
+                            : AppTheme.getTextPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -318,7 +310,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
                       language['nativeName']!,
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.getTextSecondary(context),
                       ),
                     ),
                   ],
@@ -334,6 +326,71 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
           ),
         ),
       ),
+    );
+  }
+
+  void _showComingSoonDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          contentPadding: const EdgeInsets.all(24),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                '😎',
+                style: TextStyle(fontSize: 48),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Coming Soon',
+                style: GoogleFonts.inter(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextPrimary(context),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'El soporte para inglés estará disponible pronto',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppTheme.getTextSecondary(context),
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: Text(
+                    'Entendido',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

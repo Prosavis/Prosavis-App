@@ -3,6 +3,11 @@ import 'package:prosavis/data/repositories/auth_repository_impl.dart';
 import 'package:prosavis/data/services/firebase_service.dart';
 import 'package:prosavis/domain/repositories/auth_repository.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_google_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/sign_in_with_email_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/sign_up_with_email_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/sign_in_with_phone_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/verify_phone_code_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/password_reset_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'dart:developer' as developer;
 
@@ -38,11 +43,41 @@ Future<void> init() async {
     );
     developer.log('✅ SignInWithGoogleUseCase registrado');
 
+    sl.registerLazySingleton<SignInWithEmailUseCase>(
+      () => SignInWithEmailUseCase(sl()),
+    );
+    developer.log('✅ SignInWithEmailUseCase registrado');
+
+    sl.registerLazySingleton<SignUpWithEmailUseCase>(
+      () => SignUpWithEmailUseCase(sl()),
+    );
+    developer.log('✅ SignUpWithEmailUseCase registrado');
+
+    sl.registerLazySingleton<SignInWithPhoneUseCase>(
+      () => SignInWithPhoneUseCase(sl()),
+    );
+    developer.log('✅ SignInWithPhoneUseCase registrado');
+
+    sl.registerLazySingleton<VerifyPhoneCodeUseCase>(
+      () => VerifyPhoneCodeUseCase(sl()),
+    );
+    developer.log('✅ VerifyPhoneCodeUseCase registrado');
+
+    sl.registerLazySingleton<PasswordResetUseCase>(
+      () => PasswordResetUseCase(sl()),
+    );
+    developer.log('✅ PasswordResetUseCase registrado');
+
     // BLoC
     sl.registerFactory(
       () => AuthBloc(
         authRepository: sl(),
         signInWithGoogleUseCase: sl(),
+        signInWithEmailUseCase: sl(),
+        signUpWithEmailUseCase: sl(),
+        signInWithPhoneUseCase: sl(),
+        verifyPhoneCodeUseCase: sl(),
+        passwordResetUseCase: sl(),
       ),
     );
     developer.log('✅ AuthBloc registrado');

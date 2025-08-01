@@ -13,10 +13,63 @@ class AppTheme {
   static const Color warningColor = Color(0xFFFF7700); // Usando el naranja del logo
   static const Color successColor = Color(0xFF10B981);
   
-  // Colores de texto
+  // Colores de texto para modo claro (deprecated - usar getters adaptativos)
   static const Color textPrimary = Color(0xFF002446); // Usando el azul del logo
   static const Color textSecondary = Color(0xFF6B7280);
   static const Color textTertiary = Color(0xFF9CA3AF);
+  
+  // Colores adaptativos para modo oscuro
+  static const Color darkBackground = Color(0xFF0F172A);
+  static const Color darkSurface = Color(0xFF1E293B);
+  static const Color darkSurfaceVariant = Color(0xFF334155);
+  static const Color darkTextPrimary = Color(0xFFFFFFFF);
+  static const Color darkTextSecondary = Color(0xFFE2E8F0);
+  static const Color darkTextTertiary = Color(0xFFCBD5E1);
+  static const Color darkBorder = Color(0xFF475569);
+  
+  // Getters adaptativos que detectan el tema actual
+  static Color getTextPrimary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkTextPrimary 
+        : textPrimary;
+  }
+  
+  static Color getTextSecondary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkTextSecondary 
+        : textSecondary;
+  }
+  
+  static Color getTextTertiary(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkTextTertiary 
+        : textTertiary;
+  }
+  
+  static Color getSurfaceColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkSurface 
+        : surfaceColor;
+  }
+  
+  static Color getBackgroundColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkBackground 
+        : backgroundColor;
+  }
+  
+  static Color getBorderColor(BuildContext context) {
+    return Theme.of(context).brightness == Brightness.dark 
+        ? darkBorder 
+        : Colors.grey.shade200;
+  }
+  
+  static Color getContainerColor(BuildContext context, {double alpha = 1.0}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return isDark 
+        ? darkSurfaceVariant.withValues(alpha: alpha)
+        : Colors.grey.shade100.withValues(alpha: alpha);
+  }
   
   // Gradientes actualizados con los colores de Prosavis
   static const LinearGradient primaryGradient = LinearGradient(

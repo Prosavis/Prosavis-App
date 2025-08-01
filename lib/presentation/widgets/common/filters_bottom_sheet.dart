@@ -59,9 +59,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
       position: _slideAnimation,
       child: Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: AppTheme.getSurfaceColor(context),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -99,7 +99,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200),
+          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
         ),
       ),
       child: Row(
@@ -109,7 +109,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: AppTheme.getTextPrimary(context),
             ),
           ),
           const Spacer(),
@@ -147,14 +147,14 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                   color: isSelected ? AppTheme.primaryColor : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
+                    color: isSelected ? AppTheme.primaryColor : AppTheme.getBorderColor(context),
                   ),
                 ),
                 child: Text(
                   category['name'],
                   style: GoogleFonts.inter(
                     fontSize: 12,
-                    color: isSelected ? Colors.white : AppTheme.textSecondary,
+                    color: isSelected ? Colors.white : AppTheme.getTextSecondary(context),
                     fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                   ),
                 ),
@@ -179,7 +179,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                 'Radio de búsqueda: ${_currentFilters.radiusKm.toInt()} km',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
               ),
             ),
@@ -214,7 +214,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
               '\$${_currentFilters.minPrice.toInt()}',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             const Spacer(),
@@ -222,7 +222,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
               '\$${_currentFilters.maxPrice.toInt()}',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
           ],
@@ -264,7 +264,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                 margin: const EdgeInsets.only(right: 8),
                 child: Icon(
                   isSelected ? Symbols.star : Symbols.star_outline,
-                  color: isSelected ? Colors.orange : Colors.grey.shade400,
+                  color: isSelected ? Colors.orange : AppTheme.getTextTertiary(context),
                   size: 32,
                 ),
               ),
@@ -349,7 +349,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
       style: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.bold,
-        color: AppTheme.textPrimary,
+        color: AppTheme.getTextPrimary(context),
       ),
     );
   }
@@ -359,7 +359,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       decoration: BoxDecoration(
         border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
+          top: BorderSide(color: AppTheme.getBorderColor(context)),
         ),
       ),
       child: Row(
@@ -369,14 +369,14 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
               onPressed: () => Navigator.pop(context),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                side: BorderSide(color: Colors.grey.shade300),
+                side: BorderSide(color: AppTheme.getBorderColor(context)),
               ),
               child: Text(
                 'Cancelar',
                 style: GoogleFonts.inter(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
               ),
             ),
@@ -477,10 +477,10 @@ class FilterSettings {
 }
 
 enum SortOption {
-  relevance,
   priceLowToHigh,
   priceHighToLow,
   rating,
   distance,
   newest,
+  relevance,
 } 

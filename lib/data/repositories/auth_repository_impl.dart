@@ -95,6 +95,153 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserEntity?> signInWithEmail(String email, String password) async {
+    try {
+      developer.log('🚀 Iniciando sesión con email...');
+      
+      final userCredential = await _firebaseService.signInWithEmail(email, password);
+      
+      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+        developer.log('❌ Credenciales incorrectas');
+        return null;
+      }
+
+      // En modo desarrollo, crear usuario mock
+      if (FirebaseService.isDevelopmentMode) {
+        final mockUser = _firebaseService.getCurrentUser();
+        if (mockUser != null) {
+          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
+          developer.log('✅ Usuario mock creado: ${userEntity.email}');
+          return userEntity;
+        }
+      }
+
+      // Flujo normal con Firebase
+      final firebaseUser = userCredential!.user!;
+      
+      // Verificar si el usuario ya existe en Firestore
+      final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
+      
+      if (existingUser != null) {
+        developer.log('✅ Usuario autenticado: ${existingUser.email}');
+        return existingUser;
+      } else {
+        // Usuario nuevo, crear en Firestore
+        final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
+        developer.log('✅ Nuevo usuario creado: ${newUser.email}');
+        return newUser;
+      }
+    } catch (e) {
+      developer.log('⚠️ Error en signInWithEmail: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<UserEntity?> signUpWithEmail(String email, String password, String name) async {
+    try {
+      developer.log('🚀 Registrando usuario con email...');
+      
+      final userCredential = await _firebaseService.signUpWithEmail(email, password, name);
+      
+      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+        developer.log('❌ Error en registro');
+        return null;
+      }
+
+      // En modo desarrollo, crear usuario mock
+      if (FirebaseService.isDevelopmentMode) {
+        final mockUser = _firebaseService.getCurrentUser();
+        if (mockUser != null) {
+          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
+          developer.log('✅ Usuario mock registrado: ${userEntity.email}');
+          return userEntity;
+        }
+      }
+
+      // Flujo normal con Firebase
+      final firebaseUser = userCredential!.user!;
+      
+      // Crear usuario en Firestore
+      final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
+      developer.log('✅ Usuario registrado exitosamente: ${newUser.email}');
+      return newUser;
+    } catch (e) {
+      developer.log('⚠️ Error en signUpWithEmail: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<String> signInWithPhone(String phoneNumber) async {
+    try {
+      developer.log('🚀 Iniciando verificación de teléfono...');
+      
+      final verificationId = await _firebaseService.signInWithPhone(phoneNumber);
+      developer.log('✅ Código SMS enviado al $phoneNumber');
+      return verificationId;
+    } catch (e) {
+      developer.log('⚠️ Error en signInWithPhone: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserEntity?> verifyPhoneCode(String verificationId, String smsCode) async {
+    try {
+      developer.log('🚀 Verificando código SMS...');
+      
+      final userCredential = await _firebaseService.verifyPhoneCode(verificationId, smsCode);
+      
+      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+        developer.log('❌ Código SMS incorrecto');
+        return null;
+      }
+
+      // En modo desarrollo, crear usuario mock
+      if (FirebaseService.isDevelopmentMode) {
+        final mockUser = _firebaseService.getCurrentUser();
+        if (mockUser != null) {
+          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
+          developer.log('✅ Usuario mock verificado: ${userEntity.email}');
+          return userEntity;
+        }
+      }
+
+      // Flujo normal con Firebase
+      final firebaseUser = userCredential!.user!;
+      
+      // Verificar si el usuario ya existe en Firestore
+      final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
+      
+      if (existingUser != null) {
+        developer.log('✅ Usuario autenticado por teléfono: ${existingUser.phoneNumber}');
+        return existingUser;
+      } else {
+        // Usuario nuevo, crear en Firestore
+        final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
+        developer.log('✅ Nuevo usuario creado por teléfono: ${newUser.phoneNumber}');
+        return newUser;
+      }
+    } catch (e) {
+      developer.log('⚠️ Error en verifyPhoneCode: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail(String email) async {
+    try {
+      developer.log('🚀 Enviando email de recuperación...');
+      await _firebaseService.sendPasswordResetEmail(email);
+      developer.log('✅ Email de recuperación enviado a $email');
+    } catch (e) {
+      developer.log('⚠️ Error al enviar email de recuperación: $e');
+      rethrow;
+    }
+  }
+
+  @override
   Future<void> signOut() async {
     try {
       developer.log('👋 Cerrando sesión...');

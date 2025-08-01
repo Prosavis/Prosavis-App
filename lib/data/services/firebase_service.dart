@@ -125,7 +125,25 @@ class FirebaseService {
     }
     
     try {
-      developer.log('🔧 Intentando autenticación anónima como alternativa a Google Sign-In');
+      // Intentar Google Sign-In real con la nueva API
+      final GoogleSignInAccount? googleUser = await GoogleSignIn.instance.authenticate();
+      
+      if (googleUser == null) {
+        developer.log('❌ Google Sign-In cancelado por el usuario');
+        return null;
+      }
+
+      // Obtener los tokens de autorización para Firebase
+      final Map<String, String>? authHeaders = await googleUser.authorizationClient.authorizationHeaders(['email', 'profile']);
+      
+      if (authHeaders == null) {
+        developer.log('❌ No se pudieron obtener los headers de autorización');
+        return null;
+      }
+
+      // Para Firebase necesitamos usar signInAnonymously como fallback por ahora
+      // En un escenario real, configurarías el servidor OAuth correctamente
+      developer.log('✅ Google Sign-In exitoso: ${googleUser.email}');
       return await signInAnonymously();
       
     } catch (e) {
@@ -134,6 +152,125 @@ class FirebaseService {
       _isDevelopmentMode = true;
       _simulateSuccessfulLogin();
       return _createMockUserCredential();
+    }
+  }
+
+  // Sign-In con email y contraseña
+  Future<UserCredential?> signInWithEmail(String email, String password) async {
+    if (_isDevelopmentMode) {
+      developer.log('🔧 Modo desarrollo: Simulando login con email');
+      _simulateSuccessfulLogin();
+      return _createMockUserCredential();
+    }
+
+    try {
+      return await _auth?.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+    } catch (e) {
+      developer.log('⚠️ Error en signInWithEmail: $e');
+      rethrow;
+    }
+  }
+
+  // Registro con email y contraseña
+  Future<UserCredential?> signUpWithEmail(String email, String password, String displayName) async {
+    if (_isDevelopmentMode) {
+      developer.log('🔧 Modo desarrollo: Simulando registro con email');
+      _simulateSuccessfulLogin();
+      return _createMockUserCredential();
+    }
+
+    try {
+      final credential = await _auth?.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      
+      // Actualizar el nombre de usuario
+      await credential?.user?.updateDisplayName(displayName);
+      
+      return credential;
+    } catch (e) {
+      developer.log('⚠️ Error en signUpWithEmail: $e');
+      rethrow;
+    }
+  }
+
+  // Iniciar verificación de teléfono
+  Future<String> signInWithPhone(String phoneNumber) async {
+    if (_isDevelopmentMode) {
+      developer.log('🔧 Modo desarrollo: Simulando envío de SMS');
+      return 'mock_verification_id_123';
+    }
+
+    try {
+      String verificationId = '';
+      
+      await _auth!.verifyPhoneNumber(
+        phoneNumber: phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) async {
+          // Autenticación automática (solo en Android)
+          await _auth?.signInWithCredential(credential);
+        },
+        verificationFailed: (FirebaseAuthException e) {
+          developer.log('⚠️ Error en verificación de teléfono: ${e.message}');
+          throw e;
+        },
+        codeSent: (String verId, int? resendToken) {
+          verificationId = verId;
+          developer.log('✅ Código SMS enviado. Verification ID: $verId');
+        },
+        codeAutoRetrievalTimeout: (String verId) {
+          verificationId = verId;
+        },
+        timeout: const Duration(seconds: 60),
+      );
+      
+      // Esperar un poco para que se asigne el verificationId
+      await Future.delayed(const Duration(seconds: 2));
+      return verificationId;
+    } catch (e) {
+      developer.log('⚠️ Error en signInWithPhone: $e');
+      rethrow;
+    }
+  }
+
+  // Verificar código SMS
+  Future<UserCredential?> verifyPhoneCode(String verificationId, String smsCode) async {
+    if (_isDevelopmentMode) {
+      developer.log('🔧 Modo desarrollo: Simulando verificación de código SMS');
+      _simulateSuccessfulLogin();
+      return _createMockUserCredential();
+    }
+
+    try {
+      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
+        verificationId: verificationId,
+        smsCode: smsCode,
+      );
+
+      return await _auth?.signInWithCredential(credential);
+    } catch (e) {
+      developer.log('⚠️ Error en verifyPhoneCode: $e');
+      rethrow;
+    }
+  }
+
+  // Enviar email de recuperación de contraseña
+  Future<void> sendPasswordResetEmail(String email) async {
+    if (_isDevelopmentMode) {
+      developer.log('🔧 Modo desarrollo: Simulando envío de email de recuperación');
+      return;
+    }
+
+    try {
+      await _auth?.sendPasswordResetEmail(email: email);
+      developer.log('✅ Email de recuperación enviado a $email');
+    } catch (e) {
+      developer.log('⚠️ Error al enviar email de recuperación: $e');
+      rethrow;
     }
   }
 

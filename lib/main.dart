@@ -11,6 +11,11 @@ import 'data/services/firebase_service.dart';
 import 'data/services/firestore_service.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/usecases/auth/sign_in_with_google_usecase.dart';
+import 'domain/usecases/auth/sign_in_with_email_usecase.dart';
+import 'domain/usecases/auth/sign_up_with_email_usecase.dart';
+import 'domain/usecases/auth/sign_in_with_phone_usecase.dart';
+import 'domain/usecases/auth/verify_phone_code_usecase.dart';
+import 'domain/usecases/auth/password_reset_usecase.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/theme/theme_bloc.dart';
@@ -18,6 +23,8 @@ import 'presentation/blocs/theme/theme_state.dart';
 import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/main/main_navigation_page.dart';
 import 'presentation/pages/auth/login_page.dart';
+import 'presentation/pages/auth/verify_phone_page.dart';
+import 'presentation/pages/auth/forgot_password_page.dart';
 import 'presentation/pages/settings/notifications_settings_page.dart';
 import 'presentation/pages/settings/language_settings_page.dart';
 import 'presentation/pages/settings/edit_profile_page.dart';
@@ -62,6 +69,20 @@ final _router = GoRouter(
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginPage(),
+    ),
+    GoRoute(
+      path: '/auth/verify-phone',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return VerifyPhonePage(
+          verificationId: extra['verificationId'],
+          phoneNumber: extra['phoneNumber'],
+        );
+      },
+    ),
+    GoRoute(
+      path: '/auth/forgot-password',
+      builder: (context, state) => const ForgotPasswordPage(),
     ),
     GoRoute(
       path: '/home',
@@ -117,10 +138,40 @@ class MyApp extends StatelessWidget {
             context.read<AuthRepository>(),
           ),
         ),
+        Provider<SignInWithEmailUseCase>(
+          create: (context) => SignInWithEmailUseCase(
+            context.read<AuthRepository>(),
+          ),
+        ),
+        Provider<SignUpWithEmailUseCase>(
+          create: (context) => SignUpWithEmailUseCase(
+            context.read<AuthRepository>(),
+          ),
+        ),
+        Provider<SignInWithPhoneUseCase>(
+          create: (context) => SignInWithPhoneUseCase(
+            context.read<AuthRepository>(),
+          ),
+        ),
+        Provider<VerifyPhoneCodeUseCase>(
+          create: (context) => VerifyPhoneCodeUseCase(
+            context.read<AuthRepository>(),
+          ),
+        ),
+        Provider<PasswordResetUseCase>(
+          create: (context) => PasswordResetUseCase(
+            context.read<AuthRepository>(),
+          ),
+        ),
         BlocProvider<AuthBloc>(
           create: (context) => AuthBloc(
             authRepository: context.read<AuthRepository>(),
             signInWithGoogleUseCase: context.read<SignInWithGoogleUseCase>(),
+            signInWithEmailUseCase: context.read<SignInWithEmailUseCase>(),
+            signUpWithEmailUseCase: context.read<SignUpWithEmailUseCase>(),
+            signInWithPhoneUseCase: context.read<SignInWithPhoneUseCase>(),
+            verifyPhoneCodeUseCase: context.read<VerifyPhoneCodeUseCase>(),
+            passwordResetUseCase: context.read<PasswordResetUseCase>(),
           )..add(AuthStarted()),
         ),
         BlocProvider<ThemeBloc>(
