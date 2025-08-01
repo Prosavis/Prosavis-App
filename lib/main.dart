@@ -46,6 +46,9 @@ void main() async {
     // Configurar Firestore según el modo
     FirestoreService.setDevelopmentMode(FirebaseService.isDevelopmentMode);
     
+    // Diagnosticar configuración de Firebase para debugging
+    FirebaseService.diagnoseFirebaseConfiguration();
+    
     if (FirebaseService.isDevelopmentMode) {
       developer.log('🔧 Aplicación iniciada en MODO DESARROLLO');
     } else {

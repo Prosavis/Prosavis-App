@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:developer' as developer;
@@ -121,8 +122,10 @@ class _SplashPageState extends State<SplashPage>
       // Sonido de éxito/bienvenida
       SystemSound.play(SystemSoundType.alert);
       
-      // Vibración sutil para dispositivos móviles
-      HapticFeedback.lightImpact();
+      // Vibración sutil solo para dispositivos móviles (no web)
+      if (!kIsWeb) {
+        HapticFeedback.lightImpact();
+      }
     } catch (e) {
       // Si hay error, continuar sin sonido
       developer.log('Error reproduciendo sonido: $e');
@@ -131,8 +134,10 @@ class _SplashPageState extends State<SplashPage>
 
   void _playTextSound() {
     try {
-      // Sonido más sutil para la aparición del texto
-      HapticFeedback.selectionClick();
+      // Sonido más sutil para la aparición del texto (solo móvil)
+      if (!kIsWeb) {
+        HapticFeedback.selectionClick();
+      }
     } catch (e) {
       // Si hay error, continuar sin sonido
       developer.log('Error reproduciendo vibración: $e');

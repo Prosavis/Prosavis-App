@@ -101,7 +101,7 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.signInWithEmail(email, password);
       
-      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+      if (userCredential.user == null && !FirebaseService.isDevelopmentMode) {
         developer.log('❌ Credenciales incorrectas');
         return null;
       }
@@ -117,7 +117,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Flujo normal con Firebase
-      final firebaseUser = userCredential!.user!;
+      final firebaseUser = userCredential.user!;
       
       // Verificar si el usuario ya existe en Firestore
       final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
@@ -144,8 +144,8 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.signUpWithEmail(email, password, name);
       
-      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
-        developer.log('❌ Error en registro');
+      if (userCredential.user == null) {
+        developer.log('❌ Error en registro: Usuario no creado');
         return null;
       }
 
@@ -160,7 +160,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Flujo normal con Firebase
-      final firebaseUser = userCredential!.user!;
+      final firebaseUser = userCredential.user!;
       
       // Crear usuario en Firestore
       final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
@@ -193,7 +193,7 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.verifyPhoneCode(verificationId, smsCode);
       
-      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+      if (userCredential.user == null && !FirebaseService.isDevelopmentMode) {
         developer.log('❌ Código SMS incorrecto');
         return null;
       }
@@ -209,7 +209,7 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Flujo normal con Firebase
-      final firebaseUser = userCredential!.user!;
+      final firebaseUser = userCredential.user!;
       
       // Verificar si el usuario ya existe en Firestore
       final existingUser = await _firestoreService.getUserById(firebaseUser.uid);

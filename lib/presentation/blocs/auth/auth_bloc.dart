@@ -107,7 +107,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user != null) {
         emit(AuthAuthenticated(user));
       } else {
-        emit(AuthError('Credenciales incorrectas. Verifica tu email y contraseña.'));
+        emit(const AuthError('Credenciales incorrectas. Verifica tu email y contraseña.'));
       }
     } catch (e) {
       emit(AuthError('Error al iniciar sesión: $e'));
@@ -132,7 +132,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user != null) {
         emit(AuthAuthenticated(user));
       } else {
-        emit(AuthError('Error al crear la cuenta. Intenta nuevamente.'));
+        emit(const AuthError('Error al crear la cuenta. Intenta nuevamente.'));
       }
     } catch (e) {
       emit(AuthError('Error al registrarse: $e'));
@@ -176,7 +176,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       if (user != null) {
         emit(AuthAuthenticated(user));
       } else {
-        emit(AuthError('Código SMS incorrecto. Verifica e intenta nuevamente.'));
+        emit(const AuthError('Código SMS incorrecto. Verifica e intenta nuevamente.'));
       }
     } catch (e) {
       emit(AuthError('Error al verificar código: $e'));
