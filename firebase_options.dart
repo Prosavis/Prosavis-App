@@ -46,29 +46,33 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // TODO: Reemplaza estos valores con los reales de tu proyecto Firebase
+  // Para obtener la configuración real, ejecuta: flutterfire configure
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
-    appId: '1:967024953650:web:abcdef123456',
+    appId: '1:967024953650:web:abcdef123456', // Reemplaza con tu App ID real
     messagingSenderId: '967024953650',
-    projectId: 'prosavis',
-    authDomain: 'prosavis.firebaseapp.com',
-    storageBucket: 'prosavis.firebasestorage.app',
+    projectId: 'prosavis', // Reemplaza con tu Project ID real
+    authDomain: 'prosavis.firebaseapp.com', // Reemplaza con tu Auth Domain real
+    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
-    appId: '1:967024953650:android:1fe7d2346bfbf313af2f2b',
+    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k', // Reemplaza con tu API Key real
+    appId: '1:967024953650:android:1fe7d2346bfbf313af2f2b', // Reemplaza con tu App ID real
     messagingSenderId: '967024953650',
-    projectId: 'prosavis',
-    storageBucket: 'prosavis.firebasestorage.app',
+    projectId: 'prosavis', // Reemplaza con tu Project ID real
+    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
+    authDomain: 'prosavis.firebaseapp.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBPpEb_XZIdZTPhJbJTffv0bNb-gmaUVpo',
-    appId: '1:967024953650:ios:c0927334cc143facaf2f2b',
+    apiKey: 'AIzaSyBPpEb_XZIdZTPhJbJTffv0bNb-gmaUVpo', // Reemplaza con tu API Key real
+    appId: '1:967024953650:ios:c0927334cc143facaf2f2b', // Reemplaza con tu App ID real
     messagingSenderId: '967024953650',
-    projectId: 'prosavis',
-    storageBucket: 'prosavis.firebasestorage.app',
-    iosBundleId: 'com.example.myapp',
+    projectId: 'prosavis', // Reemplaza con tu Project ID real
+    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
+    authDomain: 'prosavis.firebaseapp.com',
+    iosBundleId: 'com.example.myapp', // Reemplaza con tu Bundle ID real
   );
 }

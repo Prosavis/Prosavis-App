@@ -2,7 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:prosavis/data/repositories/auth_repository_impl.dart';
 import 'package:prosavis/data/services/firebase_service.dart';
 import 'package:prosavis/data/services/firestore_service.dart';
-import 'package:prosavis/data/services/local_image_storage_service.dart';
+
 import 'package:prosavis/data/services/image_storage_service.dart';
 import 'package:prosavis/domain/repositories/auth_repository.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_google_usecase.dart';
@@ -11,12 +11,17 @@ import 'package:prosavis/domain/usecases/auth/sign_up_with_email_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_phone_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/verify_phone_code_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/password_reset_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/enroll_mfa_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/sign_in_with_mfa_usecase.dart';
 import 'package:prosavis/domain/repositories/service_repository.dart';
 import 'package:prosavis/data/repositories/service_repository_impl.dart';
 import 'package:prosavis/domain/usecases/services/create_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/search_services_usecase.dart';
+import 'package:prosavis/domain/usecases/services/get_featured_services_usecase.dart';
+import 'package:prosavis/domain/usecases/services/get_nearby_services_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
+import 'package:prosavis/presentation/blocs/home/home_bloc.dart';
 
 import 'dart:developer' as developer;
 
@@ -33,9 +38,7 @@ Future<void> init() async {
     await FirebaseService.initializeFirebase();
     developer.log('✅ Firebase inicializado: ${FirebaseService.isInitialized}');
     
-    if (FirebaseService.isDevelopmentMode) {
-      developer.log('⚠️ Ejecutando en modo desarrollo (sin Firebase real)');
-    }
+
 
     // 2) Register your service and repositories
     sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
@@ -44,8 +47,7 @@ Future<void> init() async {
     sl.registerLazySingleton<FirestoreService>(() => FirestoreService());
     developer.log('✅ FirestoreService registrado');
     
-    sl.registerLazySingleton<LocalImageStorageService>(() => LocalImageStorageService());
-    developer.log('✅ LocalImageStorageService registrado');
+
     
     sl.registerLazySingleton<ImageStorageService>(() => ImageStorageService());
     developer.log('✅ ImageStorageService registrado');
@@ -91,6 +93,16 @@ Future<void> init() async {
     );
     developer.log('✅ PasswordResetUseCase registrado');
 
+    sl.registerLazySingleton<EnrollMFAUseCase>(
+      () => EnrollMFAUseCase(sl<AuthRepository>()),
+    );
+    developer.log('✅ EnrollMFAUseCase registrado');
+
+    sl.registerLazySingleton<SignInWithMFAUseCase>(
+      () => SignInWithMFAUseCase(sl<AuthRepository>()),
+    );
+    developer.log('✅ SignInWithMFAUseCase registrado');
+
     sl.registerLazySingleton<CreateServiceUseCase>(
       () {
         developer.log('🔧 Creando instancia de CreateServiceUseCase...');
@@ -105,6 +117,16 @@ Future<void> init() async {
       () => SearchServicesUseCase(sl<ServiceRepository>()),
     );
     developer.log('✅ SearchServicesUseCase registrado');
+
+    sl.registerLazySingleton<GetFeaturedServicesUseCase>(
+      () => GetFeaturedServicesUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ GetFeaturedServicesUseCase registrado');
+
+    sl.registerLazySingleton<GetNearbyServicesUseCase>(
+      () => GetNearbyServicesUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ GetNearbyServicesUseCase registrado');
 
     // BLoCs
     sl.registerFactory(
@@ -124,6 +146,14 @@ Future<void> init() async {
       () => SearchBloc(sl<SearchServicesUseCase>()),
     );
     developer.log('✅ SearchBloc registrado');
+
+    sl.registerFactory(
+      () => HomeBloc(
+        getFeaturedServicesUseCase: sl<GetFeaturedServicesUseCase>(),
+        getNearbyServicesUseCase: sl<GetNearbyServicesUseCase>(),
+      ),
+    );
+    developer.log('✅ HomeBloc registrado');
 
     // ProfileBloc se registra directamente en main.dart para acceso al AuthBloc
     developer.log('✅ ProfileBloc configurado en main.dart');

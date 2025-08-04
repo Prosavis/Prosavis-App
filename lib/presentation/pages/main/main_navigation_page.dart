@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../home/home_page.dart';
@@ -7,6 +8,9 @@ import '../profile/profile_page.dart';
 import '../services/service_creation_page.dart';
 import '../../../domain/usecases/services/create_service_usecase.dart';
 import '../../../core/injection/injection_container.dart' as di;
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_state.dart';
+import '../../widgets/common/auth_required_dialog.dart';
 
 
 class MainNavigationPage extends StatefulWidget {
@@ -16,22 +20,32 @@ class MainNavigationPage extends StatefulWidget {
   State<MainNavigationPage> createState() => _MainNavigationPageState();
 }
 
-class _MainNavigationPageState extends State<MainNavigationPage> {
+class _MainNavigationPageState extends State<MainNavigationPage> 
+    with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   int _selectedIndex = 0;
   late PageController _pageController;
   List<Widget>? _pages;
 
   @override
+  bool get wantKeepAlive => true; // Mantener estado para evitar reconstrucciones
+
+  @override
   void initState() {
     super.initState();
-    _pageController = PageController();
+    _pageController = PageController(
+      initialPage: 0,
+      keepPage: true, // Optimización: mantener páginas en memoria
+    );
   }
 
   // Lazy loading de las páginas para evitar problemas con GetIt
   List<Widget> get pages {
     _pages ??= [
       HomePage(onProfileTapped: _goToProfile),
-      ServiceCreationPage(createServiceUseCase: di.sl<CreateServiceUseCase>()),
+      // Optimización: Crear páginas con AutomaticKeepAlive cuando sea necesario
+      KeepAlivePage(
+        child: ServiceCreationPage(createServiceUseCase: di.sl<CreateServiceUseCase>()),
+      ),
       const SavedPage(),
       const ProfilePage(),
     ];
@@ -49,6 +63,15 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
   }
 
   void _onItemTapped(int index) {
+    // Verificar autenticación para pestañas protegidas
+    if ((index == 1 || index == 2)) { // Ofrecer (1) y Favoritos (2)
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        _showAuthRequiredDialog(index);
+        return;
+      }
+    }
+
     if (_selectedIndex != index) {
       setState(() {
         _selectedIndex = index;
@@ -61,15 +84,43 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
     }
   }
 
+  void _showAuthRequiredDialog(int attemptedIndex) {
+    final String featureName = attemptedIndex == 1 ? 'ofrecer servicios' : 'favoritos';
+    
+    showDialog(
+      context: context,
+      builder: (context) => AuthRequiredDialog(
+        title: 'Inicia Sesión',
+        message: 'Para acceder a $featureName necesitas iniciar sesión en tu cuenta.',
+        onLoginTapped: () {
+          // Ir a la pestaña de perfil para iniciar sesión
+          setState(() {
+            _selectedIndex = 3;
+          });
+          _pageController.animateToPage(
+            3,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Requerido por AutomaticKeepAliveClientMixin
+    
     return Scaffold(
       body: PageView(
         controller: _pageController,
         onPageChanged: (index) {
-          setState(() {
-            _selectedIndex = index;
-          });
+          // Optimización: Solo setState si el índice realmente cambió
+          if (_selectedIndex != index) {
+            setState(() {
+              _selectedIndex = index;
+            });
+          }
         },
         children: pages, // Usar el getter que maneja lazy loading
       ),
@@ -128,5 +179,29 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         ],
       ),
     );
+  }
+}
+
+/// Widget optimizado que mantiene el estado de sus hijos
+/// Previene reconstrucciones innecesarias de páginas complejas
+class KeepAlivePage extends StatefulWidget {
+  final Widget child;
+  
+  const KeepAlivePage({super.key, required this.child});
+
+  @override
+  State<KeepAlivePage> createState() => _KeepAlivePageState();
+}
+
+class _KeepAlivePageState extends State<KeepAlivePage> 
+    with AutomaticKeepAliveClientMixin {
+  
+  @override
+  bool get wantKeepAlive => true;
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context);
+    return widget.child;
   }
 }

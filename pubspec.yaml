@@ -11,15 +11,15 @@ dependencies:
     sdk: flutter
   
   # UI & Icons
-  cupertino_icons: ^1.0.2
-  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.8
+  google_fonts: ^6.3.0
   provider: ^6.1.5
 
   # State Management
   flutter_bloc: ^9.1.1
   equatable: ^2.0.7
 
-  # Firebase - Versiones compatibles
+  # Firebase - Versiones compatibles actualizadas
   firebase_core: ^4.0.0
   firebase_auth: ^6.0.0
   cloud_firestore: ^6.0.0
@@ -29,40 +29,40 @@ dependencies:
   # Navigation
   go_router: ^16.0.0
 
-  # Dependency Injection
-  get_it: ^7.6.4
+  # Dependency Injection - actualizado
+  get_it: ^8.2.0
 
   # Storage
-  shared_preferences: ^2.2.2
+  shared_preferences: ^2.4.1
 
   # Environment
-  flutter_dotenv: ^5.1.0
+  flutter_dotenv: ^5.2.1
 
-  # UI Enhancements
-  material_symbols_icons: ^4.2719.3
+  # UI Enhancements - actualizados
+  material_symbols_icons: ^4.2858.1
   animations: ^2.0.11
   shimmer: ^3.0.0
   flutter_svg: ^2.0.9
 
-  # Other
+  # Other - actualizados
   intl: ^0.20.2
   lottie: ^3.3.1
-  url_launcher: ^6.2.2
+  url_launcher: ^6.3.1
   
-  # File and sharing
-  share_plus: ^10.1.1
+  # File and sharing - actualizados
+  share_plus: ^11.0.0
   path_provider: ^2.1.4
   path: ^1.9.0
   pdf: ^3.11.1
   image_picker: ^1.1.2
-  permission_handler: ^11.3.1
+  permission_handler: ^12.0.1
 
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
 
 flutter:

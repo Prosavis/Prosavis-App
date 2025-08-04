@@ -477,11 +477,22 @@ class _LoginPageState extends State<LoginPage>
         children: [
         _buildTextField(
           controller: _phoneController,
-          label: 'Número de teléfono',
+          label: 'Número de celular (Colombia)',
           icon: Symbols.phone,
           keyboardType: TextInputType.phone,
-          hintText: '+57 300 123 4567',
+          hintText: '300 123 4567',
+          prefix: const Text('+57 ', style: TextStyle(fontWeight: FontWeight.bold)),
           validator: Validators.validatePhone,
+          onChanged: (value) {
+            // Formatear automáticamente mientras el usuario escribe
+            final formatted = Validators.formatPhoneForDisplay(value);
+            if (formatted != value) {
+              _phoneController.value = TextEditingValue(
+                text: formatted,
+                selection: TextSelection.collapsed(offset: formatted.length),
+              );
+            }
+          },
         ),
         
         const SizedBox(height: 24),
@@ -560,8 +571,10 @@ class _LoginPageState extends State<LoginPage>
     bool isPassword = false,
     bool obscureText = false,
     Widget? suffixIcon,
+    Widget? prefix,
     String? hintText,
     String? Function(String?)? validator,
+    void Function(String)? onChanged,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -580,9 +593,11 @@ class _LoginPageState extends State<LoginPage>
           keyboardType: keyboardType,
           obscureText: obscureText,
           validator: validator,
+          onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: Icon(icon, color: AppTheme.textSecondary),
+            prefix: prefix,
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -848,8 +863,11 @@ class _LoginPageState extends State<LoginPage>
       return;
     }
 
+    // Formatear número colombiano con +57
+    final formattedPhone = Validators.formatColombianPhone(_phoneController.text.trim());
+
     context.read<AuthBloc>().add(AuthSignInWithPhoneRequested(
-      phoneNumber: _phoneController.text.trim(),
+      phoneNumber: formattedPhone,
     ));
   }
 

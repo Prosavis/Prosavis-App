@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../services/firebase_service.dart';
@@ -46,22 +47,11 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.signInWithGoogle();
       
-      if (userCredential?.user == null && !FirebaseService.isDevelopmentMode) {
+      if (userCredential?.user == null) {
         developer.log('❌ Google Sign-In cancelado por el usuario');
         return null;
       }
 
-      // En modo desarrollo, crear usuario mock
-      if (FirebaseService.isDevelopmentMode) {
-        final mockUser = _firebaseService.getCurrentUser();
-        if (mockUser != null) {
-          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
-          developer.log('✅ Usuario mock creado: ${userEntity.email}');
-          return userEntity;
-        }
-      }
-
-      // Flujo normal con Firebase
       final firebaseUser = userCredential!.user!;
       
       // Verificar si el usuario ya existe en Firestore
@@ -101,22 +91,6 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.signInWithEmail(email, password);
       
-      if (userCredential.user == null && !FirebaseService.isDevelopmentMode) {
-        developer.log('❌ Credenciales incorrectas');
-        return null;
-      }
-
-      // En modo desarrollo, crear usuario mock
-      if (FirebaseService.isDevelopmentMode) {
-        final mockUser = _firebaseService.getCurrentUser();
-        if (mockUser != null) {
-          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
-          developer.log('✅ Usuario mock creado: ${userEntity.email}');
-          return userEntity;
-        }
-      }
-
-      // Flujo normal con Firebase
       final firebaseUser = userCredential.user!;
       
       // Verificar si el usuario ya existe en Firestore
@@ -142,25 +116,17 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       developer.log('🚀 Registrando usuario con email...');
       
-      final userCredential = await _firebaseService.signUpWithEmail(email, password, name);
+      final userCredential = await _firebaseService.signUpWithEmail(email, password);
       
       if (userCredential.user == null) {
         developer.log('❌ Error en registro: Usuario no creado');
         return null;
       }
 
-      // En modo desarrollo, crear usuario mock
-      if (FirebaseService.isDevelopmentMode) {
-        final mockUser = _firebaseService.getCurrentUser();
-        if (mockUser != null) {
-          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
-          developer.log('✅ Usuario mock registrado: ${userEntity.email}');
-          return userEntity;
-        }
-      }
-
-      // Flujo normal con Firebase
       final firebaseUser = userCredential.user!;
+      
+      // Actualizar el displayName del usuario
+      await firebaseUser.updateDisplayName(name);
       
       // Crear usuario en Firestore
       final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
@@ -193,22 +159,6 @@ class AuthRepositoryImpl implements AuthRepository {
       
       final userCredential = await _firebaseService.verifyPhoneCode(verificationId, smsCode);
       
-      if (userCredential.user == null && !FirebaseService.isDevelopmentMode) {
-        developer.log('❌ Código SMS incorrecto');
-        return null;
-      }
-
-      // En modo desarrollo, crear usuario mock
-      if (FirebaseService.isDevelopmentMode) {
-        final mockUser = _firebaseService.getCurrentUser();
-        if (mockUser != null) {
-          final userEntity = await _firestoreService.createUserFromFirebaseUser(mockUser);
-          developer.log('✅ Usuario mock verificado: ${userEntity.email}');
-          return userEntity;
-        }
-      }
-
-      // Flujo normal con Firebase
       final firebaseUser = userCredential.user!;
       
       // Verificar si el usuario ya existe en Firestore
@@ -252,6 +202,35 @@ class AuthRepositoryImpl implements AuthRepository {
     }
   }
 
+  // Método para forzar limpieza completa del estado de autenticación
+  Future<void> forceCompleteSignOut() async {
+    try {
+      developer.log('🧹 Forzando limpieza completa de autenticación...');
+      await _firebaseService.forceCompleteSignOut();
+      developer.log('✅ Limpieza completa exitosa');
+    } catch (e) {
+      developer.log('⚠️ Error en limpieza completa: $e');
+      rethrow;
+    }
+  }
+
+  // Método de diagnóstico
+  void diagnoseAuthState() {
+    _firebaseService.diagnoseAuthState();
+  }
+
+  // Verificar si el usuario actual es anónimo
+  @override
+  bool isCurrentUserAnonymous() {
+    try {
+      final firebaseUser = _firebaseService.getCurrentUser();
+      return firebaseUser?.isAnonymous ?? false;
+    } catch (e) {
+      developer.log('⚠️ Error verificando usuario anónimo: $e');
+      return false; // Por seguridad, asumir que no es anónimo
+    }
+  }
+
   @override
   Stream<UserEntity?> get authStateChanges {
     return _firebaseService.authStateChanges.asyncMap((firebaseUser) async {
@@ -272,5 +251,124 @@ class AuthRepositoryImpl implements AuthRepository {
         return null;
       }
     });
+  }
+
+  // === AUTENTICACIÓN DE MÚLTIPLES FACTORES (MFA) ===
+
+  @override
+  Future<UserEntity?> signInWithEmailAndMFA(String email, String password) async {
+    try {
+      developer.log('🔐 Iniciando sesión con email y soporte MFA...');
+      
+      final userCredential = await _firebaseService.signInWithEmailAndMFA(email, password);
+      
+      final firebaseUser = userCredential.user!;
+      
+      // Verificar si el usuario ya existe en Firestore
+      final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
+      
+      if (existingUser != null) {
+        developer.log('✅ Usuario MFA autenticado: ${existingUser.email}');
+        return existingUser;
+      } else {
+        // Usuario nuevo, crear en Firestore
+        final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
+        developer.log('✅ Nuevo usuario MFA creado: ${newUser.email}');
+        return newUser;
+      }
+    } catch (e) {
+      if (e is MFARequiredException) {
+        developer.log('🔐 MFA requerido - lanzando excepción para manejo en UI');
+        rethrow; // Permitir que la UI maneje la resolución MFA
+      }
+      developer.log('⚠️ Error en signInWithEmailAndMFA: $e');
+      return null;
+    }
+  }
+
+  @override
+  Future<void> enrollSecondFactor(String phoneNumber) async {
+    try {
+      developer.log('🔐 Iniciando inscripción de segundo factor...');
+      await _firebaseService.enrollSecondFactor(phoneNumber);
+      developer.log('✅ Inscripción de segundo factor iniciada');
+    } catch (e) {
+      developer.log('⚠️ Error al inscribir segundo factor: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> finalizeSecondFactorEnrollment(String verificationId, String smsCode, String displayName) async {
+    try {
+      developer.log('🔐 Finalizando inscripción de segundo factor...');
+      await _firebaseService.finalizeSecondFactorEnrollment(verificationId, smsCode, displayName);
+      developer.log('✅ Segundo factor inscrito exitosamente');
+    } catch (e) {
+      developer.log('⚠️ Error al finalizar inscripción de segundo factor: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<String> sendMFAVerificationCode(MultiFactorResolver resolver, int selectedHintIndex) async {
+    try {
+      developer.log('🔐 Enviando código de verificación MFA...');
+      final verificationId = await _firebaseService.sendMFAVerificationCode(resolver, selectedHintIndex);
+      developer.log('✅ Código MFA enviado');
+      return verificationId;
+    } catch (e) {
+      developer.log('⚠️ Error al enviar código MFA: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<UserEntity?> resolveMFA(MultiFactorResolver resolver, String verificationId, String smsCode) async {
+    try {
+      developer.log('🔐 Resolviendo MFA...');
+      
+      final userCredential = await _firebaseService.resolveMFA(resolver, verificationId, smsCode);
+      
+      final firebaseUser = userCredential.user!;
+      
+      // Verificar si el usuario ya existe en Firestore
+      final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
+      
+      if (existingUser != null) {
+        developer.log('✅ MFA resuelto - usuario autenticado: ${existingUser.email}');
+        return existingUser;
+      } else {
+        // Usuario nuevo, crear en Firestore
+        final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);
+        developer.log('✅ MFA resuelto - nuevo usuario creado: ${newUser.email}');
+        return newUser;
+      }
+    } catch (e) {
+      developer.log('⚠️ Error al resolver MFA: $e');
+      return null;
+    }
+  }
+
+  @override
+  List<MultiFactorInfo> getEnrolledFactors() {
+    return _firebaseService.getEnrolledFactors();
+  }
+
+  @override
+  Future<void> unenrollFactor(MultiFactorInfo factorInfo) async {
+    try {
+      developer.log('🔐 Desinscribiendo factor...');
+      await _firebaseService.unenrollFactor(factorInfo);
+      developer.log('✅ Factor desinscrito exitosamente');
+    } catch (e) {
+      developer.log('⚠️ Error al desinscribir factor: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  bool hasMultiFactorEnabled() {
+    return _firebaseService.hasMultiFactorEnabled();
   }
 }

@@ -18,6 +18,7 @@ import '../../../domain/entities/user_entity.dart';
 import '../../../data/services/firestore_service.dart';
 import '../../../data/services/image_storage_service.dart';
 import '../../../core/injection/injection_container.dart' as di;
+import '../../widgets/common/optimized_image.dart';
 import 'dart:io';
 
 class EditProfilePage extends StatefulWidget {
@@ -64,21 +65,30 @@ class _EditProfilePageState extends State<EditProfilePage>
     context.read<ProfileBloc>().add(LoadProfile());
   }
 
-  ImageProvider? _getProfileImage(AuthState authState) {
-    // Si hay una imagen seleccionada localmente, mostrarla
-    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
-      if (_profileImageUrl!.startsWith('http')) {
-        // Es una URL de Firebase
-        return NetworkImage(_profileImageUrl!);
-      } else {
-        // Es una ruta local
-        return FileImage(File(_profileImageUrl!));
-      }
+  /// Optimización: Obtener URL de imagen de red para el widget optimizado
+  String? _getProfileImageUrl(AuthState authState) {
+    // Si hay una imagen seleccionada localmente y es URL, mostrarla
+    if (_profileImageUrl != null && 
+        _profileImageUrl!.isNotEmpty && 
+        _profileImageUrl!.startsWith('http')) {
+      return _profileImageUrl!;
     }
     
     // Si no hay imagen local, usar la del usuario autenticado
     if (authState is AuthAuthenticated && authState.user.photoUrl != null) {
-      return NetworkImage(authState.user.photoUrl!);
+      return authState.user.photoUrl!;
+    }
+    
+    return null;
+  }
+  
+  /// Optimización: Obtener ruta local de imagen para el widget optimizado
+  String? _getLocalImagePath() {
+    // Si hay una imagen seleccionada localmente y no es URL, mostrarla
+    if (_profileImageUrl != null && 
+        _profileImageUrl!.isNotEmpty && 
+        !_profileImageUrl!.startsWith('http')) {
+      return _profileImageUrl!;
     }
     
     return null;
@@ -196,28 +206,45 @@ class _EditProfilePageState extends State<EditProfilePage>
                   builder: (context, authState) {
                     return Stack(
                       children: [
-                        CircleAvatar(
-                          radius: 60,
-                          backgroundImage: _getProfileImage(authState),
-                          backgroundColor: AppTheme.primaryColor,
-                          child: _getProfileImage(authState) == null
-                              ? (authState is AuthAuthenticated
-                                  ? Text(
-                                      authState.user.name.isNotEmpty 
-                                          ? authState.user.name[0].toUpperCase()
-                                          : 'U',
-                                      style: GoogleFonts.inter(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 40,
+                        ClipOval(
+                          child: SizedBox(
+                            width: 120,
+                            height: 120,
+                            child: OptimizedImage(
+                              imageUrl: _getProfileImageUrl(authState),
+                              localPath: _getLocalImagePath(),
+                              width: 120,
+                              height: 120,
+                              fit: BoxFit.cover,
+                              cacheWidth: 200,
+                              cacheHeight: 200,
+                              placeholder: Container(
+                                width: 120,
+                                height: 120,
+                                color: AppTheme.primaryColor,
+                                child: authState is AuthAuthenticated
+                                    ? Center(
+                                        child: Text(
+                                          authState.user.name.isNotEmpty 
+                                              ? authState.user.name[0].toUpperCase()
+                                              : 'U',
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 40,
+                                          ),
+                                        ),
+                                      )
+                                    : const Center(
+                                        child: Icon(
+                                          Symbols.person,
+                                          size: 60,
+                                          color: Colors.white,
+                                        ),
                                       ),
-                                    )
-                                  : const Icon(
-                                      Symbols.person,
-                                      size: 60,
-                                      color: Colors.white,
-                                    ))
-                              : null,
+                              ),
+                            ),
+                          ),
                         ),
                         Positioned(
                           bottom: 0,
@@ -500,6 +527,10 @@ class _EditProfilePageState extends State<EditProfilePage>
   }
 
   Future<void> _captureImage() async {
+    // Capturar referencias al context ANTES de cualquier operación asíncrona
+    final authBloc = context.read<AuthBloc>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
     try {
       // Solicitar permiso de cámara
       final cameraStatus = await Permission.camera.status;
@@ -519,9 +550,10 @@ class _EditProfilePageState extends State<EditProfilePage>
       );
 
       if (image != null) {
+        
         // Mostrar indicador de carga
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Row(
                 children: [
@@ -543,7 +575,7 @@ class _EditProfilePageState extends State<EditProfilePage>
 
         try {
           // Obtener el usuario actual para el ID
-          final authState = context.read<AuthBloc>().state;
+          final authState = authBloc.state;
           if (authState is AuthAuthenticated) {
             final imageStorageService = di.sl<ImageStorageService>();
             final uploadedUrl = await imageStorageService.uploadProfileImage(
@@ -556,25 +588,23 @@ class _EditProfilePageState extends State<EditProfilePage>
                 _profileImageUrl = uploadedUrl;
               });
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
-                      style: GoogleFonts.inter(),
-                    ),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
+                    style: GoogleFonts.inter(),
                   ),
-                );
-              }
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             } else {
               throw Exception('Error al subir la imagen');
             }
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(
                   'Error al subir imagen: ${e.toString()}',
@@ -604,6 +634,10 @@ class _EditProfilePageState extends State<EditProfilePage>
   }
 
   Future<void> _selectFromGallery() async {
+    // Capturar referencias al context ANTES de cualquier operación asíncrona
+    final authBloc = context.read<AuthBloc>();
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    
     try {
       // Solicitar permiso de galería
       final photosStatus = await Permission.photos.status;
@@ -623,9 +657,10 @@ class _EditProfilePageState extends State<EditProfilePage>
       );
 
       if (image != null) {
+        
         // Mostrar indicador de carga
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
+          scaffoldMessenger.showSnackBar(
             SnackBar(
               content: Row(
                 children: [
@@ -647,7 +682,7 @@ class _EditProfilePageState extends State<EditProfilePage>
 
         try {
           // Obtener el usuario actual para el ID
-          final authState = context.read<AuthBloc>().state;
+          final authState = authBloc.state;
           if (authState is AuthAuthenticated) {
             final imageStorageService = di.sl<ImageStorageService>();
             final uploadedUrl = await imageStorageService.uploadProfileImage(
@@ -660,25 +695,23 @@ class _EditProfilePageState extends State<EditProfilePage>
                 _profileImageUrl = uploadedUrl;
               });
 
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
-                      style: GoogleFonts.inter(),
-                    ),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
+              scaffoldMessenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
+                    style: GoogleFonts.inter(),
                   ),
-                );
-              }
+                  backgroundColor: Colors.green,
+                  behavior: SnackBarBehavior.floating,
+                ),
+              );
             } else {
               throw Exception('Error al subir la imagen');
             }
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
+            scaffoldMessenger.showSnackBar(
               SnackBar(
                 content: Text(
                   'Error al subir imagen: ${e.toString()}',

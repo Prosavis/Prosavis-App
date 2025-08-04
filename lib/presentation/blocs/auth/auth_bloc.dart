@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:developer' as developer;
 import '../../../domain/repositories/auth_repository.dart';
 import '../../../domain/usecases/auth/sign_in_with_google_usecase.dart';
 import '../../../domain/usecases/auth/sign_in_with_email_usecase.dart';
@@ -56,23 +57,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   ) async {
     emit(AuthLoading());
     
+    // 🔍 DIAGNÓSTICO: Verificar estado de autenticación al inicio
+    developer.log('🚀 === INICIANDO AUTHBLOC ===');
+    _authRepository.diagnoseAuthState();
+    
     // Escuchar cambios en el estado de autenticación
     _authStateSubscription?.cancel();
     _authStateSubscription = _authRepository.authStateChanges.listen(
       (user) => add(AuthUserChanged(user)),
     );
     
-    // Verificar si hay un usuario actual
+    // Verificar si hay un usuario actual - RESPETANDO PERSISTENCIA NATURAL
     try {
       final currentUser = await _authRepository.getCurrentUser();
       if (currentUser != null) {
-        emit(AuthAuthenticated(currentUser));
+        developer.log('👤 Usuario persistente encontrado:');
+        developer.log('   - ID: ${currentUser.id}');
+        developer.log('   - Email: ${currentUser.email}');
+        developer.log('   - Nombre: ${currentUser.name}');
+        
+        // 🔍 VERIFICACIÓN ESPECIAL: Limpiar solo usuarios anónimos de pruebas anteriores
+        await _checkAndCleanAnonymousUser(currentUser, emit);
       } else {
+        developer.log('📱 No hay usuario autenticado - Iniciando navegación pública');
         emit(AuthUnauthenticated());
       }
     } catch (e) {
+      developer.log('❌ Error al verificar autenticación inicial: $e');
       emit(AuthError('Error al verificar autenticación: $e'));
     }
+    
+    developer.log('🎯 === AUTHBLOC INICIADO ===');
   }
 
   Future<void> _onAuthSignInWithGoogleRequested(
@@ -230,6 +245,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) {
     emit(AuthAuthenticated(event.user));
+  }
+
+  /// Verificación inteligente: limpiar solo usuarios anónimos, mantener usuarios reales
+  Future<void> _checkAndCleanAnonymousUser(dynamic currentUser, Emitter<AuthState> emit) async {
+    try {
+      // Verificar si el usuario actual es anónimo usando el repositorio
+      final isAnonymous = _authRepository.isCurrentUserAnonymous();
+      
+      if (isAnonymous) {
+        developer.log('🧹 USUARIO ANÓNIMO DETECTADO - Limpiando para evitar confusión...');
+        developer.log('   Este usuario anónimo probablemente es de pruebas anteriores.');
+        developer.log('   Los usuarios anónimos no son parte del flujo normal de la app.');
+        await _authRepository.forceCompleteSignOut();
+        emit(AuthUnauthenticated());
+        developer.log('✅ Usuario anónimo limpiado - Navegación pública habilitada');
+      } else {
+        developer.log('✅ Usuario real encontrado - Manteniendo sesión persistente');
+        developer.log('   Este es un usuario legítimo que debemos mantener logueado.');
+        emit(AuthAuthenticated(currentUser));
+        developer.log('🎉 Sesión de usuario real restaurada correctamente');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error en verificación de usuario: $e');
+      // En caso de error, mantener la sesión por seguridad (favorecer al usuario)
+      developer.log('   Manteniendo sesión por precaución...');
+      emit(AuthAuthenticated(currentUser));
+    }
   }
 
   @override

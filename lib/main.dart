@@ -15,7 +15,8 @@ import 'presentation/blocs/theme/theme_state.dart';
 import 'presentation/blocs/search/search_bloc.dart';
 import 'presentation/blocs/search/search_event.dart';
 import 'presentation/blocs/profile/profile_bloc.dart';
-import 'data/services/local_image_storage_service.dart';
+import 'presentation/blocs/home/home_bloc.dart';
+import 'data/services/image_storage_service.dart';
 import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/main/main_navigation_page.dart';
 import 'presentation/pages/auth/login_page.dart';
@@ -35,6 +36,7 @@ import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
 
 void main() async {
+  // Optimización: Defer first frame para inicialización más suave
   WidgetsFlutterBinding.ensureInitialized();
   
   bool dependenciesInitialized = false;
@@ -42,21 +44,20 @@ void main() async {
   try {
     developer.log('🚀 Iniciando aplicación Prosavis...');
     
-    // Inicializar sistema de inyección de dependencias
-    await di.init();
-    dependenciesInitialized = true;
+    // Optimización: Inicialización en paralelo cuando sea posible
+    await Future.wait([
+      // Inicializar sistema de inyección de dependencias
+      di.init(),
+      // Precargar activos críticos si los hay
+      _preloadCriticalAssets(),
+    ]);
     
-    // Configurar Firestore según el modo
-    FirestoreService.setDevelopmentMode(FirebaseService.isDevelopmentMode);
+    dependenciesInitialized = true;
     
     // Diagnosticar configuración de Firebase para debugging
     FirebaseService.diagnoseFirebaseConfiguration();
     
-    if (FirebaseService.isDevelopmentMode) {
-      developer.log('🔧 Aplicación iniciada en MODO DESARROLLO');
-    } else {
-      developer.log('✅ Aplicación iniciada con Firebase configurado');
-    }
+    developer.log('✅ Aplicación iniciada con Firebase configurado');
     
   } catch (e, stackTrace) {
     developer.log('❌ Error crítico en inicialización: $e');
@@ -65,6 +66,13 @@ void main() async {
   }
   
   runApp(MyApp(dependenciesReady: dependenciesInitialized));
+}
+
+/// Optimización: Precargar activos críticos para mejorar rendimiento inicial
+Future<void> _preloadCriticalAssets() async {
+  // Aquí se pueden precargar imágenes, fuentes o datos críticos
+  // Por ahora es un placeholder para futuras optimizaciones
+  await Future.delayed(Duration.zero);
 }
 
 final _router = GoRouter(
@@ -181,12 +189,15 @@ class MyApp extends StatelessWidget {
         BlocProvider<SearchBloc>(
           create: (_) => di.sl<SearchBloc>()..add(LoadRecentSearches()),
         ),
+        BlocProvider<HomeBloc>(
+          create: (_) => di.sl<HomeBloc>(),
+        ),
         BlocProvider<ThemeBloc>(
           create: (context) => ThemeBloc(),
         ),
         BlocProvider<ProfileBloc>(
           create: (context) => ProfileBloc(
-            localImageStorageService: di.sl<LocalImageStorageService>(),
+            imageStorageService: di.sl<ImageStorageService>(),
             firestoreService: di.sl<FirestoreService>(),
             authBloc: context.read<AuthBloc>(),
           ),

@@ -70,7 +70,7 @@ class Validators {
     return null;
   }
 
-  // Validación de teléfono
+  // Validación de teléfono colombiano (10 dígitos)
   static String? validatePhone(String? value) {
     if (value == null || value.isEmpty) {
       return 'El teléfono es obligatorio';
@@ -79,15 +79,42 @@ class Validators {
     // Remover espacios y caracteres especiales
     final cleanPhone = value.replaceAll(RegExp(r'[^\d]'), '');
     
-    if (cleanPhone.length < 10) {
-      return 'El teléfono debe tener al menos 10 dígitos';
+    if (cleanPhone.length != 10) {
+      return 'Ingresa un número válido de 10 dígitos';
     }
     
-    if (cleanPhone.length > 15) {
-      return 'El teléfono no puede exceder 15 dígitos';
+    // Validar que empiece con 3 (celulares colombianos)
+    if (!cleanPhone.startsWith('3')) {
+      return 'El número debe ser un celular (empezar con 3)';
     }
     
     return null;
+  }
+
+  // Formatear número colombiano para Firebase (+57)
+  static String formatColombianPhone(String phoneNumber) {
+    // Remover espacios y caracteres especiales
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Agregar +57 si no lo tiene
+    if (cleanPhone.length == 10 && cleanPhone.startsWith('3')) {
+      return '+57$cleanPhone';
+    }
+    
+    return phoneNumber; // Retornar original si no cumple formato
+  }
+
+  // Formatear número para mostrar en UI (con espacios)
+  static String formatPhoneForDisplay(String phoneNumber) {
+    // Remover espacios y caracteres especiales
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    
+    if (cleanPhone.length == 10) {
+      // Formato: 300 123 4567
+      return '${cleanPhone.substring(0, 3)} ${cleanPhone.substring(3, 6)} ${cleanPhone.substring(6)}';
+    }
+    
+    return phoneNumber;
   }
 
   // Validación de confirmación de contraseña

@@ -349,10 +349,8 @@ Para ver los términos completos, descarga nuestra aplicación.
 🌐 www.prosavis.com
 ''';
 
-      await Share.share(
-        shareText,
-        subject: 'Términos y Condiciones - ${AppConstants.appName}',
-      );
+      // ignore: deprecated_member_use
+      await Share.share(shareText);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -488,10 +486,8 @@ Para ver los términos completos, descarga nuestra aplicación.
       }
 
       // Compartir el archivo PDF
-      await Share.shareXFiles(
-        [XFile(file.path)],
-        text: 'Términos y Condiciones - ${AppConstants.appName}',
-      );
+      // ignore: deprecated_member_use
+      await Share.shareXFiles([XFile(file.path)]);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

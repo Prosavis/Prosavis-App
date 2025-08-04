@@ -1,6 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:developer' as developer;
-import '../../../data/services/local_image_storage_service.dart';
+import '../../../data/services/image_storage_service.dart';
 import '../../../data/services/firestore_service.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../auth/auth_bloc.dart';
@@ -10,15 +10,15 @@ import 'profile_event.dart';
 import 'profile_state.dart';
 
 class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
-  final LocalImageStorageService _localImageStorageService;
+  final ImageStorageService _imageStorageService;
   final FirestoreService _firestoreService;
   final AuthBloc _authBloc;
 
   ProfileBloc({
-    required LocalImageStorageService localImageStorageService,
+    required ImageStorageService imageStorageService,
     required FirestoreService firestoreService,
     required AuthBloc authBloc,
-  })  : _localImageStorageService = localImageStorageService,
+  })  : _imageStorageService = imageStorageService,
         _firestoreService = firestoreService,
         _authBloc = authBloc,
         super(ProfileInitial()) {
@@ -74,24 +74,24 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       final currentUser = authState.user;
       
-      // Guardar nueva imagen localmente
-      final newPhotoPath = await _localImageStorageService.updateProfileImage(
+      // Subir nueva imagen a Firebase Storage
+      final newPhotoUrl = await _imageStorageService.updateProfileImage(
         currentUser.id,
         event.imageFile,
         currentUser.photoUrl,
       );
 
-      if (newPhotoPath == null) {
-        emit(const ProfileError('Error al guardar la imagen'));
+      if (newPhotoUrl == null) {
+        emit(const ProfileError('Error al subir la imagen a Firebase Storage'));
         return;
       }
 
-      // Actualizar usuario en Firestore con la nueva ruta local
+      // Actualizar usuario en Firestore con la nueva URL de Firebase Storage
       final updatedUser = UserEntity(
         id: currentUser.id,
         name: currentUser.name,
         email: currentUser.email,
-        photoUrl: newPhotoPath,
+        photoUrl: newPhotoUrl,
         phoneNumber: currentUser.phoneNumber,
         createdAt: currentUser.createdAt,
         updatedAt: DateTime.now(),
@@ -102,7 +102,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Actualizar el AuthBloc con el usuario actualizado
       _authBloc.add(AuthUserUpdated(updatedUser));
 
-      emit(ProfilePhotoUpdated(newPhotoPath));
+      emit(ProfilePhotoUpdated(newPhotoUrl));
       developer.log('✅ Foto de perfil actualizada exitosamente');
 
     } catch (e) {
@@ -127,9 +127,9 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
 
       final currentUser = authState.user;
 
-      // Eliminar imagen actual si existe
+      // Eliminar imagen actual si existe en Firebase Storage
       if (currentUser.photoUrl != null && currentUser.photoUrl!.isNotEmpty) {
-        await _localImageStorageService.deleteProfileImage(currentUser.id, currentUser.photoUrl);
+        await _imageStorageService.deleteProfileImage(currentUser.photoUrl!);
       }
 
       // Actualizar usuario en Firestore (sin foto)

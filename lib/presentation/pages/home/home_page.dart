@@ -9,10 +9,13 @@ import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
-
+import '../../blocs/home/home_bloc.dart';
+import '../../blocs/home/home_event.dart';
+import '../../blocs/home/home_state.dart';
 
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
+import '../../widgets/common/auth_required_dialog.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
 
@@ -45,6 +48,11 @@ class _HomePageState extends State<HomePage>
     );
 
     _fadeController.forward();
+    
+    // Cargar servicios al inicializar
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeBloc>().add(LoadHomeServices());
+    });
   }
 
   @override
@@ -67,6 +75,20 @@ class _HomePageState extends State<HomePage>
     
     // Si es una URL, usar NetworkImage
     return NetworkImage(photoUrl);
+  }
+
+  /// Muestra diálogo de autenticación requerida
+  void _showAuthRequiredDialog(String featureName) {
+    showDialog(
+      context: context,
+      builder: (context) => AuthRequiredDialog(
+        title: 'Inicia Sesión',
+        message: 'Para acceder a $featureName necesitas iniciar sesión en tu cuenta.',
+        onLoginTapped: () {
+          widget.onProfileTapped?.call();
+        },
+      ),
+    );
   }
 
   @override
@@ -234,10 +256,10 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             
-            // Notifications
+            // Notifications - Protegido para usuarios anónimos
             IconButton(
               onPressed: () {
-                context.push('/notifications');
+                _showAuthRequiredDialog('las notificaciones');
               },
               icon: const Icon(
                 Symbols.notifications,
@@ -424,119 +446,254 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildFeaturedServicesSection() {
-    return SliverToBoxAdapter(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Text(
-              'Servicios Destacados',
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        return SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(AppConstants.paddingMedium),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Servicios Destacados',
+                      style: GoogleFonts.inter(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.textPrimary,
+                      ),
+                    ),
+                    if (state is HomeLoading)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: 220,
+                child: _buildFeaturedServicesList(state),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFeaturedServicesList(HomeState state) {
+    if (state is HomeLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (state is HomeError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Symbols.error,
+              color: AppTheme.errorColor,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Error al cargar servicios',
               style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textSecondary,
+                fontSize: 14,
               ),
             ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                context.read<HomeBloc>().add(RefreshHomeServices());
+              },
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (state is HomeLoaded) {
+      if (state.featuredServices.isEmpty) {
+        return Center(
+          child: Text(
+            'No hay servicios disponibles',
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+            ),
           ),
-          SizedBox(
-            height: 220,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
-              itemCount: 5, // Mock data
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: ServiceCard(
-                    title: 'Servicio ${index + 1}',
-                    provider: 'Proveedor ${index + 1}',
-                    price: 50.0 + (index * 10),
-                    rating: 4.5 + (index * 0.1),
-                    onTap: () {
-                      final mockService = ServiceItem(
-                        id: 'featured_$index',
-                        title: 'Servicio ${index + 1}',
-                        provider: 'Proveedor ${index + 1}',
-                        price: 50.0 + (index * 10),
-                        rating: 4.5 + (index * 0.1),
-                        category: 'General',
-                        description: 'Servicio profesional destacado con años de experiencia.',
-                        isAvailable: true,
-                        distance: 2.5 + index,
-                      );
-                      
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ServiceDetailsPage(service: mockService),
-                        ),
-                      );
-                    },
+        );
+      }
+
+      return ListView.builder(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+        itemCount: state.featuredServices.length,
+        itemBuilder: (context, index) {
+          final service = state.featuredServices[index];
+          return Padding(
+            padding: const EdgeInsets.only(right: 12),
+            child: ServiceCard(
+              title: service.title,
+              provider: service.providerName,
+              price: service.price,
+              rating: service.rating,
+              imageUrl: service.images.isNotEmpty ? service.images.first : null,
+              onTap: () {
+                final serviceItem = ServiceItem(
+                  id: service.id,
+                  title: service.title,
+                  provider: service.providerName,
+                  price: service.price,
+                  rating: service.rating,
+                  category: service.category,
+                  description: service.description,
+                  isAvailable: service.isActive,
+                  distance: 2.5, // Por defecto, puede ser calculado en el futuro
+                  imageUrl: service.images.isNotEmpty ? service.images.first : null,
+                );
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ServiceDetailsPage(service: serviceItem),
                   ),
                 );
               },
             ),
-          ),
-        ],
-      ),
-    );
+          );
+        },
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
   Widget _buildNearbyServicesSection() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+    return BlocBuilder<HomeBloc, HomeState>(
+      builder: (context, state) {
+        return SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.all(AppConstants.paddingMedium),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Cerca de ti',
+                  style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildNearbyServicesList(state),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildNearbyServicesList(HomeState state) {
+    if (state is HomeLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (state is HomeError) {
+      return Center(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            const Icon(
+              Symbols.error,
+              color: AppTheme.errorColor,
+              size: 32,
+            ),
+            const SizedBox(height: 8),
             Text(
-              'Cerca de ti',
+              'Error al cargar servicios cercanos',
               style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.textSecondary,
+                fontSize: 14,
               ),
             ),
-            const SizedBox(height: 16),
-            // Mock nearby services
-            ...List.generate(
-              3,
-              (index) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: ServiceCard(
-                  title: 'Servicio Cercano ${index + 1}',
-                  provider: 'Proveedor Local ${index + 1}',
-                  price: 30.0 + (index * 15),
-                  rating: 4.0 + (index * 0.2),
-                  isHorizontal: true,
-                  onTap: () {
-                    final mockService = ServiceItem(
-                      id: 'nearby_$index',
-                      title: 'Servicio Cercano ${index + 1}',
-                      provider: 'Proveedor Local ${index + 1}',
-                      price: 30.0 + (index * 15),
-                      rating: 4.0 + (index * 0.2),
-                      category: 'Local',
-                      description: 'Servicio local cercano a tu ubicación.',
-                      isAvailable: true,
-                      distance: 0.5 + (index * 0.3),
-                    );
-                    
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => ServiceDetailsPage(service: mockService),
-                      ),
-                    );
-                  },
-                ),
-              ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () {
+                context.read<HomeBloc>().add(RefreshHomeServices());
+              },
+              child: const Text('Reintentar'),
             ),
           ],
         ),
-      ),
-    );
+      );
+    }
+
+    if (state is HomeLoaded) {
+      if (state.nearbyServices.isEmpty) {
+        return Center(
+          child: Text(
+            'No hay servicios cercanos disponibles',
+            style: GoogleFonts.inter(
+              color: AppTheme.textSecondary,
+              fontSize: 14,
+            ),
+          ),
+        );
+      }
+
+      return Column(
+        children: state.nearbyServices.map((service) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: ServiceCard(
+              title: service.title,
+              provider: service.providerName,
+              price: service.price,
+              rating: service.rating,
+              imageUrl: service.images.isNotEmpty ? service.images.first : null,
+              isHorizontal: true,
+              onTap: () {
+                final serviceItem = ServiceItem(
+                  id: service.id,
+                  title: service.title,
+                  provider: service.providerName,
+                  price: service.price,
+                  rating: service.rating,
+                  category: service.category,
+                  description: service.description,
+                  isAvailable: service.isActive,
+                  distance: 0.5, // Por defecto, puede ser calculado en el futuro
+                  imageUrl: service.images.isNotEmpty ? service.images.first : null,
+                );
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ServiceDetailsPage(service: serviceItem),
+                  ),
+                );
+              },
+            ),
+          );
+        }).toList(),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 
 

@@ -10,14 +10,14 @@ service cloud.firestore {
     }
     
     // === SERVICIOS ===
-    // Permitir a todos los usuarios autenticados leer servicios
-    // Solo el propietario puede modificar sus servicios
+    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede explorar servicios
+    // 🔒 CREACIÓN PRIVADA: Solo usuarios autenticados pueden crear/modificar
     match /services/{serviceId} {
-      allow read: if request.auth != null;
+      allow read: if true; // 📖 Lectura pública para navegación
       allow create: if request.auth != null && 
-                   request.auth.uid == resource.data.providerId;
+                   request.auth.uid == resource.data.providerId; // 🔐 Solo usuarios reales
       allow update, delete: if request.auth != null && 
-                           request.auth.uid == resource.data.providerId;
+                           request.auth.uid == resource.data.providerId; // 🔐 Solo propietario
     }
     
     // === RESERVAS ===
@@ -29,11 +29,12 @@ service cloud.firestore {
     }
     
     // === CATEGORÍAS ===
-    // Solo lectura para todos los usuarios autenticados
+    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede ver categorías
+    // 🔒 ADMINISTRACIÓN PRIVADA: Solo administradores pueden modificar
     match /categories/{categoryId} {
-      allow read: if request.auth != null;
+      allow read: if true; // 📖 Lectura pública para navegación
       // Las categorías solo pueden ser modificadas por administradores
-      allow write: if false; // Por ahora deshabilitar escritura
+      allow write: if false; // 🔐 Solo administradores (backend)
     }
     
     // === MENSAJES/CHAT ===
