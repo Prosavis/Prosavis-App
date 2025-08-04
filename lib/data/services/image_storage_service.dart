@@ -3,18 +3,37 @@ import 'dart:developer' as developer;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:path/path.dart' as path;
 import '../../core/constants/app_constants.dart';
+import 'firebase_service.dart';
 
 class ImageStorageService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
+  static FirebaseStorage? _storage;
+  static bool get isDevelopmentMode => FirebaseService.isDevelopmentMode;
+
+  FirebaseStorage? get storage {
+    if (isDevelopmentMode) return null;
+    _storage ??= FirebaseStorage.instance;
+    return _storage;
+  }
 
   /// Sube una imagen de perfil y retorna la URL de descarga
   Future<String?> uploadProfileImage(String userId, File imageFile) async {
     try {
+      if (isDevelopmentMode) {
+        developer.log('🔧 Modo desarrollo: guardando imagen localmente');
+        // En modo desarrollo, devolver la ruta local del archivo
+        return imageFile.path;
+      }
+
+      final firebaseStorage = storage;
+      if (firebaseStorage == null) {
+        throw Exception('Firebase Storage no está disponible');
+      }
+
       // Generar nombre único para la imagen
       final String fileName = '${userId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
       
       // Referencia al archivo en Firebase Storage
-      final Reference ref = _storage
+      final Reference ref = firebaseStorage
           .ref()
           .child(AppConstants.profileImagesPath)
           .child(fileName);
@@ -41,8 +60,19 @@ class ImageStorageService {
   /// Elimina una imagen de perfil usando su URL
   Future<bool> deleteProfileImage(String imageUrl) async {
     try {
+      if (isDevelopmentMode) {
+        developer.log('🔧 Modo desarrollo: imagen eliminada (simulado)');
+        // En modo desarrollo, simular eliminación exitosa
+        return true;
+      }
+
+      final firebaseStorage = storage;
+      if (firebaseStorage == null) {
+        throw Exception('Firebase Storage no está disponible');
+      }
+
       // Obtener referencia desde la URL
-      final Reference ref = _storage.refFromURL(imageUrl);
+      final Reference ref = firebaseStorage.refFromURL(imageUrl);
       
       // Eliminar imagen
       await ref.delete();
@@ -59,8 +89,8 @@ class ImageStorageService {
   /// Actualiza la imagen de perfil (elimina la anterior si existe y sube la nueva)
   Future<String?> updateProfileImage(String userId, File newImageFile, String? currentImageUrl) async {
     try {
-      // Si hay una imagen actual, eliminarla primero
-      if (currentImageUrl != null && currentImageUrl.isNotEmpty) {
+      // Si hay una imagen actual y no estamos en modo desarrollo, eliminarla primero
+      if (currentImageUrl != null && currentImageUrl.isNotEmpty && !isDevelopmentMode) {
         await deleteProfileImage(currentImageUrl);
       }
       

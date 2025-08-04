@@ -3,6 +3,7 @@ import 'package:prosavis/data/repositories/auth_repository_impl.dart';
 import 'package:prosavis/data/services/firebase_service.dart';
 import 'package:prosavis/data/services/firestore_service.dart';
 import 'package:prosavis/data/services/local_image_storage_service.dart';
+import 'package:prosavis/data/services/image_storage_service.dart';
 import 'package:prosavis/domain/repositories/auth_repository.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_google_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_email_usecase.dart';
@@ -46,6 +47,9 @@ Future<void> init() async {
     sl.registerLazySingleton<LocalImageStorageService>(() => LocalImageStorageService());
     developer.log('✅ LocalImageStorageService registrado');
     
+    sl.registerLazySingleton<ImageStorageService>(() => ImageStorageService());
+    developer.log('✅ ImageStorageService registrado');
+    
     sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(),
     );
@@ -88,7 +92,12 @@ Future<void> init() async {
     developer.log('✅ PasswordResetUseCase registrado');
 
     sl.registerLazySingleton<CreateServiceUseCase>(
-      () => CreateServiceUseCase(sl<ServiceRepository>()),
+      () {
+        developer.log('🔧 Creando instancia de CreateServiceUseCase...');
+        final serviceRepo = sl<ServiceRepository>();
+        developer.log('✅ ServiceRepository obtenido: ${serviceRepo.runtimeType}');
+        return CreateServiceUseCase(serviceRepo);
+      },
     );
     developer.log('✅ CreateServiceUseCase registrado');
 

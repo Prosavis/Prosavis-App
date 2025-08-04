@@ -19,19 +19,23 @@ class MainNavigationPage extends StatefulWidget {
 class _MainNavigationPageState extends State<MainNavigationPage> {
   int _selectedIndex = 0;
   late PageController _pageController;
-
-  late final List<Widget> _pages;
+  List<Widget>? _pages;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _pages = [
+  }
+
+  // Lazy loading de las páginas para evitar problemas con GetIt
+  List<Widget> get pages {
+    _pages ??= [
       HomePage(onProfileTapped: _goToProfile),
       ServiceCreationPage(createServiceUseCase: di.sl<CreateServiceUseCase>()),
       const SavedPage(),
       const ProfilePage(),
     ];
+    return _pages!;
   }
 
   void _goToProfile() {
@@ -67,7 +71,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             _selectedIndex = index;
           });
         },
-        children: _pages,
+        children: pages, // Usar el getter que maneja lazy loading
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );

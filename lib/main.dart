@@ -37,11 +37,14 @@ import 'core/injection/injection_container.dart' as di;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  bool dependenciesInitialized = false;
+  
   try {
     developer.log('🚀 Iniciando aplicación Prosavis...');
     
     // Inicializar sistema de inyección de dependencias
     await di.init();
+    dependenciesInitialized = true;
     
     // Configurar Firestore según el modo
     FirestoreService.setDevelopmentMode(FirebaseService.isDevelopmentMode);
@@ -55,11 +58,13 @@ void main() async {
       developer.log('✅ Aplicación iniciada con Firebase configurado');
     }
     
-  } catch (e) {
-    developer.log('⚠️ Error en inicialización: $e');
+  } catch (e, stackTrace) {
+    developer.log('❌ Error crítico en inicialización: $e');
+    developer.log('Stack trace: $stackTrace');
+    dependenciesInitialized = false;
   }
   
-  runApp(const MyApp());
+  runApp(MyApp(dependenciesReady: dependenciesInitialized));
 }
 
 final _router = GoRouter(
@@ -137,10 +142,37 @@ final _router = GoRouter(
 );
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final bool dependenciesReady;
+  
+  const MyApp({super.key, this.dependenciesReady = true});
 
   @override
   Widget build(BuildContext context) {
+    // Si las dependencias no están listas, mostrar una pantalla de error
+    if (!dependenciesReady) {
+      return const MaterialApp(
+        title: AppConstants.appName,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: Colors.red),
+                SizedBox(height: 16),
+                Text(
+                  'Error al inicializar la aplicación',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+                SizedBox(height: 8),
+                Text('Por favor reinicia la aplicación'),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Dependencias listas, continuar con la aplicación normal
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(

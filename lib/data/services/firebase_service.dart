@@ -21,30 +21,25 @@ class FirebaseService {
       if (_isInitialized) return;
 
       developer.log('🔧 Iniciando configuración de Firebase...');
+      
+      // Intentar inicializar Firebase
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      
       _isInitialized = true;
       _isDevelopmentMode = false;
       developer.log('✅ Firebase inicializado correctamente');
+      
     } catch (e) {
       developer.log('⚠️ Error al inicializar Firebase: $e');
       _isInitialized = true;
+      _isDevelopmentMode = true;
       
-      // Solo activar modo desarrollo si es un error crítico de configuración
-      if (e.toString().contains('configuration') || 
-          e.toString().contains('apiKey') ||
-          e.toString().contains('project') ||
-          e.toString().contains('app-id')) {
-        developer.log('🔧 Activando modo desarrollo debido a error de configuración');
-        _isDevelopmentMode = true;
-      } else {
-        // Para otros errores, mantener el modo normal pero logear el error
-        developer.log('⚠️ Error temporal en Firebase, manteniendo modo normal');
-        _isDevelopmentMode = false;
-      }
+      developer.log('🔧 Activando modo desarrollo - Firebase no disponible');
+      developer.log('📝 En modo desarrollo: datos se guardarán localmente');
       
-      rethrow;
+      // No relanzar el error, continuar en modo desarrollo
     }
   }
 

@@ -16,6 +16,9 @@ import '../../blocs/profile/profile_event.dart';
 import '../../blocs/profile/profile_state.dart';
 import '../../../domain/entities/user_entity.dart';
 import '../../../data/services/firestore_service.dart';
+import '../../../data/services/image_storage_service.dart';
+import '../../../core/injection/injection_container.dart' as di;
+import 'dart:io';
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({super.key});
@@ -59,6 +62,26 @@ class _EditProfilePageState extends State<EditProfilePage>
   void _loadUserData() async {
     // Cargar datos del perfil usando el ProfileBloc
     context.read<ProfileBloc>().add(LoadProfile());
+  }
+
+  ImageProvider? _getProfileImage(AuthState authState) {
+    // Si hay una imagen seleccionada localmente, mostrarla
+    if (_profileImageUrl != null && _profileImageUrl!.isNotEmpty) {
+      if (_profileImageUrl!.startsWith('http')) {
+        // Es una URL de Firebase
+        return NetworkImage(_profileImageUrl!);
+      } else {
+        // Es una ruta local
+        return FileImage(File(_profileImageUrl!));
+      }
+    }
+    
+    // Si no hay imagen local, usar la del usuario autenticado
+    if (authState is AuthAuthenticated && authState.user.photoUrl != null) {
+      return NetworkImage(authState.user.photoUrl!);
+    }
+    
+    return null;
   }
 
   @override
@@ -175,26 +198,26 @@ class _EditProfilePageState extends State<EditProfilePage>
                       children: [
                         CircleAvatar(
                           radius: 60,
-                          backgroundImage: authState is AuthAuthenticated && authState.user.photoUrl != null
-                              ? NetworkImage(authState.user.photoUrl!)
-                              : null,
+                          backgroundImage: _getProfileImage(authState),
                           backgroundColor: AppTheme.primaryColor,
-                          child: authState is AuthAuthenticated && authState.user.photoUrl == null
-                              ? Text(
-                                  authState.user.name.isNotEmpty 
-                                      ? authState.user.name[0].toUpperCase()
-                                      : 'U',
-                                  style: GoogleFonts.inter(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 40,
-                                  ),
-                                )
-                              : const Icon(
-                                  Symbols.person,
-                                  size: 60,
-                                  color: Colors.white,
-                                ),
+                          child: _getProfileImage(authState) == null
+                              ? (authState is AuthAuthenticated
+                                  ? Text(
+                                      authState.user.name.isNotEmpty 
+                                          ? authState.user.name[0].toUpperCase()
+                                          : 'U',
+                                      style: GoogleFonts.inter(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 40,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Symbols.person,
+                                      size: 60,
+                                      color: Colors.white,
+                                    ))
+                              : null,
                         ),
                         Positioned(
                           bottom: 0,
@@ -496,22 +519,72 @@ class _EditProfilePageState extends State<EditProfilePage>
       );
 
       if (image != null) {
-        setState(() {
-          // TODO: Implementar subida de imagen a Firebase Storage
-          _profileImageUrl = image.path; // Temporalmente usar la ruta local
-        });
-
+        // Mostrar indicador de carga
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Imagen capturada. Guarda el perfil para aplicar los cambios.',
-                style: GoogleFonts.inter(),
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Subiendo imagen...', style: GoogleFonts.inter()),
+                ],
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.primaryColor,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
             ),
           );
+        }
+
+        try {
+          // Obtener el usuario actual para el ID
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            final imageStorageService = di.sl<ImageStorageService>();
+            final uploadedUrl = await imageStorageService.uploadProfileImage(
+              authState.user.id,
+              File(image.path),
+            );
+
+            if (uploadedUrl != null) {
+              setState(() {
+                _profileImageUrl = uploadedUrl;
+              });
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
+                      style: GoogleFonts.inter(),
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            } else {
+              throw Exception('Error al subir la imagen');
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error al subir imagen: ${e.toString()}',
+                  style: GoogleFonts.inter(),
+                ),
+                backgroundColor: AppTheme.errorColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
@@ -550,22 +623,72 @@ class _EditProfilePageState extends State<EditProfilePage>
       );
 
       if (image != null) {
-        setState(() {
-          // TODO: Implementar subida de imagen a Firebase Storage
-          _profileImageUrl = image.path; // Temporalmente usar la ruta local
-        });
-
+        // Mostrar indicador de carga
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Imagen seleccionada. Guarda el perfil para aplicar los cambios.',
-                style: GoogleFonts.inter(),
+              content: Row(
+                children: [
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  ),
+                  const SizedBox(width: 12),
+                  Text('Subiendo imagen...', style: GoogleFonts.inter()),
+                ],
               ),
-              backgroundColor: Colors.green,
+              backgroundColor: AppTheme.primaryColor,
               behavior: SnackBarBehavior.floating,
+              duration: const Duration(seconds: 3),
             ),
           );
+        }
+
+        try {
+          // Obtener el usuario actual para el ID
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            final imageStorageService = di.sl<ImageStorageService>();
+            final uploadedUrl = await imageStorageService.uploadProfileImage(
+              authState.user.id,
+              File(image.path),
+            );
+
+            if (uploadedUrl != null) {
+              setState(() {
+                _profileImageUrl = uploadedUrl;
+              });
+
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Imagen subida exitosamente. Guarda el perfil para aplicar los cambios.',
+                      style: GoogleFonts.inter(),
+                    ),
+                    backgroundColor: Colors.green,
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            } else {
+              throw Exception('Error al subir la imagen');
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  'Error al subir imagen: ${e.toString()}',
+                  style: GoogleFonts.inter(),
+                ),
+                backgroundColor: AppTheme.errorColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         }
       }
     } catch (e) {
