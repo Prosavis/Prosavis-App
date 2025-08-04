@@ -60,10 +60,21 @@ class FirebaseService {
 
   // Constructor
   FirebaseService() : _auth = FirebaseAuth.instance {
-    // Usar la instancia predeterminada de Google Sign-In
-    _googleSignIn = GoogleSignIn(
-      scopes: ['email'],
-    );
+    // Usar la instancia singleton de Google Sign-In (versión 7.x)
+    _googleSignIn = GoogleSignIn.instance;
+    
+    // Inicializar Google Sign-In
+    _initializeGoogleSignIn();
+  }
+
+  // Inicializar Google Sign-In con configuración básica
+  Future<void> _initializeGoogleSignIn() async {
+    try {
+      await _googleSignIn.initialize();
+      developer.log('✅ Google Sign-In inicializado correctamente');
+    } catch (e) {
+      developer.log('⚠️ Error al inicializar Google Sign-In: $e');
+    }
   }
 
   // Método de logout
@@ -189,7 +200,7 @@ class FirebaseService {
       
       // Usar el flujo estándar de Google Sign-In
       developer.log('🔑 Solicitando autenticación de Google...');
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
       
       if (googleUser == null) {
         developer.log('❌ Usuario canceló Google Sign-In o no se pudo obtener cuenta');
