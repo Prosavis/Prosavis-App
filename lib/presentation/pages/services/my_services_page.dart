@@ -7,9 +7,11 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../../domain/usecases/services/get_user_services_usecase.dart';
+import '../../../domain/usecases/services/delete_service_usecase.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/service_card.dart';
+import '../../widgets/common/profile_completion_dialog.dart';
 import 'category_services_page.dart';
 
 class MyServicesPage extends StatefulWidget {
@@ -21,6 +23,7 @@ class MyServicesPage extends StatefulWidget {
 
 class _MyServicesPageState extends State<MyServicesPage> {
   late final GetUserServicesUseCase _getUserServicesUseCase;
+  late final DeleteServiceUseCase _deleteServiceUseCase;
   List<ServiceEntity> _userServices = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -29,6 +32,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
   void initState() {
     super.initState();
     _getUserServicesUseCase = sl<GetUserServicesUseCase>();
+    _deleteServiceUseCase = sl<DeleteServiceUseCase>();
     _loadUserServices();
   }
 
@@ -60,6 +64,32 @@ class _MyServicesPageState extends State<MyServicesPage> {
     }
   }
 
+  /// Valida si el perfil está completo antes de crear un servicio
+  void _validateProfileAndCreateService() {
+    final authState = context.read<AuthBloc>().state;
+    
+    if (authState is AuthAuthenticated) {
+      if (authState.user.isProfileComplete) {
+        // El perfil está completo, permitir crear servicio
+        context.push('/services/create');
+      } else {
+        // El perfil no está completo, mostrar diálogo
+        ProfileCompletionDialog.show(context);
+      }
+    } else {
+      // Usuario no autenticado (esto no debería ocurrir aquí)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Debes estar autenticado para crear servicios',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -74,14 +104,11 @@ class _MyServicesPageState extends State<MyServicesPage> {
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back, color: Colors.black87),
-          onPressed: () => context.pop(),
-        ),
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: const Icon(Symbols.add, color: Colors.black87),
-            onPressed: () => context.push('/services/create'),
+            onPressed: _validateProfileAndCreateService,
             tooltip: 'Crear nuevo servicio',
           ),
         ],
@@ -162,7 +189,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => context.push('/services/create'),
+              onPressed: _validateProfileAndCreateService,
               icon: const Icon(Symbols.add),
               label: Text(
                 'Crear mi primer servicio',
@@ -239,7 +266,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
             ),
           ),
           IconButton(
-            onPressed: () => context.push('/services/create'),
+            onPressed: _validateProfileAndCreateService,
             icon: const Icon(Symbols.add_circle_outline),
             tooltip: 'Agregar servicio',
           ),
@@ -261,6 +288,8 @@ class _MyServicesPageState extends State<MyServicesPage> {
           onTap: () => _viewServiceDetails(service),
           showEditButton: true,
           onEditPressed: () => _editService(service),
+          showDeleteButton: true,
+          onDeletePressed: () => _deleteService(service),
         ),
       )).toList(),
     );
@@ -273,6 +302,158 @@ class _MyServicesPageState extends State<MyServicesPage> {
   void _viewServiceDetails(ServiceEntity service) {
     final serviceItem = _convertToServiceItem(service);
     context.push('/services/${service.id}', extra: serviceItem);
+  }
+
+  Future<void> _deleteService(ServiceEntity service) async {
+    // Verificar que el usuario esté autenticado
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Debes estar autenticado para eliminar servicios',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Verificar que el usuario sea el propietario del servicio
+    if (authState.user.id != service.providerId) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Solo puedes eliminar tus propios servicios',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    // Mostrar diálogo de confirmación
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Eliminar servicio',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          '¿Estás seguro de que deseas eliminar "${service.title}"? Esta acción no se puede deshacer.',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      // Mostrar indicador de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text(
+                  'Eliminando servicio...',
+                  style: GoogleFonts.inter(),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      try {
+        // Eliminar el servicio
+        await _deleteServiceUseCase(service.id);
+        
+        // Cerrar el diálogo de carga
+        if (mounted) Navigator.of(context).pop();
+        
+        // Mostrar mensaje de éxito
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Servicio eliminado exitosamente',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        
+        // Recargar la lista de servicios
+        await _loadUserServices();
+        
+      } catch (e) {
+        // Cerrar el diálogo de carga
+        if (mounted) Navigator.of(context).pop();
+        
+        // Mostrar mensaje de error específico
+        String errorMessage = 'Error desconocido';
+        if (e.toString().contains('permission-denied')) {
+          errorMessage = 'No tienes permisos para eliminar este servicio. Verifica que seas el propietario y que estés autenticado correctamente.';
+        } else if (e.toString().contains('not-found')) {
+          errorMessage = 'El servicio no existe o ya fue eliminado.';
+        } else if (e.toString().contains('network')) {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet e intenta nuevamente.';
+        } else {
+          errorMessage = 'Error al eliminar el servicio: ${e.toString()}';
+        }
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                errorMessage,
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    }
   }
 
   ServiceItem _convertToServiceItem(ServiceEntity service) {

@@ -24,6 +24,7 @@ import 'package:prosavis/domain/usecases/services/get_nearby_services_usecase.da
 import 'package:prosavis/domain/usecases/services/get_user_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_service_by_id_usecase.dart';
 import 'package:prosavis/domain/usecases/services/update_service_usecase.dart';
+import 'package:prosavis/domain/usecases/services/delete_service_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/create_review_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/get_service_reviews_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
@@ -154,6 +155,11 @@ Future<void> init() async {
       () => UpdateServiceUseCase(sl<ServiceRepository>()),
     );
     developer.log('✅ UpdateServiceUseCase registrado');
+
+    sl.registerLazySingleton<DeleteServiceUseCase>(
+      () => DeleteServiceUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ DeleteServiceUseCase registrado');
 
     sl.registerLazySingleton<CreateReviewUseCase>(
       () => CreateReviewUseCase(sl<ReviewRepository>()),

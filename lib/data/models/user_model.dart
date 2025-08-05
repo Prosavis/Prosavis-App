@@ -7,6 +7,8 @@ class UserModel extends UserEntity {
     required super.email,
     super.photoUrl,
     super.phoneNumber,
+    super.bio,
+    super.location,
     required super.createdAt,
     required super.updatedAt,
   });
@@ -18,6 +20,8 @@ class UserModel extends UserEntity {
       email: json['email'] ?? '',
       photoUrl: json['photoUrl'],
       phoneNumber: json['phoneNumber'],
+      bio: json['bio'],
+      location: json['location'],
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
       updatedAt: DateTime.parse(json['updatedAt'] ?? DateTime.now().toIso8601String()),
     );
@@ -30,6 +34,8 @@ class UserModel extends UserEntity {
       'email': email,
       'photoUrl': photoUrl,
       'phoneNumber': phoneNumber,
+      'bio': bio,
+      'location': location,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -42,6 +48,8 @@ class UserModel extends UserEntity {
       email: entity.email,
       photoUrl: entity.photoUrl,
       phoneNumber: entity.phoneNumber,
+      bio: entity.bio,
+      location: entity.location,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     );

@@ -93,6 +93,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         email: currentUser.email,
         photoUrl: newPhotoUrl,
         phoneNumber: currentUser.phoneNumber,
+        bio: currentUser.bio,
+        location: currentUser.location,
         createdAt: currentUser.createdAt,
         updatedAt: DateTime.now(),
       );
@@ -139,6 +141,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         email: currentUser.email,
         photoUrl: null,
         phoneNumber: currentUser.phoneNumber,
+        bio: currentUser.bio,
+        location: currentUser.location,
         createdAt: currentUser.createdAt,
         updatedAt: DateTime.now(),
       );

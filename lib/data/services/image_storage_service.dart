@@ -87,6 +87,19 @@ class ImageStorageService {
     try {
       final firebaseStorage = storage;
 
+      // Validar que el archivo existe
+      if (!imageFile.existsSync()) {
+        developer.log('❌ Error: El archivo de imagen no existe');
+        return null;
+      }
+
+      // Validar tamaño del archivo (máximo 10MB como en las reglas)
+      final fileSize = imageFile.lengthSync();
+      if (fileSize > 10 * 1024 * 1024) {
+        developer.log('❌ Error: Imagen demasiado grande (máximo 10MB)');
+        return null;
+      }
+
       // Generar nombre único para la imagen
       final String fileName = '${serviceId}_${DateTime.now().millisecondsSinceEpoch}${path.extension(imageFile.path)}';
       
@@ -96,22 +109,70 @@ class ImageStorageService {
           .child(AppConstants.serviceImagesPath)
           .child(fileName);
 
-      // Subir archivo
-      developer.log('📤 Subiendo imagen de servicio...');
-      final UploadTask uploadTask = ref.putFile(imageFile);
+      // Configurar metadatos para mejor manejo
+      final metadata = SettableMetadata(
+        contentType: _getContentType(path.extension(imageFile.path)),
+        customMetadata: {
+          'serviceId': serviceId,
+          'uploadedAt': DateTime.now().toIso8601String(),
+        },
+      );
+
+      // Subir archivo con reintentos
+      developer.log('📤 Subiendo imagen de servicio: $fileName');
       
-      // Esperar a que se complete la subida
-      final TaskSnapshot snapshot = await uploadTask;
+      String? downloadUrl;
+      int attempts = 0;
+      const maxAttempts = 3;
       
-      // Obtener URL de descarga
-      final String downloadUrl = await snapshot.ref.getDownloadURL();
+      while (attempts < maxAttempts && downloadUrl == null) {
+        try {
+          attempts++;
+          developer.log('📤 Intento $attempts/$maxAttempts...');
+          
+          final UploadTask uploadTask = ref.putFile(imageFile, metadata);
+          
+          // Esperar a que se complete la subida
+          final TaskSnapshot snapshot = await uploadTask;
+          
+          // Verificar que la subida fue exitosa
+          if (snapshot.state == TaskState.success) {
+            // Obtener URL de descarga
+            downloadUrl = await snapshot.ref.getDownloadURL();
+            developer.log('✅ Imagen de servicio subida exitosamente: $downloadUrl');
+          } else {
+            developer.log('❌ Error en el estado de la subida: ${snapshot.state}');
+          }
+          
+        } catch (e) {
+          developer.log('❌ Error en intento $attempts: $e');
+          if (attempts < maxAttempts) {
+            // Esperar antes del siguiente intento
+            await Future.delayed(Duration(seconds: attempts * 2));
+          }
+        }
+      }
       
-      developer.log('✅ Imagen de servicio subida exitosamente: $downloadUrl');
       return downloadUrl;
       
     } catch (e) {
-      developer.log('❌ Error al subir imagen de servicio: $e');
+      developer.log('❌ Error general al subir imagen de servicio: $e');
       return null;
+    }
+  }
+
+  /// Determina el content type basado en la extensión del archivo
+  String _getContentType(String extension) {
+    switch (extension.toLowerCase()) {
+      case '.jpg':
+      case '.jpeg':
+        return 'image/jpeg';
+      case '.png':
+        return 'image/png';
+      case '.webp':
+        return 'image/webp';
+      default:
+        return 'image/jpeg'; // Por defecto
     }
   }
 
@@ -140,14 +201,31 @@ class ImageStorageService {
     try {
       final List<String> uploadedUrls = [];
       
-      for (final imageFile in imageFiles) {
-        final url = await uploadServiceImage(serviceId, imageFile);
+      if (imageFiles.isEmpty) {
+        developer.log('⚠️ Lista de imágenes vacía');
+        return uploadedUrls;
+      }
+      
+      developer.log('📤 Subiendo ${imageFiles.length} imágenes de servicio...');
+      
+      // Subir imágenes en paralelo para mejor rendimiento
+      final futures = imageFiles.map((imageFile) => uploadServiceImage(serviceId, imageFile));
+      final results = await Future.wait(futures);
+      
+      // Filtrar resultados exitosos
+      for (final url in results) {
         if (url != null) {
           uploadedUrls.add(url);
         }
       }
       
-      developer.log('✅ ${uploadedUrls.length}/${imageFiles.length} imágenes de servicio subidas');
+      developer.log('✅ ${uploadedUrls.length}/${imageFiles.length} imágenes de servicio subidas exitosamente');
+      
+      if (uploadedUrls.length < imageFiles.length) {
+        final failed = imageFiles.length - uploadedUrls.length;
+        developer.log('⚠️ $failed imágenes fallaron al subir');
+      }
+      
       return uploadedUrls;
       
     } catch (e) {

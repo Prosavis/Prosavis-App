@@ -31,21 +31,30 @@ service cloud.firestore {
                    request.resource.data.category is string && request.resource.data.category.size() > 0 &&
                    request.resource.data.price is number && request.resource.data.price >= 0 &&
                    // 🖼️ Validar que las URLs de imágenes sean de Firebase Storage (si existen)
+                   // Permitir crear servicios inicialmente sin imágenes para nuestro nuevo flujo
                    (!request.resource.data.keys().hasAny(['mainImage']) || 
                     request.resource.data.mainImage == null || 
                     request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
                    (!request.resource.data.keys().hasAny(['images']) || 
-                    request.resource.data.images is list);
+                    request.resource.data.images == null ||
+                    (request.resource.data.images is list && 
+                     request.resource.data.images.size() <= 4));
       
-      // ✅ ACTUALIZAR/ELIMINAR SERVICIO: Solo el propietario
-      allow update, delete: if request.auth != null && 
-                           request.auth.uid == resource.data.providerId && // 🔐 Solo el propietario
-                           // 🖼️ Validar URLs de imágenes en actualizaciones (si se modifican)
-                           (!request.resource.data.keys().hasAny(['mainImage']) || 
-                            request.resource.data.mainImage == null || 
-                            request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
-                           (!request.resource.data.keys().hasAny(['images']) || 
-                            request.resource.data.images is list);
+      // ✅ ACTUALIZAR SERVICIO: Solo el propietario
+      allow update: if request.auth != null && 
+                   request.auth.uid == resource.data.providerId && // 🔐 Solo el propietario
+                   // 🖼️ Validar URLs de imágenes en actualizaciones (si se modifican)
+                   (!request.resource.data.keys().hasAny(['mainImage']) || 
+                    request.resource.data.mainImage == null || 
+                    request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
+                   (!request.resource.data.keys().hasAny(['images']) || 
+                    request.resource.data.images == null ||
+                    (request.resource.data.images is list && 
+                     request.resource.data.images.size() <= 4));
+
+      // ✅ ELIMINAR SERVICIO: Solo el propietario (sin validaciones de contenido)
+      allow delete: if request.auth != null && 
+                   request.auth.uid == resource.data.providerId;
       
       // === RESEÑAS DE SERVICIOS ===
       // Subcolección para reseñas y puntuaciones

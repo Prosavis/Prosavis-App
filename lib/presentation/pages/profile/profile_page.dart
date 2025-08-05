@@ -258,9 +258,10 @@ class _ProfilePageState extends State<ProfilePage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Sección de Cuenta
+            _buildSectionTitle('Cuenta'),
+            const SizedBox(height: 12),
+            
             if (authState is! AuthAuthenticated) ...[
-              _buildSectionTitle('Cuenta'),
-              const SizedBox(height: 12),
               _buildOptionTile(
                 icon: Symbols.login,
                 title: 'Iniciar Sesión',
@@ -268,8 +269,39 @@ class _ProfilePageState extends State<ProfilePage>
                 onTap: () => context.go('/login'),
                 showArrow: true,
               ),
-              const SizedBox(height: 24),
+            ] else ...[
+              _buildOptionTile(
+                icon: Symbols.edit,
+                title: 'Editar Perfil',
+                subtitle: 'Actualiza tu información personal',
+                onTap: () => context.push('/settings/edit-profile'),
+                showArrow: true,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              _buildOptionTile(
+                icon: Symbols.security,
+                title: 'Privacidad y Seguridad',
+                subtitle: 'Gestiona la privacidad de tu cuenta',
+                onTap: () => context.push('/settings/privacy'),
+                showArrow: true,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              // Cerrar Sesión
+              _buildOptionTile(
+                icon: Symbols.logout,
+                title: 'Cerrar Sesión',
+                subtitle: 'Salir de tu cuenta',
+                onTap: () => _showLogoutDialog(),
+                showArrow: false,
+                isDestructive: true,
+              ),
             ],
+            
+            const SizedBox(height: 32),
 
             // Sección de Configuración
             _buildSectionTitle('Configuración'),
@@ -301,53 +333,6 @@ class _ProfilePageState extends State<ProfilePage>
               onTap: () => context.push('/settings/language'),
               showArrow: true,
             ),
-
-            // Sección de Usuario Autenticado
-            if (authState is AuthAuthenticated) ...[
-              const SizedBox(height: 24),
-              _buildSectionTitle('Cuenta'),
-              const SizedBox(height: 12),
-              
-              _buildOptionTile(
-                icon: Symbols.edit,
-                title: 'Editar Perfil',
-                subtitle: 'Actualiza tu información personal',
-                onTap: () => context.push('/settings/edit-profile'),
-                showArrow: true,
-              ),
-              
-              const SizedBox(height: 12),
-              
-              _buildOptionTile(
-                icon: Symbols.work,
-                title: 'Mis servicios',
-                subtitle: 'Gestiona los servicios que ofreces',
-                onTap: () => context.push('/services/my-services'),
-                showArrow: true,
-              ),
-              
-              const SizedBox(height: 12),
-              
-              _buildOptionTile(
-                icon: Symbols.security,
-                title: 'Privacidad y Seguridad',
-                subtitle: 'Gestiona la privacidad de tu cuenta',
-                onTap: () => context.push('/settings/privacy'),
-                showArrow: true,
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Cerrar Sesión
-              _buildOptionTile(
-                icon: Symbols.logout,
-                title: 'Cerrar Sesión',
-                subtitle: 'Salir de tu cuenta',
-                onTap: () => _showLogoutDialog(),
-                showArrow: false,
-                isDestructive: true,
-              ),
-            ],
             
             const SizedBox(height: 32),
             

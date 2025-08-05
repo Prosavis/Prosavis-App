@@ -201,26 +201,36 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         throw Exception('Usuario no autenticado');
       }
 
+      final imageStorageService = sl<ImageStorageService>();
+
       // Subir imagen principal si hay una nueva
       String? mainImageUrl = _mainImageUrl;
       if (_mainImageFile != null) {
-        final imageStorageService = sl<ImageStorageService>();
-        mainImageUrl = await imageStorageService.uploadServiceImage(
-          widget.serviceId,
-          _mainImageFile!,
-          'main_image',
-        );
+        try {
+          mainImageUrl = await imageStorageService.uploadServiceImage(
+            widget.serviceId,
+            _mainImageFile!,
+          );
+          if (mainImageUrl == null) {
+            throw Exception('Error al subir la imagen principal del servicio');
+          }
+        } catch (e) {
+          throw Exception('Error al subir la imagen principal: $e');
+        }
       }
 
       // Subir nuevas imágenes si las hay
       final List<String> allImages = List.from(_selectedImages);
       if (_newImages.isNotEmpty) {
-        final imageStorageService = sl<ImageStorageService>();
-        final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
-          widget.serviceId,
-          _newImages,
-        );
-        allImages.addAll(uploadedUrls);
+        try {
+          final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
+            widget.serviceId,
+            _newImages,
+          );
+          allImages.addAll(uploadedUrls);
+        } catch (e) {
+          throw Exception('Error al subir las imágenes adicionales: $e');
+        }
       }
 
       // Crear string de horario
@@ -878,7 +888,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Symbols.add_photo_alternate,
                       size: 32,
                       color: AppTheme.primaryColor,
@@ -1287,7 +1297,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
               Column(
                 children: [
                   const SizedBox(height: 8),
-                  Container(
+                  SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _getCurrentLocation,
@@ -1639,41 +1649,106 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   }
 
   Future<void> _getCurrentLocation() async {
+    if (!mounted) return;
+
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '🔍 Obteniendo ubicación GPS...',
+              style: GoogleFonts.inter(),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 30), // Dar tiempo suficiente
+      ),
+    );
+
     try {
       final address = await LocationUtils.getCurrentAddress();
+      
+      // Ocultar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
       if (address != null && mounted) {
         setState(() {
           _addressController.text = address;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '📍 Ubicación actualizada: $address',
-              style: GoogleFonts.inter(),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '📍 Ubicación obtenida: $address',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ No se pudo obtener la ubicación actual',
+              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Configuración',
+              textColor: Colors.white,
+              onPressed: () async {
+                await LocationUtils.openLocationSettings();
+              },
+            ),
+            duration: const Duration(seconds: 6),
           ),
         );
       }
     } catch (e) {
+      // Ocultar indicador de carga
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
+      if (mounted) {
+        String errorMessage = '❌ Error al obtener ubicación.';
+        SnackBarAction? action;
+        
+        if (e.toString().contains('Permisos de ubicación denegados')) {
+          errorMessage = '❌ Permisos de ubicación denegados.';
+          action = SnackBarAction(
+            label: 'Configurar',
+            textColor: Colors.white,
+            onPressed: () async {
+              await LocationUtils.openAppSettings();
+            },
+          );
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Error al obtener ubicación: $e',
+              errorMessage,
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
+            action: action,
+            duration: const Duration(seconds: 6),
           ),
         );
       }

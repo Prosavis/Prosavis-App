@@ -13,6 +13,8 @@ class ServiceCard extends StatelessWidget {
   final String? imageUrl;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
+  final bool showDeleteButton;
+  final VoidCallback? onDeletePressed;
 
   const ServiceCard({
     super.key,
@@ -25,6 +27,8 @@ class ServiceCard extends StatelessWidget {
     this.imageUrl,
     this.showEditButton = false,
     this.onEditPressed,
+    this.showDeleteButton = false,
+    this.onDeletePressed,
   });
 
   @override
@@ -64,18 +68,34 @@ class ServiceCard extends StatelessWidget {
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     color: AppTheme.primaryColor.withValues(alpha: 0.1),
                   ),
-                  child: imageUrl != null
+                  child: imageUrl != null && imageUrl!.isNotEmpty
                       ? ClipRRect(
                           borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                           child: Image.network(
                             imageUrl!,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return Container(
+                                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                  ),
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return _buildPlaceholderImage();
+                            },
                           ),
                         )
                       : _buildPlaceholderImage(),
                 ),
-                // Edit button overlay
+                // Edit and delete buttons overlay
                 if (showEditButton && onEditPressed != null)
                   Positioned(
                     top: 8,
@@ -92,6 +112,28 @@ class ServiceCard extends StatelessWidget {
                             Symbols.edit,
                             size: 16,
                             color: AppTheme.primaryColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                // Delete button overlay
+                if (showDeleteButton && onDeletePressed != null)
+                  Positioned(
+                    top: 8,
+                    right: showEditButton ? 48 : 8,
+                    child: Material(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: onDeletePressed,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(
+                            Symbols.delete,
+                            size: 16,
+                            color: Colors.red,
                           ),
                         ),
                       ),
@@ -199,13 +241,29 @@ class ServiceCard extends StatelessWidget {
                 borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
                 color: AppTheme.primaryColor.withValues(alpha: 0.1),
               ),
-              child: imageUrl != null
+              child: imageUrl != null && imageUrl!.isNotEmpty
                   ? ClipRRect(
                       borderRadius: const BorderRadius.horizontal(left: Radius.circular(16)),
                       child: Image.network(
                         imageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return _buildPlaceholderImage();
+                        },
                       ),
                     )
                   : _buildPlaceholderImage(),
@@ -218,15 +276,54 @@ class ServiceCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      title,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        // Action buttons for horizontal layout
+                        if (showEditButton && onEditPressed != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: onEditPressed,
+                              child: const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Icon(
+                                  Symbols.edit,
+                                  size: 16,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        if (showDeleteButton && onDeletePressed != null)
+                          Padding(
+                            padding: const EdgeInsets.only(left: 4),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: onDeletePressed,
+                              child: const Padding(
+                                padding: EdgeInsets.all(4),
+                                child: Icon(
+                                  Symbols.delete,
+                                  size: 16,
+                                  color: Colors.red,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     
                     const SizedBox(height: 4),

@@ -5,9 +5,7 @@ import '../../../core/themes/app_theme.dart';
 import '../home/home_page.dart';
 import '../saved/saved_page.dart';
 import '../profile/profile_page.dart';
-import '../services/service_creation_page.dart';
-import '../../../domain/usecases/services/create_service_usecase.dart';
-import '../../../core/injection/injection_container.dart' as di;
+import '../services/my_services_page.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/auth_required_dialog.dart';
@@ -43,8 +41,8 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     _pages ??= [
       HomePage(onProfileTapped: _goToProfile),
       // Optimización: Crear páginas con AutomaticKeepAlive cuando sea necesario
-      KeepAlivePage(
-        child: ServiceCreationPage(createServiceUseCase: di.sl<CreateServiceUseCase>()),
+      const KeepAlivePage(
+        child: MyServicesPage(),
       ),
       const SavedPage(),
       const ProfilePage(),

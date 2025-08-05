@@ -9,6 +9,7 @@ import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
 import '../../../domain/usecases/services/create_service_usecase.dart';
+import '../../../domain/usecases/services/update_service_usecase.dart';
 import '../../../data/models/service_model.dart';
 import '../../../data/services/image_storage_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -40,10 +41,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   String _priceType = 'fixed';
   String? _mainImageUrl; // Imagen principal
   File? _mainImageFile; // Archivo de imagen principal
-  List<String> _selectedImages = [];
+  final List<String> _selectedImages = [];
   final List<File> _newImages = []; // Nuevas imágenes seleccionadas
-  List<String> _selectedTags = [];
-  List<String> _selectedSkills = [];
+  final List<String> _selectedTags = [];
+  final List<String> _selectedSkills = [];
   final List<String> _availableDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
@@ -115,7 +116,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Symbols.arrow_back, color: Colors.black87),
-          onPressed: () => context.pop(),
+          onPressed: () => context.go('/home'),
         ),
         title: Text(
           'Ofrecer Servicio',
@@ -684,7 +685,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
+                    const Icon(
                       Symbols.add_photo_alternate,
                       size: 32,
                       color: AppTheme.primaryColor,
@@ -1063,7 +1064,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
               Column(
                 children: [
                   const SizedBox(height: 8),
-                  Container(
+                  SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
                       onPressed: _getCurrentLocation,
@@ -1197,7 +1198,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           width: double.infinity,
           height: 50,
           child: OutlinedButton(
-            onPressed: _isCreatingService ? null : () => context.pop(),
+            onPressed: _isCreatingService ? null : () => context.go('/home'),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.grey[300]!),
               shape: RoundedRectangleBorder(
@@ -1363,41 +1364,106 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   }
 
   Future<void> _getCurrentLocation() async {
+    if (!mounted) return;
+
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '🔍 Obteniendo ubicación GPS...',
+              style: GoogleFonts.inter(),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 30), // Dar tiempo suficiente
+      ),
+    );
+
     try {
       final address = await LocationUtils.getCurrentAddress();
+      
+      // Ocultar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
       if (address != null && mounted) {
         setState(() {
           _addressController.text = address;
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '📍 Ubicación actualizada: $address',
-              style: GoogleFonts.inter(),
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '📍 Ubicación obtenida: $address',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
             ),
-            backgroundColor: Colors.green,
-          ),
-        );
+          );
+        }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ No se pudo obtener la ubicación actual',
+              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Configuración',
+              textColor: Colors.white,
+              onPressed: () async {
+                await LocationUtils.openLocationSettings();
+              },
+            ),
+            duration: const Duration(seconds: 6),
           ),
         );
       }
     } catch (e) {
+      // Ocultar indicador de carga
       if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
+      if (mounted) {
+        String errorMessage = '❌ Error al obtener ubicación.';
+        SnackBarAction? action;
+        
+        if (e.toString().contains('Permisos de ubicación denegados')) {
+          errorMessage = '❌ Permisos de ubicación denegados.';
+          action = SnackBarAction(
+            label: 'Configurar',
+            textColor: Colors.white,
+            onPressed: () async {
+              await LocationUtils.openAppSettings();
+            },
+          );
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Error al obtener ubicación: $e',
+              errorMessage,
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
+            action: action,
+            duration: const Duration(seconds: 6),
           ),
         );
       }
@@ -1415,32 +1481,6 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       final authState = context.read<AuthBloc>().state;
       if (authState is! AuthAuthenticated) {
         throw Exception('Usuario no autenticado');
-      }
-
-      // Subir imagen principal si existe
-      String? mainImageUrl;
-      if (_mainImageFile != null) {
-        final imageStorageService = sl<ImageStorageService>();
-        // Generar un ID temporal para el servicio
-        final tempServiceId = DateTime.now().millisecondsSinceEpoch.toString();
-        mainImageUrl = await imageStorageService.uploadServiceImage(
-          tempServiceId,
-          _mainImageFile!,
-          'main_image',
-        );
-      }
-
-      // Subir nuevas imágenes si las hay
-      final List<String> allImages = List.from(_selectedImages);
-      if (_newImages.isNotEmpty) {
-        final imageStorageService = sl<ImageStorageService>();
-        // Generar un ID temporal para el servicio
-        final tempServiceId = DateTime.now().millisecondsSinceEpoch.toString();
-        final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
-          tempServiceId,
-          _newImages,
-        );
-        allImages.addAll(uploadedUrls);
       }
 
       // Crear string de horario
@@ -1462,6 +1502,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         finalFeatures.add(formattedExperience);
       }
 
+      // PASO 1: Crear el servicio primero (sin imágenes)
       final serviceModel = ServiceModel.createNew(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -1471,8 +1512,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         providerId: authState.user.id,
         providerName: authState.user.name,
         providerPhotoUrl: authState.user.photoUrl,
-        mainImage: mainImageUrl,
-        images: allImages,
+        mainImage: null, // Se añadirá después
+        images: const [], // Se añadirán después
         tags: _selectedTags,
         features: finalFeatures,
         availableDays: _availableDays,
@@ -1481,9 +1522,57 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         timeRange: timeRange,
       );
 
-      await widget.createServiceUseCase(
+      // Crear el servicio y obtener su ID real
+      final serviceId = await widget.createServiceUseCase(
         CreateServiceParams(service: serviceModel),
       );
+
+      // PASO 2: Subir imágenes con el ID real del servicio
+      String? mainImageUrl;
+      final List<String> allImages = List.from(_selectedImages);
+
+      if (_mainImageFile != null || _newImages.isNotEmpty) {
+        final imageStorageService = sl<ImageStorageService>();
+        
+        // Subir imagen principal si existe
+        if (_mainImageFile != null) {
+          try {
+            mainImageUrl = await imageStorageService.uploadServiceImage(
+              serviceId,
+              _mainImageFile!,
+            );
+            if (mainImageUrl == null) {
+              throw Exception('Error al subir la imagen principal del servicio');
+            }
+          } catch (e) {
+            throw Exception('Error al subir la imagen principal: $e');
+          }
+        }
+
+        // Subir nuevas imágenes si las hay
+        if (_newImages.isNotEmpty) {
+          try {
+            final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
+              serviceId,
+              _newImages,
+            );
+            allImages.addAll(uploadedUrls);
+          } catch (e) {
+            throw Exception('Error al subir las imágenes adicionales: $e');
+          }
+        }
+
+        // PASO 3: Actualizar el servicio con las URLs de las imágenes
+        if (mainImageUrl != null || allImages.isNotEmpty) {
+          final updatedServiceModel = serviceModel.copyWithModel(
+            id: serviceId,
+            mainImage: mainImageUrl,
+            images: allImages,
+          );
+
+          await sl<UpdateServiceUseCase>().call(updatedServiceModel);
+        }
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

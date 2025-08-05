@@ -6,6 +6,8 @@ class UserEntity extends Equatable {
   final String email;
   final String? photoUrl;
   final String? phoneNumber;
+  final String? bio;
+  final String? location;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -15,6 +17,8 @@ class UserEntity extends Equatable {
     required this.email,
     this.photoUrl,
     this.phoneNumber,
+    this.bio,
+    this.location,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -26,7 +30,18 @@ class UserEntity extends Equatable {
         email,
         photoUrl,
         phoneNumber,
+        bio,
+        location,
         createdAt,
         updatedAt,
       ];
+
+  /// Verifica si el perfil está completo para ofrecer servicios
+  bool get isProfileComplete {
+    return name.isNotEmpty &&
+           email.isNotEmpty &&
+           phoneNumber != null && phoneNumber!.isNotEmpty &&
+           bio != null && bio!.isNotEmpty &&
+           location != null && location!.isNotEmpty;
+  }
 } 

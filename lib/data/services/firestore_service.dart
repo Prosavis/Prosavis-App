@@ -113,6 +113,8 @@ class FirestoreService {
         email: firebaseUser.email ?? '',
         photoUrl: firebaseUser.photoURL,
         phoneNumber: firebaseUser.phoneNumber,
+        bio: null, // Nuevo usuario, biografía vacía
+        location: null, // Nuevo usuario, ubicación vacía
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
@@ -328,6 +330,24 @@ class FirestoreService {
   /// Eliminar servicio
   Future<void> deleteService(String serviceId) async {
     try {
+      developer.log('🗑️ Iniciando eliminación del servicio: $serviceId');
+      
+      // Verificar que el usuario esté autenticado
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+      
+      developer.log('👤 Usuario autenticado: ${currentUser.uid}');
+      
+      // Verificar que el servicio existe antes de eliminar
+      final serviceDoc = await firestore.collection('services').doc(serviceId).get();
+      if (!serviceDoc.exists) {
+        throw Exception('Servicio no encontrado');
+      }
+      
+      developer.log('📄 Servicio encontrado, propietario: ${serviceDoc.data()?['providerId']}');
+      
       await firestore.collection('services').doc(serviceId).delete();
       developer.log('✅ Servicio eliminado de Firestore: $serviceId');
     } catch (e) {

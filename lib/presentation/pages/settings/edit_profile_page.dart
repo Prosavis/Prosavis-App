@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -8,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/utils/location_utils.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/auth/auth_event.dart';
@@ -116,7 +118,8 @@ class _EditProfilePageState extends State<EditProfilePage>
               _nameController.text = state.user.name;
               _emailController.text = state.user.email;
               _phoneController.text = state.user.phoneNumber ?? '';
-              // Agregar otros campos cuando estén disponibles en UserEntity
+              _bioController.text = state.user.bio ?? '';
+              _locationController.text = state.user.location ?? '';
               _profileImageUrl = state.user.photoUrl;
             });
           } else if (state is ProfileError) {
@@ -318,10 +321,17 @@ class _EditProfilePageState extends State<EditProfilePage>
                 label: 'Teléfono',
                 icon: Symbols.phone,
                 keyboardType: TextInputType.phone,
+                maxLength: 10,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
-                    if (!RegExp(r'^\+?[0-9]{10,15}$').hasMatch(value)) {
-                      return 'Ingresa un teléfono válido';
+                    if (value.length != 10) {
+                      return 'El teléfono debe tener exactamente 10 dígitos';
+                    }
+                    if (!RegExp(r'^[3][0-9]{9}$').hasMatch(value)) {
+                      return 'Ingresa un número colombiano válido (debe empezar con 3)';
                     }
                   }
                   return null;
@@ -330,11 +340,7 @@ class _EditProfilePageState extends State<EditProfilePage>
 
               const SizedBox(height: 16),
 
-              _buildTextField(
-                controller: _locationController,
-                label: 'Ubicación',
-                icon: Symbols.location_on,
-              ),
+              _buildLocationField(),
 
               const SizedBox(height: 24),
 
@@ -372,7 +378,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Tu información personal está protegida y solo será visible para los proveedores cuando solicites un servicio.',
+                        'Tu información personal está protegida y solo será visible para los proveedores cuando solicites un servicio, o para los clientes cuando ofrezcas uno.',
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: AppTheme.textSecondary,
@@ -411,6 +417,7 @@ class _EditProfilePageState extends State<EditProfilePage>
     bool enabled = true,
     int maxLines = 1,
     int? maxLength,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return TextFormField(
       controller: controller,
@@ -419,6 +426,7 @@ class _EditProfilePageState extends State<EditProfilePage>
       enabled: enabled,
       maxLines: maxLines,
       maxLength: maxLength,
+      inputFormatters: inputFormatters,
       style: GoogleFonts.inter(
         color: enabled ? AppTheme.textPrimary : AppTheme.textTertiary,
       ),
@@ -794,6 +802,176 @@ class _EditProfilePageState extends State<EditProfilePage>
     );
   }
 
+  Widget _buildLocationField() {
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _locationController,
+            decoration: InputDecoration(
+              labelText: 'Ubicación',
+              hintText: 'Ej: Calle 123 #45-67, Bogotá',
+              prefixIcon: const Icon(Symbols.location_on),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
+              ),
+              labelStyle: GoogleFonts.inter(color: AppTheme.textSecondary),
+            ),
+            style: GoogleFonts.inter(color: AppTheme.textPrimary),
+            maxLength: 200,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Column(
+          children: [
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 48,
+              child: ElevatedButton.icon(
+                onPressed: _getCurrentLocation,
+                icon: const Icon(
+                  Symbols.my_location,
+                  size: 18,
+                ),
+                label: Text(
+                  'GPS',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Future<void> _getCurrentLocation() async {
+    if (!mounted) return;
+
+    // Mostrar indicador de carga
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              '🔍 Obteniendo ubicación GPS...',
+              style: GoogleFonts.inter(),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.blue,
+        duration: const Duration(seconds: 30), // Dar tiempo suficiente
+      ),
+    );
+
+    try {
+      final address = await LocationUtils.getCurrentAddress();
+      
+      // Ocultar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
+      if (address != null && mounted) {
+        setState(() {
+          _locationController.text = address;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '📍 Ubicación obtenida: $address',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.red,
+            action: SnackBarAction(
+              label: 'Configuración',
+              textColor: Colors.white,
+              onPressed: () async {
+                await LocationUtils.openLocationSettings();
+              },
+            ),
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    } catch (e) {
+      // Ocultar indicador de carga
+      if (mounted) {
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+      }
+      
+      if (mounted) {
+        String errorMessage = '❌ Error al obtener ubicación.';
+        SnackBarAction? action;
+        
+        if (e.toString().contains('Permisos de ubicación denegados')) {
+          errorMessage = '❌ Permisos de ubicación denegados.';
+          action = SnackBarAction(
+            label: 'Configurar',
+            textColor: Colors.white,
+            onPressed: () async {
+              await LocationUtils.openAppSettings();
+            },
+          );
+        }
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errorMessage,
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.red,
+            action: action,
+            duration: const Duration(seconds: 6),
+          ),
+        );
+      }
+    }
+  }
+
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -819,6 +997,12 @@ class _EditProfilePageState extends State<EditProfilePage>
         email: _emailController.text.trim(), // Email no se puede cambiar por seguridad
         phoneNumber: _phoneController.text.trim().isNotEmpty 
             ? _phoneController.text.trim() 
+            : null,
+        bio: _bioController.text.trim().isNotEmpty 
+            ? _bioController.text.trim() 
+            : null,
+        location: _locationController.text.trim().isNotEmpty 
+            ? _locationController.text.trim() 
             : null,
         photoUrl: _profileImageUrl,
         createdAt: currentUser.createdAt,
