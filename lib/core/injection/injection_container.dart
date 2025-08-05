@@ -19,6 +19,7 @@ import 'package:prosavis/domain/usecases/services/create_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/search_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_featured_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_nearby_services_usecase.dart';
+import 'package:prosavis/domain/usecases/services/get_user_services_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
 import 'package:prosavis/presentation/blocs/home/home_bloc.dart';
@@ -127,6 +128,11 @@ Future<void> init() async {
       () => GetNearbyServicesUseCase(sl<ServiceRepository>()),
     );
     developer.log('✅ GetNearbyServicesUseCase registrado');
+
+    sl.registerLazySingleton<GetUserServicesUseCase>(
+      () => GetUserServicesUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ GetUserServicesUseCase registrado');
 
     // BLoCs
     sl.registerFactory(

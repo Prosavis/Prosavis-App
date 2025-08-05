@@ -301,18 +301,6 @@ class _ProfilePageState extends State<ProfilePage>
               onTap: () => context.push('/settings/language'),
               showArrow: true,
             ),
-            
-            // Opción de diagnóstico (solo en desarrollo)
-            if (const bool.fromEnvironment('dart.vm.product') == false) ...[
-              const SizedBox(height: 12),
-              _buildOptionTile(
-                icon: Symbols.bug_report,
-                title: 'Diagnóstico',
-                subtitle: 'Herramientas de depuración',
-                onTap: () => _showDiagnosticDialog(),
-                showArrow: true,
-              ),
-            ],
 
             // Sección de Usuario Autenticado
             if (authState is AuthAuthenticated) ...[
@@ -325,6 +313,16 @@ class _ProfilePageState extends State<ProfilePage>
                 title: 'Editar Perfil',
                 subtitle: 'Actualiza tu información personal',
                 onTap: () => context.push('/settings/edit-profile'),
+                showArrow: true,
+              ),
+              
+              const SizedBox(height: 12),
+              
+              _buildOptionTile(
+                icon: Symbols.work,
+                title: 'Mis servicios',
+                subtitle: 'Gestiona los servicios que ofreces',
+                onTap: () => context.push('/services/my-services'),
                 showArrow: true,
               ),
               
@@ -691,164 +689,5 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-  void _showDiagnosticDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Symbols.bug_report, size: 24),
-            const SizedBox(width: 8),
-            Text(
-              'Herramientas de Diagnóstico',
-              style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Estas herramientas pueden ayudar a solucionar problemas:',
-              style: GoogleFonts.inter(fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            
-            // Botón de limpieza completa
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _performCompleteCleanup(),
-                icon: const Icon(Symbols.delete_sweep),
-                label: Text(
-                  'Limpieza Completa',
-                  style: GoogleFonts.inter(),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Botón de diagnóstico de auth
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () => _performAuthDiagnosis(),
-                icon: const Icon(Symbols.search),
-                label: Text(
-                  'Diagnóstico de Auth',
-                  style: GoogleFonts.inter(),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'Cerrar',
-              style: GoogleFonts.inter(color: AppTheme.primaryColor),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Future<void> _performCompleteCleanup() async {
-    Navigator.of(context).pop(); // Cerrar diálogo
-    
-    // Mostrar indicador de carga
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const AlertDialog(
-        content: Row(
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(width: 16),
-            Text('Realizando limpieza completa...'),
-          ],
-        ),
-      ),
-    );
-    
-    try {
-      // Enviar evento de limpieza completa al AuthBloc
-      context.read<AuthBloc>().add(AuthSignOutRequested());
-      
-      // Esperar un momento para que se procese
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Cerrar diálogo de carga
-      Navigator.of(context).pop();
-      
-      // Mostrar resultado
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '✅ Limpieza completa realizada. Reinicia la app si es necesario.',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      // Cerrar diálogo de carga
-      Navigator.of(context).pop();
-      
-      // Mostrar error
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ Error en limpieza: $e',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  void _performAuthDiagnosis() {
-    Navigator.of(context).pop(); // Cerrar diálogo
-    
-    // Mostrar información básica del estado actual
-    final authBloc = context.read<AuthBloc>();
-    final authState = authBloc.state;
-    
-    String diagnosisMessage;
-    if (authState is AuthAuthenticated) {
-      diagnosisMessage = '👤 Usuario autenticado: ${authState.user.email}';
-    } else if (authState is AuthUnauthenticated) {
-      diagnosisMessage = '📱 Usuario no autenticado (estado correcto para navegación pública)';
-    } else if (authState is AuthLoading) {
-      diagnosisMessage = '⏳ Cargando estado de autenticación...';
-    } else if (authState is AuthError) {
-      diagnosisMessage = '❌ Error de autenticación: ${authState.message}';
-    } else {
-      diagnosisMessage = '🔍 Estado desconocido: ${authState.runtimeType}';
-    }
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          diagnosisMessage,
-          style: GoogleFonts.inter(),
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        duration: const Duration(seconds: 4),
-      ),
-    );
-  }
 }

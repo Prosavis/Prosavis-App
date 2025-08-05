@@ -4,68 +4,81 @@ service cloud.firestore {
   match /databases/{database}/documents {
     
     // === USUARIOS ===
-    // Permitir a los usuarios autenticados leer y escribir solo sus propios datos
+    // CRUD completo para su propio perfil
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
     }
     
     // === SERVICIOS ===
     // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede explorar servicios
-    // 🔒 CREACIÓN PRIVADA: Solo usuarios autenticados pueden crear/modificar
+    // 🔒 GESTIÓN PRIVADA: Solo el propietario puede crear/modificar sus servicios
     match /services/{serviceId} {
       allow read: if true; // 📖 Lectura pública para navegación
       allow create: if request.auth != null && 
-                   request.auth.uid == resource.data.providerId; // 🔐 Solo usuarios reales
+                   request.auth.uid == request.resource.data.providerId; // 🔐 Solo usuarios autenticados
       allow update, delete: if request.auth != null && 
-                           request.auth.uid == resource.data.providerId; // 🔐 Solo propietario
-    }
-    
-    // === RESERVAS ===
-    // Los usuarios pueden ver sus propias reservas (como cliente o proveedor)
-    match /bookings/{bookingId} {
-      allow read, write: if request.auth != null && 
-                        (request.auth.uid == resource.data.clientId || 
-                         request.auth.uid == resource.data.providerId);
-    }
-    
-    // === CATEGORÍAS ===
-    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede ver categorías
-    // 🔒 ADMINISTRACIÓN PRIVADA: Solo administradores pueden modificar
-    match /categories/{categoryId} {
-      allow read: if true; // 📖 Lectura pública para navegación
-      // Las categorías solo pueden ser modificadas por administradores
-      allow write: if false; // 🔐 Solo administradores (backend)
-    }
-    
-    // === MENSAJES/CHAT ===
-    // Los usuarios pueden leer/escribir solo en conversaciones donde participan
-    match /conversations/{conversationId} {
-      allow read, write: if request.auth != null && 
-                        request.auth.uid in resource.data.participants;
+                           request.auth.uid == resource.data.providerId; // 🔐 Solo el propietario
       
-      match /messages/{messageId} {
-        allow read, write: if request.auth != null && 
-                          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+      // === RESEÑAS DE SERVICIOS ===
+      // Subcolección para reseñas y puntuaciones
+      match /reviews/{reviewId} {
+        allow read: if true; // 📖 Cualquiera puede leer reseñas
+        allow create: if request.auth != null && 
+                     request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
+                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId; // 🚫 No auto-reseñas
+        allow update, delete: if request.auth != null && 
+                             request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
+      }
+      
+      // === IMÁGENES DE SERVICIOS ===
+      // Metadatos de imágenes (las imágenes reales van en Storage)
+      match /images/{imageId} {
+        allow read: if true; // 📖 Cualquiera puede ver metadatos de imágenes
+        allow write: if request.auth != null && 
+                    request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.providerId; // 🔐 Solo el propietario del servicio
       }
     }
     
+    // === CATEGORÍAS DE SERVICIOS ===
+    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede ver categorías
+    // 🔒 GESTIÓN ADMIN: Solo administradores pueden modificar
+    match /categories/{categoryId} {
+      allow read: if true; // 📖 Lectura pública para navegación
+      allow write: if false; // 🔐 Solo administradores (desde backend/consola)
+    }
+    
     // === NOTIFICACIONES ===
-    // Los usuarios solo pueden leer sus propias notificaciones
+    // Sistema de notificaciones para usuarios
     match /notifications/{notificationId} {
       allow read: if request.auth != null && 
-                 request.auth.uid == resource.data.userId;
-      // Las notificaciones se crean desde el backend
-      allow write: if false;
+                 request.auth.uid == resource.data.userId; // 🔐 Solo el destinatario
+      allow write: if false; // 🔐 Solo el sistema puede crear notificaciones
     }
     
     // === CONFIGURACIÓN GLOBAL ===
-    // Solo lectura para configuraciones globales de la app
+    // Configuración pública de la aplicación
     match /app_config/{configId} {
-      allow read: if request.auth != null;
-      allow write: if false; // Solo administradores desde backend
+      allow read: if true; // 📖 Configuración pública (términos, contacto, etc.)
+      allow write: if false; // 🔐 Solo administradores desde backend
     }
     
-    // Denegar acceso a todo lo demás por defecto
+    // === UBICACIONES ===
+    // Cache de ubicaciones para mejorar rendimiento
+    match /locations/{locationId} {
+      allow read: if true; // 📖 Lectura pública para búsquedas geográficas
+      allow write: if false; // 🔐 Solo el sistema puede gestionar ubicaciones
+    }
+    
+    // === REPORTES ===
+    // Sistema de reportes para servicios/usuarios problemáticos
+    match /reports/{reportId} {
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.reporterId; // 🔐 Solo usuarios autenticados pueden reportar
+      allow read, update, delete: if false; // 🔐 Solo administradores desde backend
+    }
+    
+    // 🚫 Denegar acceso a todo lo demás por defecto
     match /{document=**} {
       allow read, write: if false;
     }

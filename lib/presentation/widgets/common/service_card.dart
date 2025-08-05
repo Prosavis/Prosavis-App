@@ -11,6 +11,8 @@ class ServiceCard extends StatelessWidget {
   final bool isHorizontal;
   final VoidCallback onTap;
   final String? imageUrl;
+  final bool showEditButton;
+  final VoidCallback? onEditPressed;
 
   const ServiceCard({
     super.key,
@@ -21,6 +23,8 @@ class ServiceCard extends StatelessWidget {
     this.isHorizontal = false,
     required this.onTap,
     this.imageUrl,
+    this.showEditButton = false,
+    this.onEditPressed,
   });
 
   @override
@@ -50,24 +54,50 @@ class ServiceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image
-            Container(
-              height: 120,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
-              ),
-              child: imageUrl != null
-                  ? ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                      child: Image.network(
-                        imageUrl!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+            // Image with edit button overlay
+            Stack(
+              children: [
+                Container(
+                  height: 120,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  ),
+                  child: imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                          child: Image.network(
+                            imageUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
+                          ),
+                        )
+                      : _buildPlaceholderImage(),
+                ),
+                // Edit button overlay
+                if (showEditButton && onEditPressed != null)
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: Material(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(20),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(20),
+                        onTap: onEditPressed,
+                        child: const Padding(
+                          padding: EdgeInsets.all(8),
+                          child: Icon(
+                            Symbols.edit,
+                            size: 16,
+                            color: AppTheme.primaryColor,
+                          ),
+                        ),
                       ),
-                    )
-                  : _buildPlaceholderImage(),
+                    ),
+                  ),
+              ],
             ),
             
             // Content
