@@ -203,6 +203,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   // Método para forzar limpieza completa del estado de autenticación
+  @override
   Future<void> forceCompleteSignOut() async {
     try {
       developer.log('🧹 Forzando limpieza completa de autenticación...');
@@ -215,6 +216,7 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   // Método de diagnóstico
+  @override
   void diagnoseAuthState() {
     _firebaseService.diagnoseAuthState();
   }

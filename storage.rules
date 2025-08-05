@@ -1,0 +1,51 @@
+rules_version = '2';
+
+// 🔥 FIREBASE STORAGE SECURITY RULES
+// Reglas para gestión de imágenes y archivos
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // === IMÁGENES DE PERFIL ===
+    // 🔒 Solo el propietario puede gestionar sus fotos de perfil
+    match /profile_images/{fileName} {
+      // Permitir lectura de imágenes de perfil para mostrar en la app
+      allow read: if true;
+      
+      // Solo usuarios autenticados pueden subir/modificar sus propias imágenes
+      allow write: if request.auth != null && 
+                   fileName.matches('.*' + request.auth.uid + '.*') &&
+                   request.resource.size < 5 * 1024 * 1024 && // Máximo 5MB
+                   request.resource.contentType.matches('image/.*'); // Solo imágenes
+    }
+    
+    // === IMÁGENES DE SERVICIOS ===
+    // 🔒 Solo el propietario del servicio puede gestionar las imágenes
+    match /service_images/{fileName} {
+      // Permitir lectura pública de imágenes de servicios para navegación
+      allow read: if true;
+      
+      // Solo usuarios autenticados pueden subir/modificar imágenes de servicios
+      allow write: if request.auth != null && 
+                   request.resource.size < 10 * 1024 * 1024 && // Máximo 10MB para servicios
+                   request.resource.contentType.matches('image/.*') && // Solo imágenes
+                   // Validar formatos permitidos (JPEG, PNG, WebP)
+                   (request.resource.contentType == 'image/jpeg' ||
+                    request.resource.contentType == 'image/png' ||
+                    request.resource.contentType == 'image/webp');
+    }
+    
+    // === DOCUMENTOS Y CERTIFICADOS ===
+    // Para futuras funcionalidades de verificación
+    match /documents/{userId}/{fileName} {
+      allow read, write: if request.auth != null && 
+                        request.auth.uid == userId &&
+                        request.resource.size < 2 * 1024 * 1024; // Máximo 2MB para documentos
+    }
+    
+    // 🚫 Denegar acceso a todo lo demás por defecto
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

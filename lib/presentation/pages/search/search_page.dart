@@ -10,7 +10,6 @@ import '../../blocs/search/search_bloc.dart';
 import '../../blocs/search/search_event.dart';
 import '../../blocs/search/search_state.dart';
 import '../services/service_details_page.dart';
-import '../services/category_services_page.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -435,23 +434,10 @@ class _SearchPageState extends State<SearchPage>
               price: service.price,
               rating: service.rating,
               onTap: () {
-                // Convertir ServiceEntity a ServiceItem para detalles
-                final serviceItem = ServiceItem(
-                  id: service.id,
-                  title: service.title,
-                  provider: service.providerName,
-                  price: service.price,
-                  rating: service.rating,
-                  category: service.category,
-                  description: service.description,
-                  isAvailable: service.isActive,
-                  distance: 0.0, // Por ahora sin geolocalización
-                );
-                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: serviceItem),
+                    builder: (context) => ServiceDetailsPage(service: service),
                   ),
                 );
               },

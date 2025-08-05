@@ -3,6 +3,9 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/injection/injection_container.dart';
+import '../../../domain/entities/service_entity.dart';
+import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
 import 'service_details_page.dart';
@@ -23,16 +26,20 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  late SearchServicesUseCase _searchServicesUseCase;
 
   final TextEditingController _searchController = TextEditingController();
   FilterSettings _currentFilters = FilterSettings();
-  List<ServiceItem> _services = [];
-  List<ServiceItem> _filteredServices = [];
+  List<ServiceEntity> _services = [];
+  List<ServiceEntity> _filteredServices = [];
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _searchServicesUseCase = sl<SearchServicesUseCase>();
+    
     _fadeController = AnimationController(
       duration: AppConstants.mediumAnimation,
       vsync: this,
@@ -80,7 +87,11 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
             _buildSearchAndFilters(),
             _buildResultsHeader(),
             Expanded(
-              child: _isLoading ? _buildLoadingState() : _buildServicesList(),
+              child: _isLoading
+                  ? _buildLoadingState()
+                  : _errorMessage != null
+                      ? _buildErrorState()
+                      : _buildServicesList(),
             ),
           ],
         ),
@@ -199,15 +210,62 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
           padding: const EdgeInsets.only(bottom: 16),
           child: ServiceCard(
             title: service.title,
-            provider: service.provider,
+            provider: service.providerName,
             price: service.price,
             rating: service.rating,
-            imageUrl: service.imageUrl,
+            imageUrl: service.images.isNotEmpty ? service.images.first : null,
             isHorizontal: true,
             onTap: () => _navigateToServiceDetails(service),
           ),
         );
       },
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(
+            Symbols.error_outline,
+            size: 64,
+            color: Colors.red,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Error al cargar servicios',
+            style: GoogleFonts.inter(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _errorMessage ?? 'Ha ocurrido un error inesperado',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppTheme.textTertiary,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton(
+            onPressed: _loadServices,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryColor,
+            ),
+            child: Text(
+              'Reintentar',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -264,109 +322,39 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     );
   }
 
-  void _loadServices() {
+  Future<void> _loadServices() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    // Mock data - in real app, this would load from your data source
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    try {
+      // Obtener servicios reales filtrados por categoría desde Firestore
+      final categoryName = widget.category['name'] as String;
+      final services = await _searchServicesUseCase.call(
+        SearchServicesParams(
+          category: categoryName,
+          limit: 50, // Cargar más servicios para poder filtrar
+        ),
+      );
+
       if (mounted) {
         setState(() {
-          _services = _generateMockServices();
-          _filteredServices = _services;
+          _services = services;
+          _filteredServices = services;
           _isLoading = false;
         });
       }
-    });
-  }
-
-  List<ServiceItem> _generateMockServices() {
-    final categoryName = widget.category['name'] as String;
-    final List<ServiceItem> services = [];
-    
-    // Generate mock services based on category
-    for (int i = 1; i <= 15; i++) {
-      services.add(ServiceItem(
-        id: '${categoryName.toLowerCase()}_$i',
-        title: _getServiceTitle(categoryName, i),
-        provider: _getProviderName(i),
-        price: _getServicePrice(categoryName, i),
-        rating: 3.5 + (i % 4) * 0.3,
-        imageUrl: null,
-        category: categoryName,
-        description: _getServiceDescription(categoryName, i),
-        isAvailable: i % 4 != 0,
-        distance: (i % 10) + 1.0,
-      ));
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _services = [];
+          _filteredServices = [];
+          _isLoading = false;
+          _errorMessage = 'Error al cargar servicios: $e';
+        });
+      }
     }
-    
-    return services;
-  }
-
-  String _getServiceTitle(String category, int index) {
-    final Map<String, List<String>> categoryTitles = {
-      'Limpieza': [
-        'Limpieza profunda de hogar',
-        'Limpieza de oficinas',
-        'Limpieza post-construcción',
-        'Limpieza de alfombras',
-        'Limpieza de ventanas',
-      ],
-      'Plomería': [
-        'Reparación de tuberías',
-        'Instalación de grifos',
-        'Destape de drenajes',
-        'Reparación de inodoros',
-        'Instalación de regaderas',
-      ],
-      'Electricidad': [
-        'Instalación eléctrica',
-        'Reparación de contactos',
-        'Instalación de lámparas',
-        'Cableado de casas',
-        'Reparación de tableros',
-      ],
-      // Add more categories as needed
-    };
-    
-    final titles = categoryTitles[category] ?? ['Servicio de $category'];
-    return titles[(index - 1) % titles.length];
-  }
-
-  String _getProviderName(int index) {
-    final List<String> names = [
-      'Juan Pérez', 'María García', 'Carlos López', 'Ana Martínez',
-      'Luis Rodríguez', 'Carmen Silva', 'Miguel Torres', 'Laura Jiménez',
-      'Roberto Díaz', 'Patricia Ruiz', 'Fernando Morales', 'Isabel Castro',
-      'Andrés Herrera', 'Mónica Vargas', 'Daniel Romero'
-    ];
-    
-    return names[(index - 1) % names.length];
-  }
-
-  double _getServicePrice(String category, int index) {
-    final Map<String, double> basePrices = {
-      'Limpieza': 25.0,
-      'Plomería': 40.0,
-      'Electricidad': 50.0,
-      'Carpintería': 35.0,
-      'Pintura': 30.0,
-      'Jardinería': 20.0,
-      'Tecnología': 60.0,
-      'Mecánica': 45.0,
-      'Cocina': 80.0,
-      'Tutorías': 15.0,
-      'Belleza': 25.0,
-      'Mudanzas': 100.0,
-    };
-    
-    final basePrice = basePrices[category] ?? 30.0;
-    return basePrice + (index % 5) * 10.0;
-  }
-
-  String _getServiceDescription(String category, int index) {
-    return 'Servicio profesional de $category con años de experiencia. Trabajo garantizado y materiales de calidad incluidos.';
   }
 
   void _filterServices([String? query]) {
@@ -376,7 +364,8 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       _filteredServices = _services.where((service) {
         final matchesSearch = searchQuery.isEmpty ||
             service.title.toLowerCase().contains(searchQuery.toLowerCase()) ||
-            service.provider.toLowerCase().contains(searchQuery.toLowerCase());
+            service.providerName.toLowerCase().contains(searchQuery.toLowerCase()) ||
+            service.description.toLowerCase().contains(searchQuery.toLowerCase());
         
         final matchesFilters = _matchesFilters(service);
         
@@ -388,7 +377,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     });
   }
 
-  bool _matchesFilters(ServiceItem service) {
+  bool _matchesFilters(ServiceEntity service) {
     if (_currentFilters.minPrice > 0 && service.price < _currentFilters.minPrice) {
       return false;
     }
@@ -401,11 +390,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       return false;
     }
     
-    if (_currentFilters.radiusKm < 50 && service.distance > _currentFilters.radiusKm) {
-      return false;
-    }
-    
-    if (_currentFilters.availableNow && !service.isAvailable) {
+    if (_currentFilters.availableNow && !service.isActive) {
       return false;
     }
     
@@ -424,13 +409,14 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
         _filteredServices.sort((a, b) => b.rating.compareTo(a.rating));
         break;
       case SortOption.distance:
-        _filteredServices.sort((a, b) => a.distance.compareTo(b.distance));
+        // Para distancia, podríamos calcular basado en ubicación
+        // Por ahora mantener orden original
         break;
       case SortOption.newest:
-        // Keep original order for newest
+        _filteredServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         break;
       case SortOption.relevance:
-        // Keep original order for relevance
+        // Mantener orden original para relevancia
         break;
     }
   }
@@ -460,7 +446,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     _filterServices('');
   }
 
-  void _navigateToServiceDetails(ServiceItem service) {
+  void _navigateToServiceDetails(ServiceEntity service) {
     Navigator.push(
       context,
       MaterialPageRoute(

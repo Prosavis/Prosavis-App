@@ -200,12 +200,7 @@ class FirebaseService {
       
       // Usar el flujo estándar de Google Sign-In
       developer.log('🔑 Solicitando autenticación de Google...');
-      final GoogleSignInAccount? googleUser = await _googleSignIn.authenticate();
-      
-      if (googleUser == null) {
-        developer.log('❌ Usuario canceló Google Sign-In o no se pudo obtener cuenta');
-        return null;
-      }
+      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
       
       developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
 

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import 'category_services_page.dart';
+import '../../../core/utils/location_utils.dart';
+import '../../../domain/entities/service_entity.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_state.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
-  final ServiceItem service;
+  final ServiceEntity service;
 
   const ServiceDetailsPage({
     super.key,
@@ -26,34 +30,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   bool _isFavorite = false;
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
+  String? _calculatedDistance;
 
-  // Mock data for service details
-  final List<String> _serviceImages = [
-    'https://via.placeholder.com/400x300/2196F3/FFFFFF?text=Trabajo+1',
-    'https://via.placeholder.com/400x300/4CAF50/FFFFFF?text=Trabajo+2',
-    'https://via.placeholder.com/400x300/FF9800/FFFFFF?text=Trabajo+3',
-  ];
 
-  final List<Review> _reviews = [
-    Review(
-      name: 'Ana María',
-      rating: 5.0,
-      comment: 'Excelente trabajo, muy profesional y puntual. Lo recomiendo 100%.',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-    Review(
-      name: 'Carlos Pérez',
-      rating: 4.5,
-      comment: 'Buen servicio, precio justo y trabajo de calidad.',
-      date: DateTime.now().subtract(const Duration(days: 7)),
-    ),
-    Review(
-      name: 'María José',
-      rating: 5.0,
-      comment: 'Quedé muy satisfecha con el resultado. Definitivamente lo contrataré de nuevo.',
-      date: DateTime.now().subtract(const Duration(days: 12)),
-    ),
-  ];
+
+  List<Review> _reviews = []; // Las reseñas se cargarán dinámicamente
 
   @override
   void initState() {
@@ -67,7 +48,29 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
+    _calculateDistance();
+    _loadReviews();
     _fadeController.forward();
+  }
+
+  Future<void> _loadReviews() async {
+    // Implementar carga real de reseñas desde Firestore
+    // Por ahora mantenemos la lista vacía para mostrar estado coherente
+    setState(() {
+      _reviews = [];
+    });
+  }
+
+  Future<void> _calculateDistance() async {
+    final distance = await LocationUtils.calculateDistanceToService(
+      serviceLocation: widget.service.location,
+    );
+    
+    if (mounted) {
+      setState(() {
+        _calculatedDistance = distance;
+      });
+    }
   }
 
   @override
@@ -147,25 +150,112 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppTheme.primaryColor,
-                AppTheme.primaryColor.withValues(alpha: 0.8),
-              ],
-            ),
-          ),
-          child: Center(
-            child: Icon(
-              Symbols.work,
-              size: 80,
-              color: Colors.white.withValues(alpha: 0.3),
-            ),
-          ),
-        ),
+        background: widget.service.mainImage != null
+            ? Container(
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade200,
+                ),
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    // Mostrar imagen real si es una URL, o ícono si es simulada
+                    widget.service.mainImage!.startsWith('https://')
+                        ? Image.network(
+                            widget.service.mainImage!,
+                            width: double.infinity,
+                            height: double.infinity,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, loadingProgress) {
+                              if (loadingProgress == null) return child;
+                              return const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 3,
+                                  color: AppTheme.primaryColor,
+                                ),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Symbols.broken_image,
+                                      size: 48,
+                                      color: AppTheme.primaryColor,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Error al cargar imagen',
+                                      style: GoogleFonts.inter(
+                                        fontSize: 14,
+                                        color: AppTheme.textSecondary,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          )
+                        : Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(
+                                  Symbols.camera_alt,
+                                  size: 48,
+                                  color: AppTheme.primaryColor,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Imagen principal (simulación)',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 14,
+                                    color: AppTheme.textSecondary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                    // Overlay para mejorar legibilidad de los botones
+                    Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.3),
+                            Colors.transparent,
+                            Colors.transparent,
+                            Colors.black.withValues(alpha: 0.1),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.primaryColor,
+                      AppTheme.primaryColor.withValues(alpha: 0.8),
+                    ],
+                  ),
+                ),
+                child: Center(
+                  child: Icon(
+                    Symbols.work,
+                    size: 80,
+                    color: Colors.white.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
       ),
     );
   }
@@ -183,11 +273,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: widget.service.isAvailable ? Colors.green : Colors.orange,
+                    color: widget.service.isActive ? Colors.green : Colors.orange,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    widget.service.isAvailable ? 'Disponible' : 'Ocupado',
+                    widget.service.isActive ? 'Disponible' : 'No disponible',
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -236,7 +326,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  widget.service.provider,
+                  widget.service.providerName,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     color: AppTheme.textSecondary,
@@ -247,23 +337,42 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             const SizedBox(height: 8),
             
-            Row(
-              children: [
-                const Icon(
-                  Symbols.location_on,
-                  size: 20,
-                  color: AppTheme.textSecondary,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${widget.service.distance.toStringAsFixed(1)} km de distancia',
-                  style: GoogleFonts.inter(
-                    fontSize: 14,
+            if (widget.service.address != null || _calculatedDistance != null)
+              Row(
+                children: [
+                  const Icon(
+                    Symbols.location_on,
+                    size: 20,
                     color: AppTheme.textSecondary,
                   ),
-                ),
-              ],
-            ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (widget.service.address != null)
+                          Text(
+                            widget.service.address!,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: AppTheme.textSecondary,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        if (_calculatedDistance != null)
+                          Text(
+                            '$_calculatedDistance de distancia',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppTheme.textTertiary,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             
             const SizedBox(height: 16),
             
@@ -287,7 +396,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '(${_reviews.length} reseñas)',
+                      '(${widget.service.reviewCount} reseñas)',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: AppTheme.textSecondary,
@@ -313,9 +422,65 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Widget _buildImageGallery() {
+    final galleryImages = widget.service.images;
+    
+    if (galleryImages.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Container(
+          margin: const EdgeInsets.symmetric(vertical: 8),
+          color: Colors.white,
+          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Galería de trabajos',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Symbols.photo_library,
+                        size: 32,
+                        color: AppTheme.textTertiary,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'No hay fotos de trabajos disponibles',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppTheme.textTertiary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
+        color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -340,7 +505,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     _currentImageIndex = index;
                   });
                 },
-                itemCount: _serviceImages.length,
+                itemCount: galleryImages.length,
                 itemBuilder: (context, index) {
                   return Container(
                     margin: const EdgeInsets.symmetric(horizontal: 8),
@@ -348,11 +513,24 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       borderRadius: BorderRadius.circular(12),
                       color: Colors.grey.shade200,
                     ),
-                    child: const Center(
-                      child: Icon(
-                        Symbols.image,
-                        size: 64,
-                        color: AppTheme.textTertiary,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Symbols.image,
+                            size: 48,
+                            color: AppTheme.textTertiary,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Trabajo ${index + 1}',
+                            style: GoogleFonts.inter(
+                              fontSize: 12,
+                              color: AppTheme.textTertiary,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   );
@@ -360,22 +538,24 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               ),
             ),
             const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: _serviceImages.asMap().entries.map((entry) {
-                return Container(
-                  width: 8,
-                  height: 8,
-                  margin: const EdgeInsets.symmetric(horizontal: 4),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _currentImageIndex == entry.key
-                        ? AppTheme.primaryColor
-                        : Colors.grey.shade300,
-                  ),
-                );
-              }).toList(),
-            ),
+            if (galleryImages.length > 1)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: galleryImages.asMap().entries.map((entry) {
+                  return Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.symmetric(horizontal: 4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: _currentImageIndex == entry.key
+                          ? AppTheme.primaryColor
+                          : Colors.grey.shade300,
+                    ),
+                  );
+                }).toList(),
+              ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
@@ -417,13 +597,51 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Widget _buildServiceFeatures() {
-    final features = [
-      'Garantía de satisfacción',
-      'Materiales incluidos',
-      'Presupuesto gratuito',
-      'Servicio a domicilio',
-      'Experiencia certificada',
-    ];
+    final features = widget.service.features;
+
+    if (features.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Incluye:',
+            style: GoogleFonts.inter(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Symbols.info,
+                  size: 16,
+                  color: AppTheme.textTertiary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'No se especificaron características adicionales',
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppTheme.textTertiary,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -438,20 +656,27 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
         const SizedBox(height: 8),
         ...features.map((feature) => Padding(
-          padding: const EdgeInsets.only(bottom: 4),
+          padding: const EdgeInsets.only(bottom: 6),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Symbols.check_circle,
-                size: 16,
-                color: Colors.green,
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                child: const Icon(
+                  Symbols.check_circle,
+                  size: 16,
+                  color: Colors.green,
+                ),
               ),
               const SizedBox(width: 8),
-              Text(
-                feature,
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: AppTheme.textSecondary,
+              Expanded(
+                child: Text(
+                  feature,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: AppTheme.textSecondary,
+                    height: 1.3,
+                  ),
                 ),
               ),
             ],
@@ -484,14 +709,19 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: AppTheme.primaryColor,
-                  child: Text(
-                    widget.service.provider[0].toUpperCase(),
-                    style: GoogleFonts.inter(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
+                  backgroundImage: widget.service.providerPhotoUrl != null 
+                      ? NetworkImage(widget.service.providerPhotoUrl!)
+                      : null,
+                  child: widget.service.providerPhotoUrl == null
+                      ? Text(
+                          widget.service.providerName[0].toUpperCase(),
+                          style: GoogleFonts.inter(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -499,7 +729,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.service.provider,
+                        widget.service.providerName,
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -508,20 +738,30 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Miembro desde 2020',
+                        'Miembro desde ${widget.service.createdAt.year}',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppTheme.textSecondary,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '95% trabajos completados',
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          color: Colors.green,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          const Icon(
+                            Symbols.star,
+                            size: 14,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            widget.service.rating.toStringAsFixed(1),
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
+                              color: Colors.orange.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -563,20 +803,81 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   ),
                 ),
                 const Spacer(),
-                TextButton(
-                  onPressed: _viewAllReviews,
-                  child: Text(
-                    'Ver todas',
-                    style: GoogleFonts.inter(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
+                if (_reviews.isNotEmpty)
+                  TextButton(
+                    onPressed: _viewAllReviews,
+                    child: Text(
+                      'Ver todas',
+                      style: GoogleFonts.inter(
+                        color: AppTheme.primaryColor,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-                ),
               ],
             ),
             const SizedBox(height: 16),
-            ..._reviews.take(2).map((review) => _buildReviewItem(review)),
+            
+            if (_reviews.isEmpty)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Symbols.reviews,
+                      size: 48,
+                      color: AppTheme.textTertiary,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '¡Sé el primero en dejar una reseña!',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Tu opinión ayuda a otros usuarios',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppTheme.textTertiary,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ..._reviews.take(2).map((review) => _buildReviewItem(review)),
+            
+            const SizedBox(height: 16),
+            
+            // Botón para agregar reseña
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _showAddReviewDialog,
+                icon: const Icon(Symbols.rate_review, size: 18),
+                label: Text(
+                  'Agregar reseña',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppTheme.primaryColor,
+                  side: const BorderSide(color: AppTheme.primaryColor),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -677,30 +978,44 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               ),
             ),
             const SizedBox(height: 16),
-            SizedBox(
+            
+            // Implementar carga real de servicios similares desde Firestore
+            Container(
+              width: double.infinity,
               height: 120,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 5,
-                itemBuilder: (context, index) {
-                  return Container(
-                    width: 200,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      color: AppTheme.backgroundColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Symbols.search_off,
+                      size: 32,
+                      color: AppTheme.textTertiary,
                     ),
-                    child: Center(
-                      child: Text(
-                        'Servicio similar ${index + 1}',
-                        style: GoogleFonts.inter(
-                          color: AppTheme.textSecondary,
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'No hay servicios similares disponibles',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: AppTheme.textTertiary,
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 4),
+                    Text(
+                      'Categoría: ${widget.service.category}',
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: AppTheme.textTertiary,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -808,8 +1123,224 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
 
   void _viewAllReviews() {
+    // Implementar navegación a página de todas las reseñas
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Todas las reseñas',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: 300,
+            child: _reviews.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Symbols.reviews,
+                          size: 48,
+                          color: AppTheme.textTertiary,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Aún no hay reseñas',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    itemCount: _reviews.length,
+                    itemBuilder: (context, index) {
+                      return _buildReviewItem(_reviews[index]);
+                    },
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cerrar',
+                style: GoogleFonts.inter(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showAddReviewDialog() {
+    // Verificar si el usuario está autenticado
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) {
+      _showAuthRequiredDialog();
+      return;
+    }
+
+    double rating = 5.0;
+    final TextEditingController commentController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text(
+                'Agregar reseña',
+                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Califica tu experiencia con este servicio',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  
+                  // Selector de estrellas
+                  Text(
+                    'Calificación',
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: List.generate(5, (index) {
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            rating = (index + 1).toDouble();
+                          });
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Icon(
+                            index < rating ? Symbols.star : Symbols.star_outline,
+                            size: 32,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      );
+                    }),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Campo de comentario
+                  TextFormField(
+                    controller: commentController,
+                    decoration: const InputDecoration(
+                      labelText: 'Comentario (opcional)',
+                      hintText: 'Comparte tu experiencia...',
+                      prefixIcon: Icon(Symbols.comment),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 3,
+                    maxLength: 200,
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    'Cancelar',
+                    style: GoogleFonts.inter(color: AppTheme.textSecondary),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _submitReview(rating, commentController.text.trim());
+                    Navigator.of(context).pop();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: Text(
+                    'Publicar reseña',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAuthRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Inicio de sesión requerido',
+            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          ),
+          content: Text(
+            'Para agregar una reseña necesitas iniciar sesión o crear una cuenta.',
+            style: GoogleFonts.inter(),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(color: AppTheme.textSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navegar a página de login
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Navegación a login próximamente')),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+              ),
+              child: Text(
+                'Iniciar sesión',
+                style: GoogleFonts.inter(fontWeight: FontWeight.w600),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _submitReview(double rating, String comment) {
+    // Implementar envío real de reseña a Firestore
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Ver todas las reseñas próximamente')),
+      SnackBar(
+        content: Text('Reseña de ${rating.toInt()} estrella${rating > 1 ? 's' : ''} enviada'),
+        backgroundColor: Colors.green,
+      ),
     );
   }
 }

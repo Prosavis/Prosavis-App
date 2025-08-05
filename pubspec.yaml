@@ -56,6 +56,10 @@ dependencies:
   pdf: ^3.11.1
   image_picker: ^1.1.2
   permission_handler: ^12.0.1
+  
+  # Geolocation
+  geolocator: ^13.0.1
+  geocoding: ^3.0.0
 
 
 dev_dependencies:

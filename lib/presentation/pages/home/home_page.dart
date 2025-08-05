@@ -14,7 +14,6 @@ import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
 
 import '../../widgets/common/service_card.dart';
-import '../../widgets/common/filters_bottom_sheet.dart';
 import '../../widgets/common/auth_required_dialog.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
@@ -282,7 +281,7 @@ class _HomePageState extends State<HomePage>
             context.push('/search');
           },
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -300,23 +299,6 @@ class _HomePageState extends State<HomePage>
                       color: AppTheme.textTertiary,
                     ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      backgroundColor: Colors.transparent,
-                      builder: (context) => FiltersBottomSheet(
-                        onFiltersApplied: (filters) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Filtros aplicados')),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                  icon: const Icon(Symbols.tune, color: AppTheme.textTertiary),
                 ),
               ],
             ),
@@ -550,23 +532,10 @@ class _HomePageState extends State<HomePage>
               rating: service.rating,
               imageUrl: service.images.isNotEmpty ? service.images.first : null,
               onTap: () {
-                final serviceItem = ServiceItem(
-                  id: service.id,
-                  title: service.title,
-                  provider: service.providerName,
-                  price: service.price,
-                  rating: service.rating,
-                  category: service.category,
-                  description: service.description,
-                  isAvailable: service.isActive,
-                  distance: 2.5, // Por defecto, puede ser calculado en el futuro
-                  imageUrl: service.images.isNotEmpty ? service.images.first : null,
-                );
-                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: serviceItem),
+                    builder: (context) => ServiceDetailsPage(service: service),
                   ),
                 );
               },
@@ -667,23 +636,10 @@ class _HomePageState extends State<HomePage>
               imageUrl: service.images.isNotEmpty ? service.images.first : null,
               isHorizontal: true,
               onTap: () {
-                final serviceItem = ServiceItem(
-                  id: service.id,
-                  title: service.title,
-                  provider: service.providerName,
-                  price: service.price,
-                  rating: service.rating,
-                  category: service.category,
-                  description: service.description,
-                  isAvailable: service.isActive,
-                  distance: 0.5, // Por defecto, puede ser calculado en el futuro
-                  imageUrl: service.images.isNotEmpty ? service.images.first : null,
-                );
-                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: serviceItem),
+                    builder: (context) => ServiceDetailsPage(service: service),
                   ),
                 );
               },

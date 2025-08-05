@@ -3,8 +3,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 import '../models/user_model.dart';
 import '../models/service_model.dart';
+import '../models/review_model.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/entities/service_entity.dart';
+import '../../domain/entities/review_entity.dart';
 
 class FirestoreService {
   static FirebaseFirestore? _firestore;
@@ -201,8 +203,7 @@ class FirestoreService {
     try {
       final querySnapshot = await firestore
           .collection('services')
-          .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
+          .where('providerId', isEqualTo: userId)
           .get();
 
       final services = querySnapshot.docs.map((doc) {
@@ -210,6 +211,9 @@ class FirestoreService {
         data['id'] = doc.id;
         return ServiceModel.fromJson(data) as ServiceEntity;
       }).toList();
+      
+      // Ordenar en memoria por fecha de creación (más recientes primero)
+      services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       developer.log('✅ ${services.length} servicios obtenidos para usuario: $userId');
       return services;
@@ -241,13 +245,12 @@ class FirestoreService {
     }
   }
 
-  /// Obtener servicios disponibles (no asignados)
+  /// Obtener servicios disponibles (activos)
   Future<List<ServiceEntity>> getAvailableServices() async {
     try {
       final querySnapshot = await firestore
           .collection('services')
-          .where('isAssigned', isEqualTo: false)
-          .orderBy('createdAt', descending: true)
+          .where('isActive', isEqualTo: true)
           .get();
 
       final services = querySnapshot.docs.map((doc) {
@@ -256,7 +259,10 @@ class FirestoreService {
         return ServiceModel.fromJson(data) as ServiceEntity;
       }).toList();
       
-      developer.log('✅ ${services.length} servicios disponibles obtenidos');
+      // Ordenar en memoria por fecha de creación (más recientes primero)
+      services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      developer.log('✅ ${services.length} servicios activos obtenidos');
       return services;
     } catch (e) {
       developer.log('⚠️ Error al obtener servicios disponibles: $e');
@@ -297,8 +303,8 @@ class FirestoreService {
         firestoreQuery = firestoreQuery.where('priceType', isEqualTo: priceType);
       }
 
+      // Aplicar limit primero, sin orderBy para evitar índices compuestos
       final querySnapshot = await firestoreQuery
-          .orderBy('createdAt', descending: true)
           .limit(limit)
           .get();
 
@@ -307,6 +313,9 @@ class FirestoreService {
         data['id'] = doc.id;
         return ServiceModel.fromJson(data) as ServiceEntity;
       }).toList();
+      
+      // Ordenar en memoria por fecha de creación (más recientes primero)
+      services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
       developer.log('✅ ${services.length} servicios encontrados con filtros');
       return services;
@@ -332,15 +341,18 @@ class FirestoreService {
     try {
       return firestore
           .collection('services')
-          .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
+          .where('providerId', isEqualTo: userId)
           .snapshots()
           .map((snapshot) {
-        return snapshot.docs.map((doc) {
+        final services = snapshot.docs.map((doc) {
           final data = doc.data();
           data['id'] = doc.id;
           return ServiceModel.fromJson(data) as ServiceEntity;
         }).toList();
+        
+        // Ordenar en memoria por fecha de creación (más recientes primero)
+        services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return services;
       });
     } catch (e) {
       developer.log('⚠️ Error en stream de servicios del usuario: $e');
@@ -389,8 +401,10 @@ class FirestoreService {
         providerId: service.providerId,
         providerName: service.providerName,
         providerPhotoUrl: service.providerPhotoUrl,
+        mainImage: service.mainImage,
         images: service.images,
         tags: service.tags,
+        features: service.features,
         isActive: service.isActive,
         createdAt: service.createdAt,
         updatedAt: DateTime.now(),
@@ -425,8 +439,10 @@ class FirestoreService {
         providerId: service.providerId,
         providerName: service.providerName,
         providerPhotoUrl: service.providerPhotoUrl,
+        mainImage: service.mainImage,
         images: service.images,
         tags: service.tags,
+        features: service.features,
         isActive: service.isActive,
         createdAt: service.createdAt,
         updatedAt: DateTime.now(),
@@ -454,6 +470,200 @@ class FirestoreService {
     } catch (e) {
       developer.log('⚠️ Error al obtener servicios por proveedor: $e');
       rethrow;
+    }
+  }
+
+  // === RESEÑAS ===
+
+  /// Crear una nueva reseña
+  Future<String> createReview(ReviewEntity review) async {
+    try {
+      developer.log('📝 Creando reseña para servicio: ${review.serviceId}');
+      
+      final reviewModel = ReviewModel.fromEntity(review);
+      final docRef = await firestore
+          .collection('services')
+          .doc(review.serviceId)
+          .collection('reviews')
+          .add(reviewModel.toJson());
+      
+      developer.log('✅ Reseña creada con ID: ${docRef.id}');
+      return docRef.id;
+    } catch (e) {
+      developer.log('⚠️ Error al crear reseña: $e');
+      rethrow;
+    }
+  }
+
+  /// Obtener reseñas de un servicio específico
+  Future<List<ReviewEntity>> getServiceReviews(String serviceId, {int limit = 20}) async {
+    try {
+      developer.log('📖 Obteniendo reseñas del servicio: $serviceId');
+      
+      final querySnapshot = await firestore
+          .collection('services')
+          .doc(serviceId)
+          .collection('reviews')
+          .orderBy('createdAt', descending: true)
+          .limit(limit)
+          .get();
+      
+      final reviews = querySnapshot.docs
+          .map((doc) => ReviewModel.fromFirestore(doc).toEntity())
+          .toList();
+      
+      developer.log('✅ ${reviews.length} reseñas encontradas');
+      return reviews;
+    } catch (e) {
+      developer.log('⚠️ Error al obtener reseñas: $e');
+      return []; // Retornar lista vacía en caso de error
+    }
+  }
+
+  /// Obtener reseña específica por ID
+  Future<ReviewEntity?> getReviewById(String reviewId) async {
+    try {
+      // Nota: Esto requiere conocer el serviceId. Para simplificar, usaremos una consulta
+      final querySnapshot = await firestore
+          .collectionGroup('reviews')
+          .where(FieldPath.documentId, isEqualTo: reviewId)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isEmpty) {
+        return null;
+      }
+      
+      return ReviewModel.fromFirestore(querySnapshot.docs.first).toEntity();
+    } catch (e) {
+      developer.log('⚠️ Error al obtener reseña por ID: $e');
+      return null;
+    }
+  }
+
+  /// Actualizar una reseña existente
+  Future<void> updateReview(ReviewEntity review) async {
+    try {
+      developer.log('📝 Actualizando reseña: ${review.id}');
+      
+      final reviewModel = ReviewModel.fromEntity(review);
+      await firestore
+          .collection('services')
+          .doc(review.serviceId)
+          .collection('reviews')
+          .doc(review.id)
+          .update(reviewModel.toJson());
+      
+      developer.log('✅ Reseña actualizada');
+    } catch (e) {
+      developer.log('⚠️ Error al actualizar reseña: $e');
+      rethrow;
+    }
+  }
+
+  /// Eliminar una reseña
+  Future<void> deleteReview(String reviewId) async {
+    try {
+      // Eliminar de todas las subcolecciones reviews
+      final querySnapshot = await firestore
+          .collectionGroup('reviews')
+          .where(FieldPath.documentId, isEqualTo: reviewId)
+          .limit(1)
+          .get();
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        await querySnapshot.docs.first.reference.delete();
+        developer.log('✅ Reseña eliminada');
+      }
+    } catch (e) {
+      developer.log('⚠️ Error al eliminar reseña: $e');
+      rethrow;
+    }
+  }
+
+  /// Verificar si un usuario ya reseñó un servicio
+  Future<bool> hasUserReviewedService(String userId, String serviceId) async {
+    try {
+      final querySnapshot = await firestore
+          .collection('services')
+          .doc(serviceId)
+          .collection('reviews')
+          .where('userId', isEqualTo: userId)
+          .limit(1)
+          .get();
+      
+      return querySnapshot.docs.isNotEmpty;
+    } catch (e) {
+      developer.log('⚠️ Error al verificar reseña existente: $e');
+      return false;
+    }
+  }
+
+  /// Obtener estadísticas de reseñas de un servicio
+  Future<Map<String, dynamic>> getServiceReviewStats(String serviceId) async {
+    try {
+      final querySnapshot = await firestore
+          .collection('services')
+          .doc(serviceId)
+          .collection('reviews')
+          .get();
+      
+      if (querySnapshot.docs.isEmpty) {
+        return {
+          'averageRating': 0.0,
+          'totalReviews': 0,
+          'ratingDistribution': {
+            '5': 0,
+            '4': 0,
+            '3': 0,
+            '2': 0,
+            '1': 0,
+          },
+        };
+      }
+      
+      final reviews = querySnapshot.docs
+          .map((doc) => ReviewModel.fromFirestore(doc).toEntity())
+          .toList();
+      
+      final totalRating = reviews.fold<double>(
+        0.0,
+        (accumulator, review) => accumulator + review.rating,
+      );
+      
+      final averageRating = totalRating / reviews.length;
+      
+      final ratingDistribution = <String, int>{
+        '5': 0,
+        '4': 0,
+        '3': 0,
+        '2': 0,
+        '1': 0,
+      };
+      
+      for (final review in reviews) {
+        final rating = review.rating.round().toString();
+        ratingDistribution[rating] = (ratingDistribution[rating] ?? 0) + 1;
+      }
+      
+      return {
+        'averageRating': averageRating,
+        'totalReviews': reviews.length,
+        'ratingDistribution': ratingDistribution,
+      };
+    } catch (e) {
+      developer.log('⚠️ Error al obtener estadísticas de reseñas: $e');
+      return {
+        'averageRating': 0.0,
+        'totalReviews': 0,
+        'ratingDistribution': {
+          '5': 0,
+          '4': 0,
+          '3': 0,
+          '2': 0,
+          '1': 0,
+        },
+      };
     }
   }
 }

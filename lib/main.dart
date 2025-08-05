@@ -32,6 +32,10 @@ import 'presentation/pages/categories/categories_page.dart';
 import 'presentation/pages/notifications/notifications_page.dart';
 import 'presentation/pages/profile/profile_page.dart';
 import 'presentation/pages/services/service_creation_page.dart';
+import 'presentation/pages/services/my_services_page.dart';
+import 'presentation/pages/services/service_details_page.dart';
+import 'presentation/pages/services/service_edit_page.dart';
+import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
 
@@ -145,6 +149,38 @@ final _router = GoRouter(
     GoRoute(
       path: '/profile',
       builder: (context, state) => const ProfilePage(),
+    ),
+    GoRoute(
+      path: '/services/my-services',
+      builder: (context, state) => const MyServicesPage(),
+    ),
+    GoRoute(
+      path: '/services/create',
+      builder: (context, state) => ServiceCreationPage(
+        createServiceUseCase: di.sl<CreateServiceUseCase>(),
+      ),
+    ),
+    GoRoute(
+      path: '/services/:serviceId',
+      builder: (context, state) {
+        final serviceEntity = state.extra as ServiceEntity?;
+        if (serviceEntity != null) {
+          return ServiceDetailsPage(service: serviceEntity);
+        }
+        // Fallback si no se pasa el objeto completo
+        return const Scaffold(
+          body: Center(
+            child: Text('Error: Datos del servicio no encontrados'),
+          ),
+        );
+      },
+    ),
+    GoRoute(
+      path: '/services/edit/:serviceId',
+      builder: (context, state) {
+        final serviceId = state.pathParameters['serviceId']!;
+        return ServiceEditPage(serviceId: serviceId);
+      },
     ),
   ],
 );

@@ -10,8 +10,10 @@ class ServiceEntity extends Equatable {
   final String providerId;
   final String providerName;
   final String? providerPhotoUrl;
-  final List<String> images;
+  final String? mainImage; // Imagen principal del servicio
+  final List<String> images; // Galería de trabajos
   final List<String> tags;
+  final List<String> features; // Características/incluye del servicio
   final bool isActive;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -33,8 +35,10 @@ class ServiceEntity extends Equatable {
     required this.providerId,
     required this.providerName,
     this.providerPhotoUrl,
+    this.mainImage,
     required this.images,
     required this.tags,
+    required this.features,
     required this.isActive,
     required this.createdAt,
     required this.updatedAt,
@@ -58,8 +62,10 @@ class ServiceEntity extends Equatable {
         providerId,
         providerName,
         providerPhotoUrl,
+        mainImage,
         images,
         tags,
+        features,
         isActive,
         createdAt,
         updatedAt,
@@ -82,8 +88,10 @@ class ServiceEntity extends Equatable {
     String? providerId,
     String? providerName,
     String? providerPhotoUrl,
+    String? mainImage,
     List<String>? images,
     List<String>? tags,
+    List<String>? features,
     bool? isActive,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -105,8 +113,10 @@ class ServiceEntity extends Equatable {
       providerId: providerId ?? this.providerId,
       providerName: providerName ?? this.providerName,
       providerPhotoUrl: providerPhotoUrl ?? this.providerPhotoUrl,
+      mainImage: mainImage ?? this.mainImage,
       images: images ?? this.images,
       tags: tags ?? this.tags,
+      features: features ?? this.features,
       isActive: isActive ?? this.isActive,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

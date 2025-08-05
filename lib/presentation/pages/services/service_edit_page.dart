@@ -4,30 +4,36 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
-import '../../../domain/usecases/services/create_service_usecase.dart';
-import '../../../data/models/service_model.dart';
+import '../../../domain/entities/service_entity.dart';
+import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
+import '../../../domain/usecases/services/update_service_usecase.dart';
 import '../../../data/services/image_storage_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/image_picker_bottom_sheet.dart';
 
-class ServiceCreationPage extends StatefulWidget {
-  final CreateServiceUseCase createServiceUseCase;
+class ServiceEditPage extends StatefulWidget {
+  final String serviceId;
   
-  const ServiceCreationPage({super.key, required this.createServiceUseCase});
+  const ServiceEditPage({super.key, required this.serviceId});
 
   @override
-  State<ServiceCreationPage> createState() => _ServiceCreationPageState();
+  State<ServiceEditPage> createState() => _ServiceEditPageState();
 }
 
-class _ServiceCreationPageState extends State<ServiceCreationPage>
-    with TickerProviderStateMixin {
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+class _ServiceEditPageState extends State<ServiceEditPage> {
+  late final GetServiceByIdUseCase _getServiceByIdUseCase;
+  late final UpdateServiceUseCase _updateServiceUseCase;
+  
+  ServiceEntity? _service;
+  bool _isLoading = true;
+  bool _isUpdating = false;
+  String? _errorMessage;
 
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
@@ -44,11 +50,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final List<File> _newImages = []; // Nuevas imágenes seleccionadas
   List<String> _selectedTags = [];
   List<String> _selectedSkills = [];
-  final List<String> _availableDays = [];
+  List<String> _availableDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
   int _availabilityRadius = 10;
-  bool _isCreatingService = false;
 
   final List<String> _priceTypes = [
     'fixed',
@@ -83,21 +88,13 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
-      duration: AppConstants.mediumAnimation,
-      vsync: this,
-    );
-    
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
-    );
-
-    _fadeController.forward();
+    _getServiceByIdUseCase = sl<GetServiceByIdUseCase>();
+    _updateServiceUseCase = sl<UpdateServiceUseCase>();
+    _loadService();
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
     _titleController.dispose();
     _descriptionController.dispose();
     _priceController.dispose();
@@ -106,34 +103,283 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     super.dispose();
   }
 
+  Future<void> _loadService() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final service = await _getServiceByIdUseCase(widget.serviceId);
+      if (service == null) {
+        setState(() {
+          _errorMessage = 'Servicio no encontrado';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Verificar que el usuario actual es el propietario del servicio
+      if (mounted) {
+        final authState = context.read<AuthBloc>().state;
+        if (authState is! AuthAuthenticated || authState.user.id != service.providerId) {
+          setState(() {
+            _errorMessage = 'No tienes permisos para editar este servicio';
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+
+      // Cargar datos del servicio en los controladores
+      _titleController.text = service.title;
+      _descriptionController.text = service.description;
+      _priceController.text = service.price.toString();
+      _selectedCategory = service.category;
+      _priceType = service.priceType;
+      _mainImageUrl = service.mainImage; // Cargar imagen principal
+      _selectedImages = List.from(service.images);
+      _selectedTags = List.from(service.tags);
+      _selectedSkills = List.from(service.features);
+      _availableDays = List.from(service.availableDays);
+      _availabilityRadius = service.availabilityRadius;
+      _addressController.text = service.address ?? '';
+      // Cargar experiencia si está disponible en los tags o features
+      if (service.features.isNotEmpty) {
+        final experienceFeature = service.features.firstWhere(
+          (feature) => feature.toLowerCase().contains('experiencia') || 
+                      feature.toLowerCase().contains('años') ||
+                      feature.toLowerCase().contains('exp:'),
+          orElse: () => '',
+        );
+        if (experienceFeature.isNotEmpty) {
+          _experienceController.text = experienceFeature;
+          // Remover de features para no duplicar
+          _selectedSkills.remove(experienceFeature);
+        }
+      }
+      
+      // Cargar horarios si están disponibles
+      if (service.timeRange != null && service.timeRange!.contains('-')) {
+        final timeParts = service.timeRange!.split('-');
+        if (timeParts.length == 2) {
+          final startParts = timeParts[0].split(':');
+          final endParts = timeParts[1].split(':');
+          if (startParts.length == 2 && endParts.length == 2) {
+            _startTime = TimeOfDay(
+              hour: int.tryParse(startParts[0]) ?? 9,
+              minute: int.tryParse(startParts[1]) ?? 0,
+            );
+            _endTime = TimeOfDay(
+              hour: int.tryParse(endParts[0]) ?? 17,
+              minute: int.tryParse(endParts[1]) ?? 0,
+            );
+          }
+        }
+      }
+
+      setState(() {
+        _service = service;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Error al cargar el servicio: $e';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateService() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isUpdating = true);
+
+    try {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is! AuthAuthenticated) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      // Subir imagen principal si hay una nueva
+      String? mainImageUrl = _mainImageUrl;
+      if (_mainImageFile != null) {
+        final imageStorageService = sl<ImageStorageService>();
+        mainImageUrl = await imageStorageService.uploadServiceImage(
+          widget.serviceId,
+          _mainImageFile!,
+          'main_image',
+        );
+      }
+
+      // Subir nuevas imágenes si las hay
+      final List<String> allImages = List.from(_selectedImages);
+      if (_newImages.isNotEmpty) {
+        final imageStorageService = sl<ImageStorageService>();
+        final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
+          widget.serviceId,
+          _newImages,
+        );
+        allImages.addAll(uploadedUrls);
+      }
+
+      // Crear string de horario
+      String? timeRange;
+      if (_startTime != null && _endTime != null) {
+        final startStr = '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}';
+        final endStr = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
+        timeRange = '$startStr-$endStr';
+      }
+
+      // Combinar habilidades con experiencia si está presente
+      final List<String> finalFeatures = List.from(_selectedSkills);
+      if (_experienceController.text.trim().isNotEmpty) {
+        final experienceText = _experienceController.text.trim();
+        // Agregar prefijo si no lo tiene
+        final formattedExperience = experienceText.startsWith('exp:') 
+            ? experienceText 
+            : 'exp: $experienceText';
+        finalFeatures.add(formattedExperience);
+      }
+
+      final updatedService = _service!.copyWith(
+        title: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        price: double.parse(_priceController.text),
+        category: _selectedCategory!,
+        priceType: _priceType,
+        mainImage: mainImageUrl,
+        images: allImages,
+        tags: _selectedTags,
+        features: finalFeatures,
+        availableDays: _availableDays,
+        availabilityRadius: _availabilityRadius,
+        address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        timeRange: timeRange,
+        updatedAt: DateTime.now(),
+      );
+
+      await _updateServiceUseCase(updatedService);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '✅ Servicio actualizado exitosamente',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        context.pop(); // Regresar a la página anterior
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '❌ Error al actualizar: $e',
+              style: GoogleFonts.inter(),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: Colors.grey[50],
       appBar: AppBar(
+        title: Text(
+          'Editar servicio',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+            color: Colors.black87,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Symbols.arrow_back, color: Colors.black87),
           onPressed: () => context.pop(),
         ),
-        title: Text(
-          'Ofrecer Servicio',
-          style: GoogleFonts.inter(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
-        ),
+        actions: [
+          if (!_isLoading && _service != null)
+            TextButton(
+              onPressed: _isUpdating ? null : _updateService,
+              child: _isUpdating
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      'Guardar',
+                      style: GoogleFonts.inter(
+                        fontWeight: FontWeight.w600,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+            ),
+        ],
       ),
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: _buildCreationForm(),
-      ),
+      body: _buildBody(),
     );
   }
 
-  Widget _buildCreationForm() {
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Cargando servicio...'),
+          ],
+        ),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Symbols.error_outline,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: GoogleFonts.inter(
+                fontSize: 16,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadService,
+              child: Text(
+                'Reintentar',
+                style: GoogleFonts.inter(),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Form(
       key: _formKey,
       child: ListView(
@@ -176,7 +422,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       child: Row(
         children: [
           const Icon(
-            Symbols.add_business,
+            Symbols.edit_note,
             color: AppTheme.primaryColor,
             size: 24,
           ),
@@ -186,7 +432,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Crear nuevo servicio',
+                  'Editar servicio',
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
@@ -194,7 +440,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                   ),
                 ),
                 Text(
-                  'Completa la información de tu servicio',
+                  'Actualiza la información de tu servicio',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppTheme.primaryColor.withValues(alpha: 0.8),
@@ -382,58 +628,6 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         ),
         maxLines: 2,
         maxLength: 200,
-      ),
-    );
-  }
-
-  Widget _buildSectionCard({
-    required String title,
-    required IconData icon,
-    required Widget child,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey[50],
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(icon, color: AppTheme.primaryColor),
-                const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: GoogleFonts.inter(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
-        ],
       ),
     );
   }
@@ -721,31 +915,61 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                             height: double.infinity,
                             fit: BoxFit.cover,
                           )
-                        : Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Symbols.image,
-                                    size: 32,
-                                    color: AppTheme.textTertiary,
-                                  ),
-                                  SizedBox(height: 4),
-                                  Text(
-                                    'Imagen principal',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppTheme.textTertiary,
+                        : (_mainImageUrl != null && _mainImageUrl!.startsWith('https://'))
+                            ? Image.network(
+                                _mainImageUrl!,
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                                loadingBuilder: (context, child, loadingProgress) {
+                                  if (loadingProgress == null) return child;
+                                  return const Center(
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: AppTheme.primaryColor,
                                     ),
+                                  );
+                                },
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    color: Colors.grey.shade200,
+                                    child: const Center(
+                                      child: Icon(
+                                        Symbols.broken_image,
+                                        size: 32,
+                                        color: AppTheme.textTertiary,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              )
+                            : Container(
+                                width: double.infinity,
+                                height: double.infinity,
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Symbols.image,
+                                        size: 32,
+                                        color: AppTheme.textTertiary,
+                                      ),
+                                      SizedBox(height: 4),
+                                      Text(
+                                        'Imagen principal',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: AppTheme.textTertiary,
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
-                            ),
-                          ),
                   ),
                   Positioned(
                     top: 8,
@@ -1152,6 +1376,58 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     );
   }
 
+  Widget _buildSectionCard({
+    required String title,
+    required IconData icon,
+    required Widget child,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+            color: Colors.grey[50],
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(16),
+            ),
+          ),
+            child: Row(
+              children: [
+                Icon(icon, color: AppTheme.primaryColor),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActionButtons() {
     return Column(
       children: [
@@ -1159,7 +1435,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           width: double.infinity,
           height: 50,
           child: ElevatedButton(
-            onPressed: _isCreatingService ? null : _submitService,
+            onPressed: _isUpdating ? null : _updateService,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
@@ -1167,7 +1443,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: _isCreatingService
+            child: _isUpdating
                 ? const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -1180,11 +1456,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                         ),
                       ),
                       SizedBox(width: 12),
-                      Text('Creando servicio...'),
+                      Text('Actualizando...'),
                     ],
                   )
                 : Text(
-                    'Crear servicio',
+                    'Guardar cambios',
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
@@ -1197,7 +1473,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           width: double.infinity,
           height: 50,
           child: OutlinedButton(
-            onPressed: _isCreatingService ? null : () => context.pop(),
+            onPressed: _isUpdating ? null : () => context.pop(),
             style: OutlinedButton.styleFrom(
               side: BorderSide(color: Colors.grey[300]!),
               shape: RoundedRectangleBorder(
@@ -1403,117 +1679,4 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       }
     }
   }
-
-
-
-  Future<void> _submitService() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isCreatingService = true);
-
-    try {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is! AuthAuthenticated) {
-        throw Exception('Usuario no autenticado');
-      }
-
-      // Subir imagen principal si existe
-      String? mainImageUrl;
-      if (_mainImageFile != null) {
-        final imageStorageService = sl<ImageStorageService>();
-        // Generar un ID temporal para el servicio
-        final tempServiceId = DateTime.now().millisecondsSinceEpoch.toString();
-        mainImageUrl = await imageStorageService.uploadServiceImage(
-          tempServiceId,
-          _mainImageFile!,
-          'main_image',
-        );
-      }
-
-      // Subir nuevas imágenes si las hay
-      final List<String> allImages = List.from(_selectedImages);
-      if (_newImages.isNotEmpty) {
-        final imageStorageService = sl<ImageStorageService>();
-        // Generar un ID temporal para el servicio
-        final tempServiceId = DateTime.now().millisecondsSinceEpoch.toString();
-        final uploadedUrls = await imageStorageService.uploadMultipleServiceImages(
-          tempServiceId,
-          _newImages,
-        );
-        allImages.addAll(uploadedUrls);
-      }
-
-      // Crear string de horario
-      String? timeRange;
-      if (_startTime != null && _endTime != null) {
-        final startStr = '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}';
-        final endStr = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
-        timeRange = '$startStr-$endStr';
-      }
-
-      // Combinar habilidades con experiencia si está presente
-      final List<String> finalFeatures = List.from(_selectedSkills);
-      if (_experienceController.text.trim().isNotEmpty) {
-        final experienceText = _experienceController.text.trim();
-        // Agregar prefijo si no lo tiene
-        final formattedExperience = experienceText.startsWith('exp:') 
-            ? experienceText 
-            : 'exp: $experienceText';
-        finalFeatures.add(formattedExperience);
-      }
-
-      final serviceModel = ServiceModel.createNew(
-        title: _titleController.text.trim(),
-        description: _descriptionController.text.trim(),
-        category: _selectedCategory!,
-        price: _priceType == 'negotiable' ? 0.0 : double.parse(_priceController.text),
-        priceType: _priceType,
-        providerId: authState.user.id,
-        providerName: authState.user.name,
-        providerPhotoUrl: authState.user.photoUrl,
-        mainImage: mainImageUrl,
-        images: allImages,
-        tags: _selectedTags,
-        features: finalFeatures,
-        availableDays: _availableDays,
-        availabilityRadius: _availabilityRadius,
-        address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-        timeRange: timeRange,
-      );
-
-      await widget.createServiceUseCase(
-        CreateServiceParams(service: serviceModel),
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '✅ Servicio creado exitosamente',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop(); // Regresar a la página anterior
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ Error al crear: $e',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isCreatingService = false);
-      }
-    }
-  }
-
-} 
+}

@@ -15,11 +15,17 @@ import 'package:prosavis/domain/usecases/auth/enroll_mfa_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_mfa_usecase.dart';
 import 'package:prosavis/domain/repositories/service_repository.dart';
 import 'package:prosavis/data/repositories/service_repository_impl.dart';
+import 'package:prosavis/domain/repositories/review_repository.dart';
+import 'package:prosavis/data/repositories/review_repository_impl.dart';
 import 'package:prosavis/domain/usecases/services/create_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/search_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_featured_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_nearby_services_usecase.dart';
 import 'package:prosavis/domain/usecases/services/get_user_services_usecase.dart';
+import 'package:prosavis/domain/usecases/services/get_service_by_id_usecase.dart';
+import 'package:prosavis/domain/usecases/services/update_service_usecase.dart';
+import 'package:prosavis/domain/usecases/reviews/create_review_usecase.dart';
+import 'package:prosavis/domain/usecases/reviews/get_service_reviews_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
 import 'package:prosavis/presentation/blocs/home/home_bloc.dart';
@@ -62,6 +68,11 @@ Future<void> init() async {
       () => ServiceRepositoryImpl(sl<FirestoreService>()),
     );
     developer.log('✅ ServiceRepository registrado');
+
+    sl.registerLazySingleton<ReviewRepository>(
+      () => ReviewRepositoryImpl(sl<FirestoreService>()),
+    );
+    developer.log('✅ ReviewRepository registrado');
 
     // Use cases
     sl.registerLazySingleton<SignInWithGoogleUseCase>(
@@ -133,6 +144,26 @@ Future<void> init() async {
       () => GetUserServicesUseCase(sl<ServiceRepository>()),
     );
     developer.log('✅ GetUserServicesUseCase registrado');
+
+    sl.registerLazySingleton<GetServiceByIdUseCase>(
+      () => GetServiceByIdUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ GetServiceByIdUseCase registrado');
+
+    sl.registerLazySingleton<UpdateServiceUseCase>(
+      () => UpdateServiceUseCase(sl<ServiceRepository>()),
+    );
+    developer.log('✅ UpdateServiceUseCase registrado');
+
+    sl.registerLazySingleton<CreateReviewUseCase>(
+      () => CreateReviewUseCase(sl<ReviewRepository>()),
+    );
+    developer.log('✅ CreateReviewUseCase registrado');
+
+    sl.registerLazySingleton<GetServiceReviewsUseCase>(
+      () => GetServiceReviewsUseCase(sl<ReviewRepository>()),
+    );
+    developer.log('✅ GetServiceReviewsUseCase registrado');
 
     // BLoCs
     sl.registerFactory(

@@ -10,6 +10,7 @@ import '../../../domain/usecases/services/get_user_services_usecase.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/service_card.dart';
+import 'category_services_page.dart';
 
 class MyServicesPage extends StatefulWidget {
   const MyServicesPage({super.key});
@@ -194,7 +195,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -205,7 +206,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Theme.of(context).primaryColor.withOpacity(0.1),
+              color: Theme.of(context).primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -257,7 +258,7 @@ class _MyServicesPageState extends State<MyServicesPage> {
           price: service.price,
           rating: service.rating,
           imageUrl: service.images.isNotEmpty ? service.images.first : null,
-          onTap: () => context.push('/services/${service.id}'),
+          onTap: () => _viewServiceDetails(service),
           showEditButton: true,
           onEditPressed: () => _editService(service),
         ),
@@ -267,5 +268,25 @@ class _MyServicesPageState extends State<MyServicesPage> {
 
   void _editService(ServiceEntity service) {
     context.push('/services/edit/${service.id}');
+  }
+
+  void _viewServiceDetails(ServiceEntity service) {
+    final serviceItem = _convertToServiceItem(service);
+    context.push('/services/${service.id}', extra: serviceItem);
+  }
+
+  ServiceItem _convertToServiceItem(ServiceEntity service) {
+    return ServiceItem(
+      id: service.id,
+      title: service.title,
+      provider: service.providerName,
+      price: service.price,
+      rating: service.rating,
+      imageUrl: service.images.isNotEmpty ? service.images.first : null,
+      category: service.category,
+      description: service.description,
+      isAvailable: service.isActive,
+      distance: 0.0, // Por defecto, se podría calcular si es necesario
+    );
   }
 }
