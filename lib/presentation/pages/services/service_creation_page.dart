@@ -142,11 +142,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         children: [
           _buildInfoCard(),
           const SizedBox(height: 16),
+          _buildCategorySection(),
+          const SizedBox(height: 16),
           _buildBasicInfoSection(),
           const SizedBox(height: 16),
           _buildPricingSection(),
-          const SizedBox(height: 16),
-          _buildCategorySection(),
           const SizedBox(height: 16),
           _buildExperienceSection(),
           const SizedBox(height: 16),

@@ -209,11 +209,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: ServiceCard(
-            title: service.title,
-            provider: service.providerName,
-            price: service.price,
-            rating: service.rating,
-            imageUrl: service.images.isNotEmpty ? service.images.first : null,
+            service: service,
             isHorizontal: true,
             onTap: () => _navigateToServiceDetails(service),
           ),

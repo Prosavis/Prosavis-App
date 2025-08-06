@@ -56,16 +56,7 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                    request.auth.uid == resource.data.providerId;
       
-      // === RESEÑAS DE SERVICIOS ===
-      // Subcolección para reseñas y puntuaciones
-      match /reviews/{reviewId} {
-        allow read: if true; // 📖 Cualquiera puede leer reseñas
-        allow create: if request.auth != null && 
-                     request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId; // 🚫 No auto-reseñas
-        allow update, delete: if request.auth != null && 
-                             request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
-      }
+
       
       // === IMÁGENES DE SERVICIOS ===
       // Metadatos de imágenes (las imágenes reales van en Storage)
@@ -74,6 +65,41 @@ service cloud.firestore {
         allow write: if request.auth != null && 
                     request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.providerId; // 🔐 Solo el propietario del servicio
       }
+    }
+    
+    // === FAVORITOS ===
+    // ✅ GESTIÓN PERSONAL: Cada usuario gestiona sus propios favoritos
+    match /favorites/{favoriteId} {
+      allow read, write: if request.auth != null && 
+                        request.auth.uid == resource.data.userId; // 🔐 Solo el propietario de los favoritos
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
+                   // 📋 Validar que el servicio existe
+                   exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId));
+    }
+    
+    // === RESEÑAS GLOBALES ===
+    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede leer reseñas
+    // 🔒 GESTIÓN PERSONAL: Solo el autor puede modificar sus reseñas
+    match /reviews/{reviewId} {
+      allow read: if true; // 📖 Lectura pública para ver reseñas
+      allow create: if request.auth != null && 
+                   request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
+                   // 📋 Validar campos obligatorios
+                   request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating', 'comment']) &&
+                   request.resource.data.rating is number && 
+                   request.resource.data.rating >= 1 && 
+                   request.resource.data.rating <= 5 &&
+                   // 📋 Validar comentario obligatorio (mínimo 10 caracteres)
+                   request.resource.data.comment is string &&
+                   request.resource.data.comment.size() >= 10 &&
+                   request.resource.data.comment.size() <= 200 &&
+                   // 📋 Validar que el servicio existe
+                   exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId)) &&
+                   // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
+                   request.auth.uid != get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.providerId;
+      allow update, delete: if request.auth != null && 
+                           request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
     }
     
     // === CATEGORÍAS DE SERVICIOS ===

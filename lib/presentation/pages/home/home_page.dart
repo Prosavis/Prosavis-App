@@ -526,11 +526,7 @@ class _HomePageState extends State<HomePage>
           return Padding(
             padding: const EdgeInsets.only(right: 12),
             child: ServiceCard(
-              title: service.title,
-              provider: service.providerName,
-              price: service.price,
-              rating: service.rating,
-              imageUrl: service.images.isNotEmpty ? service.images.first : null,
+              service: service,
               onTap: () {
                 Navigator.push(
                   context,
@@ -629,11 +625,7 @@ class _HomePageState extends State<HomePage>
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
             child: ServiceCard(
-              title: service.title,
-              provider: service.providerName,
-              price: service.price,
-              rating: service.rating,
-              imageUrl: service.images.isNotEmpty ? service.images.first : null,
+              service: service,
               isHorizontal: true,
               onTap: () {
                 Navigator.push(

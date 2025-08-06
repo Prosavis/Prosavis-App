@@ -9,6 +9,15 @@ import '../../../core/utils/location_utils.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/favorites/favorites_bloc.dart';
+import '../../blocs/favorites/favorites_event.dart';
+import '../../blocs/favorites/favorites_state.dart';
+import '../../widgets/common/service_card.dart';
+import '../../widgets/reviews/write_review_dialog.dart';
+import '../../widgets/rating_stars.dart';
+import '../../../domain/entities/review_entity.dart';
+import '../../../domain/usecases/reviews/get_service_reviews_usecase.dart';
+import '../../../core/injection/injection_container.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
   final ServiceEntity service;
@@ -27,14 +36,14 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  bool _isFavorite = false;
   final PageController _pageController = PageController();
   int _currentImageIndex = 0;
   String? _calculatedDistance;
 
 
 
-  List<Review> _reviews = []; // Las reseñas se cargarán dinámicamente
+  List<ReviewEntity> _reviews = []; // Las reseñas se cargarán dinámicamente
+  late final GetServiceReviewsUseCase _getServiceReviewsUseCase;
 
   @override
   void initState() {
@@ -48,17 +57,33 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
+    // Inicializar casos de uso
+    _getServiceReviewsUseCase = sl<GetServiceReviewsUseCase>();
+
     _calculateDistance();
     _loadReviews();
     _fadeController.forward();
   }
 
   Future<void> _loadReviews() async {
-    // Implementar carga real de reseñas desde Firestore
-    // Por ahora mantenemos la lista vacía para mostrar estado coherente
-    setState(() {
-      _reviews = [];
-    });
+    try {
+      final reviews = await _getServiceReviewsUseCase(GetServiceReviewsParams(
+        serviceId: widget.service.id,
+        limit: 20,
+      ));
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+        });
+      }
+    } catch (e) {
+      // En caso de error, mantener lista vacía
+      if (mounted) {
+        setState(() {
+          _reviews = [];
+        });
+      }
+    }
   }
 
   Future<void> _calculateDistance() async {
@@ -82,24 +107,35 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
   @override
   Widget build(BuildContext context) {
+    // Cargar estado inicial de favorito si el usuario está autenticado
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<FavoritesBloc>().add(CheckFavoriteStatus(
+          userId: authState.user.id,
+          serviceId: widget.service.id,
+        ));
+      }
+    });
+
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(),
-            _buildServiceInfo(),
-            _buildImageGallery(),
-            _buildDescription(),
-            _buildProviderInfo(),
-            _buildReviews(),
-            _buildSimilarServices(),
-          ],
+        backgroundColor: AppTheme.backgroundColor,
+        body: FadeTransition(
+          opacity: _fadeAnimation,
+          child: CustomScrollView(
+            slivers: [
+              _buildAppBar(),
+              _buildServiceInfo(),
+              _buildImageGallery(),
+              _buildDescription(),
+              _buildProviderInfo(),
+              _buildReviews(),
+              _buildSimilarServices(),
+            ],
+          ),
         ),
-      ),
-      bottomNavigationBar: _buildActionButtons(),
-    );
+        bottomNavigationBar: _buildActionButtons(),
+      );
   }
 
   Widget _buildAppBar() {
@@ -119,23 +155,73 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
       ),
       actions: [
-        IconButton(
-          onPressed: () {
-            setState(() {
-              _isFavorite = !_isFavorite;
-            });
+        BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            if (authState is AuthAuthenticated) {
+              return BlocBuilder<FavoritesBloc, FavoritesState>(
+                builder: (context, favoritesState) {
+                  bool isFavorite = false;
+                  bool isLoading = false;
+                  
+                  if (favoritesState is FavoritesLoaded) {
+                    isFavorite = favoritesState.isFavorite(widget.service.id);
+                  } else if (favoritesState is FavoriteToggling && 
+                            favoritesState.serviceId == widget.service.id) {
+                    isLoading = true;
+                    isFavorite = favoritesState.favoriteStatus[widget.service.id] ?? false;
+                  }
+                  
+                  return IconButton(
+                    onPressed: isLoading ? null : () {
+                      context.read<FavoritesBloc>().add(
+                        ToggleFavorite(
+                          userId: authState.user.id,
+                          serviceId: widget.service.id,
+                        ),
+                      );
+                    },
+                    icon: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.9),
+                        shape: BoxShape.circle,
+                      ),
+                      child: isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppTheme.primaryColor,
+                              ),
+                            )
+                          : Icon(
+                              isFavorite ? Symbols.favorite : Symbols.favorite_border,
+                              color: isFavorite ? Colors.red : AppTheme.textPrimary,
+                            ),
+                    ),
+                  );
+                },
+              );
+            } else {
+              return IconButton(
+                onPressed: () {
+                  _showLoginRequiredDialog();
+                },
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Symbols.favorite_border,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              );
+            }
           },
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              _isFavorite ? Symbols.favorite : Symbols.favorite_border,
-              color: _isFavorite ? Colors.red : AppTheme.textPrimary,
-            ),
-          ),
         ),
         IconButton(
           onPressed: _shareService,
@@ -884,7 +970,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
-  Widget _buildReviewItem(Review review) {
+  Widget _buildReviewItem(ReviewEntity review) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -896,7 +982,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 radius: 16,
                                   backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
                 child: Text(
-                  review.name[0].toUpperCase(),
+                  review.userName[0].toUpperCase(),
                   style: GoogleFonts.inter(
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
@@ -910,7 +996,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review.name,
+                      review.userName,
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -919,18 +1005,15 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                     Row(
                       children: [
-                        ...List.generate(5, (index) {
-                          return Icon(
-                            index < review.rating.floor()
-                                ? Symbols.star
-                                : Symbols.star_outline,
-                            size: 14,
-                            color: Colors.orange,
-                          );
-                        }),
+                        RatingStars(
+                          rating: review.rating,
+                          size: 14,
+                          color: Colors.amber.shade600,
+                          unratedColor: Colors.grey.shade300,
+                        ),
                         const SizedBox(width: 8),
                         Text(
-                          _formatDate(review.date),
+                          _formatDate(review.createdAt),
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: AppTheme.textTertiary,
@@ -1188,103 +1271,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       return;
     }
 
-    double rating = 5.0;
-    final TextEditingController commentController = TextEditingController();
-
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text(
-                'Agregar reseña',
-                style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Califica tu experiencia con este servicio',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Selector de estrellas
-                  Text(
-                    'Calificación',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: List.generate(5, (index) {
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            rating = (index + 1).toDouble();
-                          });
-                        },
-                        child: Padding(
-                          padding: const EdgeInsets.only(right: 4),
-                          child: Icon(
-                            index < rating ? Symbols.star : Symbols.star_outline,
-                            size: 32,
-                            color: Colors.orange,
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // Campo de comentario
-                  TextFormField(
-                    controller: commentController,
-                    decoration: const InputDecoration(
-                      labelText: 'Comentario (opcional)',
-                      hintText: 'Comparte tu experiencia...',
-                      prefixIcon: Icon(Symbols.comment),
-                      alignLabelWithHint: true,
-                    ),
-                    maxLines: 3,
-                    maxLength: 200,
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text(
-                    'Cancelar',
-                    style: GoogleFonts.inter(color: AppTheme.textSecondary),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _submitReview(rating, commentController.text.trim());
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.primaryColor,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: Text(
-                    'Publicar reseña',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w600),
-                  ),
-                ),
-              ],
-            );
-          },
+        return WriteReviewDialog(
+          serviceId: widget.service.id,
+          serviceName: widget.service.title,
+          onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
         );
       },
     );
@@ -1334,27 +1327,23 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
-  void _submitReview(double rating, String comment) {
-    // Implementar envío real de reseña a Firestore
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Reseña de ${rating.toInt()} estrella${rating > 1 ? 's' : ''} enviada'),
-        backgroundColor: Colors.green,
+
+
+  void _showLoginRequiredDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        content: const LoginRequiredWidget(
+          title: 'Inicia sesión para guardar favoritos',
+          subtitle: 'Necesitas tener una cuenta para guardar servicios como favoritos.',
+        ),
       ),
     );
   }
 }
 
-class Review {
-  final String name;
-  final double rating;
-  final String comment;
-  final DateTime date;
-
-  Review({
-    required this.name,
-    required this.rating,
-    required this.comment,
-    required this.date,
-  });
-} 
+ 

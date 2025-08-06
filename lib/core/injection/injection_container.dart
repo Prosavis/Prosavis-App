@@ -27,9 +27,16 @@ import 'package:prosavis/domain/usecases/services/update_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/delete_service_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/create_review_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/get_service_reviews_usecase.dart';
+import 'package:prosavis/domain/repositories/favorite_repository.dart';
+import 'package:prosavis/data/repositories/favorite_repository_impl.dart';
+import 'package:prosavis/domain/usecases/favorites/add_to_favorites_usecase.dart';
+import 'package:prosavis/domain/usecases/favorites/remove_from_favorites_usecase.dart';
+import 'package:prosavis/domain/usecases/favorites/get_user_favorites_usecase.dart';
+import 'package:prosavis/domain/usecases/favorites/check_favorite_status_usecase.dart';
 import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
 import 'package:prosavis/presentation/blocs/home/home_bloc.dart';
+import 'package:prosavis/presentation/blocs/favorites/favorites_bloc.dart';
 
 import 'dart:developer' as developer;
 
@@ -74,6 +81,11 @@ Future<void> init() async {
       () => ReviewRepositoryImpl(sl<FirestoreService>()),
     );
     developer.log('✅ ReviewRepository registrado');
+
+    sl.registerLazySingleton<FavoriteRepository>(
+      () => FavoriteRepositoryImpl(),
+    );
+    developer.log('✅ FavoriteRepository registrado');
 
     // Use cases
     sl.registerLazySingleton<SignInWithGoogleUseCase>(
@@ -171,6 +183,26 @@ Future<void> init() async {
     );
     developer.log('✅ GetServiceReviewsUseCase registrado');
 
+    sl.registerLazySingleton<AddToFavoritesUseCase>(
+      () => AddToFavoritesUseCase(sl<FavoriteRepository>()),
+    );
+    developer.log('✅ AddToFavoritesUseCase registrado');
+
+    sl.registerLazySingleton<RemoveFromFavoritesUseCase>(
+      () => RemoveFromFavoritesUseCase(sl<FavoriteRepository>()),
+    );
+    developer.log('✅ RemoveFromFavoritesUseCase registrado');
+
+    sl.registerLazySingleton<GetUserFavoritesUseCase>(
+      () => GetUserFavoritesUseCase(sl<FavoriteRepository>()),
+    );
+    developer.log('✅ GetUserFavoritesUseCase registrado');
+
+    sl.registerLazySingleton<CheckFavoriteStatusUseCase>(
+      () => CheckFavoriteStatusUseCase(sl<FavoriteRepository>()),
+    );
+    developer.log('✅ CheckFavoriteStatusUseCase registrado');
+
     // BLoCs
     sl.registerFactory(
       () => AuthBloc(
@@ -197,6 +229,16 @@ Future<void> init() async {
       ),
     );
     developer.log('✅ HomeBloc registrado');
+
+    sl.registerFactory(
+      () => FavoritesBloc(
+        getUserFavoritesUseCase: sl<GetUserFavoritesUseCase>(),
+        addToFavoritesUseCase: sl<AddToFavoritesUseCase>(),
+        removeFromFavoritesUseCase: sl<RemoveFromFavoritesUseCase>(),
+        checkFavoriteStatusUseCase: sl<CheckFavoriteStatusUseCase>(),
+      ),
+    );
+    developer.log('✅ FavoritesBloc registrado');
 
     // ProfileBloc se registra directamente en main.dart para acceso al AuthBloc
     developer.log('✅ ProfileBloc configurado en main.dart');

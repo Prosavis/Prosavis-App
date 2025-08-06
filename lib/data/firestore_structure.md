@@ -2,7 +2,7 @@
 
 ## 📊 **Colecciones Principales**
 
-Tu app usa **2 colecciones principales** en Firestore:
+Tu app usa **3 colecciones principales** en Firestore:
 
 ### 👥 **Colección: `users`**
 Almacena información de usuarios registrados.
@@ -53,6 +53,37 @@ Almacena servicios ofrecidos por proveedores.
 }
 ```
 
+### ❤️ **Colección: `favorites`**
+Almacena los servicios favoritos de cada usuario.
+
+```json
+/favorites/{favoriteId}
+{
+  "id": "uuid-del-favorito",
+  "userId": "uuid-del-usuario",
+  "serviceId": "uuid-del-servicio",
+  "createdAt": "2024-01-01T10:00:00Z"
+}
+```
+
+### 🌟 **Colección: `reviews`**
+Almacena las reseñas y calificaciones de servicios.
+
+```json
+/reviews/{reviewId}
+{
+  "id": "uuid-de-la-reseña",
+  "serviceId": "uuid-del-servicio",
+  "userId": "uuid-del-usuario",
+  "userName": "María García",
+  "userPhotoUrl": "https://...jpg",
+  "rating": 5,
+  "comment": "Excelente servicio, muy recomendado",
+  "createdAt": "2024-01-01T10:00:00Z",
+  "updatedAt": "2024-01-01T10:00:00Z"
+}
+```
+
 ## 🔧 **Funciones Automáticas**
 
 ### ✅ **Creación Automática**
@@ -80,6 +111,18 @@ Almacena servicios ofrecidos por proveedores.
    ```
    → Lee documentos de `/services` con filtros
 
+4. **Agregar servicio a favoritos**:
+   ```dart
+   FavoriteRepositoryImpl().addToFavorites(userId: "...", serviceId: "...");
+   ```
+   → Crea documento en `/favorites/{favoriteId}`
+
+5. **Crear reseña**:
+   ```dart
+   ReviewRepositoryImpl().createReview(reviewEntity);
+   ```
+   → Crea documento en `/reviews/{reviewId}`
+
 ## 🔍 **Consultas Implementadas**
 
 ### **Usuarios**
@@ -101,6 +144,21 @@ Almacena servicios ofrecidos por proveedores.
 - ✅ `watchAllServices()` - Stream tiempo real
 - ✅ `watchUserServices(userId)` - Stream de usuario
 
+### **Favoritos**
+- ✅ `addToFavorites(userId, serviceId)` - Agregar a favoritos
+- ✅ `removeFromFavorites(userId, serviceId)` - Quitar de favoritos
+- ✅ `isFavorite(userId, serviceId)` - Verificar si es favorito
+- ✅ `getUserFavorites(userId)` - Favoritos de un usuario
+- ✅ `getUserFavoriteServices(userId)` - Servicios favoritos con detalles
+- ✅ `cleanupInvalidFavorites(userId)` - Limpiar favoritos inválidos
+
+### **Reseñas**
+- ✅ `createReview(review)` - Crear reseña
+- ✅ `getServiceReviews(serviceId)` - Reseñas de un servicio
+- ✅ `getUserReviews(userId)` - Reseñas de un usuario
+- ✅ `updateReview(review)` - Actualizar reseña
+- ✅ `deleteReview(reviewId)` - Eliminar reseña
+
 ## 🚨 **Importante**
 
 ### **NO Necesitas Crear Nada Manualmente**
@@ -111,6 +169,8 @@ Almacena servicios ofrecidos por proveedores.
 ### **La App Se Encarga de Todo**
 - ✅ Cuando un usuario se registre → se crea `/users/{id}`
 - ✅ Cuando publique un servicio → se crea `/services/{id}`
+- ✅ Cuando marque un favorito → se crea `/favorites/{id}`
+- ✅ Cuando escriba una reseña → se crea `/reviews/{id}`
 - ✅ Todas las consultas están implementadas
 - ✅ La estructura se genera automáticamente
 
@@ -118,7 +178,9 @@ Almacena servicios ofrecidos por proveedores.
 
 1. **Probar registro de usuario** → Verás datos en `/users`
 2. **Crear un servicio** → Verás datos en `/services`
-3. **Si hay consultas lentas** → Firestore sugerirá índices automáticamente
+3. **Marcar favoritos** → Verás datos en `/favorites`
+4. **Escribir reseñas** → Verás datos en `/reviews`
+5. **Si hay consultas lentas** → Firestore sugerirá índices automáticamente
 
 ## 🔒 **Reglas de Seguridad (Opcional)**
 
@@ -138,6 +200,20 @@ service cloud.firestore {
       allow read: if true;
       allow write: if request.auth != null && 
                    request.auth.uid == resource.data.providerId;
+    }
+    
+    // Favoritos: solo el usuario puede gestionar sus favoritos
+    match /favorites/{favoriteId} {
+      allow read, write: if request.auth != null && 
+                         request.auth.uid == resource.data.userId;
+    }
+    
+    // Reseñas: todos pueden leer, solo el autor puede escribir/editar
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null && 
+                            request.auth.uid == resource.data.userId;
     }
   }
 }

@@ -44,14 +44,14 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       const KeepAlivePage(
         child: MyServicesPage(),
       ),
-      const SavedPage(),
+      SavedPage(onExploreServicesTapped: () => onItemTapped(0)),
       const ProfilePage(),
     ];
     return _pages!;
   }
 
   void _goToProfile() {
-    _onItemTapped(3); // Índice 3 corresponde a ProfilePage
+    onItemTapped(3); // Índice 3 corresponde a ProfilePage
   }
 
   @override
@@ -60,7 +60,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     super.dispose();
   }
 
-  void _onItemTapped(int index) {
+  void onItemTapped(int index) {
     // Verificar autenticación para pestañas protegidas
     if ((index == 1 || index == 2)) { // Ofrecer (1) y Favoritos (2)
       final authState = context.read<AuthBloc>().state;
@@ -139,7 +139,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       ),
       child: BottomNavigationBar(
         currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+        onTap: onItemTapped,
         type: BottomNavigationBarType.fixed,
         backgroundColor: Colors.white,
         selectedItemColor: AppTheme.primaryColor,

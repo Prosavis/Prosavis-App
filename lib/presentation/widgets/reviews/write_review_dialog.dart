@@ -10,6 +10,7 @@ import '../../../domain/entities/review_entity.dart';
 import '../../../domain/usecases/reviews/create_review_usecase.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../interactive_rating_stars.dart';
 
 
 class WriteReviewDialog extends StatefulWidget {
@@ -145,25 +146,16 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
           ),
           child: Column(
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: List.generate(5, (index) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _rating = (index + 1).toDouble();
-                      });
-                    },
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Icon(
-                        index < _rating ? Symbols.star : Symbols.star_outline,
-                        color: Colors.amber,
-                        size: 32,
-                      ),
-                    ),
-                  );
-                }),
+              InteractiveRatingStars(
+                rating: _rating,
+                onRatingChanged: (rating) {
+                  setState(() {
+                    _rating = rating;
+                  });
+                },
+                size: 36,
+                activeColor: Colors.amber.shade600,
+                inactiveColor: Colors.grey.shade300,
               ),
               const SizedBox(height: 8),
               Text(
@@ -185,8 +177,8 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Comentario (opcional)',
+                    Text(
+              'Comentario (obligatorio)',
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -197,7 +189,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         TextField(
           controller: _commentController,
           decoration: InputDecoration(
-            hintText: 'Comparte tu experiencia con este servicio...',
+            hintText: 'Comparte tu experiencia con este servicio... (mínimo 10 caracteres)',
             hintStyle: GoogleFonts.inter(
               color: AppTheme.textSecondary,
             ),
@@ -289,6 +281,34 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
   }
 
   Future<void> _submitReview() async {
+    // Validar comentario obligatorio
+    final comment = _commentController.text.trim();
+    if (comment.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ El comentario es obligatorio',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (comment.length < 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '❌ El comentario debe tener al menos 10 caracteres',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
@@ -304,7 +324,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         userName: authState.user.name,
         userPhotoUrl: authState.user.photoUrl,
         rating: _rating,
-        comment: _commentController.text.trim(),
+        comment: comment,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

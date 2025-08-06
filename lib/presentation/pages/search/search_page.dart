@@ -81,13 +81,28 @@ class _SearchPageState extends State<SearchPage>
     return SliverToBoxAdapter(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Text(
-          'Buscar',
-          style: GoogleFonts.inter(
-            fontSize: 28,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
-          ),
+        child: Row(
+          children: [
+            // Botón de atrás para ir al inicio
+            IconButton(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(
+                Symbols.arrow_back,
+                color: AppTheme.textPrimary,
+              ),
+              tooltip: 'Volver al inicio',
+            ),
+            const SizedBox(width: 8),
+            // Título
+            Text(
+              'Buscar',
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.textPrimary,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -429,10 +444,7 @@ class _SearchPageState extends State<SearchPage>
               AppConstants.paddingSmall,
             ),
             child: ServiceCard(
-              title: service.title,
-              provider: service.providerName,
-              price: service.price,
-              rating: service.rating,
+              service: service,
               onTap: () {
                 Navigator.push(
                   context,

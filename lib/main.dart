@@ -16,6 +16,7 @@ import 'presentation/blocs/search/search_bloc.dart';
 import 'presentation/blocs/search/search_event.dart';
 import 'presentation/blocs/profile/profile_bloc.dart';
 import 'presentation/blocs/home/home_bloc.dart';
+import 'presentation/blocs/favorites/favorites_bloc.dart';
 import 'data/services/image_storage_service.dart';
 import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/main/main_navigation_page.dart';
@@ -237,6 +238,9 @@ class MyApp extends StatelessWidget {
             firestoreService: di.sl<FirestoreService>(),
             authBloc: context.read<AuthBloc>(),
           ),
+        ),
+        BlocProvider<FavoritesBloc>(
+          create: (_) => di.sl<FavoritesBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

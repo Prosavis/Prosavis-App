@@ -597,7 +597,7 @@ class _PrivacySettingsPageState extends State<PrivacySettingsPage>
             ),
             const SizedBox(height: 12),
             Text('• Tu perfil y datos personales', style: GoogleFonts.inter()),
-            Text('• Tu historial de servicios', style: GoogleFonts.inter()),
+            Text('• Tus servicios favoritos', style: GoogleFonts.inter()),
             Text('• Todas tus reseñas y calificaciones', style: GoogleFonts.inter()),
             Text('• Configuraciones y preferencias', style: GoogleFonts.inter()),
             const SizedBox(height: 12),

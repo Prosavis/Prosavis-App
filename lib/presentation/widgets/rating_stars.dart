@@ -27,22 +27,22 @@ class RatingStars extends StatelessWidget {
       children: [
         ...List.generate(5, (index) {
           if (index < rating.floor()) {
-            // Full star
+            // Full star - estrella llena
             return Icon(
               Symbols.star,
               size: size,
               color: activeColor,
-              fill: 1,
+              fill: 1.0, // Completamente llena
             );
           } else if (index < rating && rating - index >= 0.5) {
-            // Half star
+            // Half star - media estrella
             return Stack(
               children: [
                 Icon(
-                  Symbols.star,
+                  Symbols.star_outline,
                   size: size,
                   color: inactiveColor,
-                  fill: 1,
+                  fill: 0.0, // Vacía por dentro
                 ),
                 ClipRect(
                   clipper: HalfStarClipper(),
@@ -50,18 +50,18 @@ class RatingStars extends StatelessWidget {
                     Symbols.star,
                     size: size,
                     color: activeColor,
-                    fill: 1,
+                    fill: 1.0, // Mitad llena
                   ),
                 ),
               ],
             );
           } else {
-            // Empty star
+            // Empty star - estrella vacía
             return Icon(
-              Symbols.star,
+              Symbols.star_outline,
               size: size,
               color: inactiveColor,
-              fill: 1,
+              fill: 0.0, // Completamente vacía
             );
           }
         }),
