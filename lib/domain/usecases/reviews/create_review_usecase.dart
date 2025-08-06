@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../../entities/review_entity.dart';
 import '../../repositories/review_repository.dart';
 import '../../repositories/service_repository.dart';
@@ -54,7 +56,7 @@ class CreateReviewUseCase implements UseCase<String, ReviewEntity> {
       await serviceRepository.updateService(updatedService);
     } catch (e) {
       // Log del error pero no interrumpir el flujo principal
-      print('Error al actualizar estadísticas del servicio: $e');
+      debugPrint('Error al actualizar estadísticas del servicio: $e');
     }
   }
 }

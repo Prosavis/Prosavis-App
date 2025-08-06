@@ -31,7 +31,7 @@ Almacena servicios ofrecidos por proveedores.
   "description": "Servicio completo de plomería...",
   "category": "Hogar",
   "price": 50000.0,
-  "priceType": "fixed", // "fixed", "hourly", "negotiable"
+  "priceType": "fixed", // "fixed", "daily", "negotiable"
   "providerId": "uuid-del-proveedor",
   "providerName": "Juan Pérez",
   "providerPhotoUrl": "https://...jpg",
@@ -49,7 +49,7 @@ Almacena servicios ofrecidos por proveedores.
   },
   "availabilityRadius": 10, // km
   "availableDays": ["lunes", "martes", "miércoles"],
-  "timeRange": "09:00-17:00"
+  "timeRange": null // Ya no se usa horario de trabajo
 }
 ```
 

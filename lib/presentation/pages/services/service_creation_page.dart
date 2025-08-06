@@ -8,6 +8,7 @@ import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
+import '../../../core/utils/service_refresh_notifier.dart';
 import '../../../domain/usecases/services/create_service_usecase.dart';
 import '../../../domain/usecases/services/update_service_usecase.dart';
 import '../../../data/models/service_model.dart';
@@ -46,17 +47,12 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final List<String> _selectedTags = [];
   final List<String> _selectedSkills = [];
   final List<String> _availableDays = [];
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
 
   bool _isCreatingService = false;
 
   final List<String> _priceTypes = [
     'fixed',
-    'hourly',
     'daily',
-    'weekly',
-    'monthly',
     'negotiable',
   ];
 
@@ -281,11 +277,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             ),
             items: _priceTypes.map((type) {
               final displayName = {
-                'fixed': 'Precio fijo',
-                'hourly': 'Por hora',
+                'fixed': 'Por servicio',
                 'daily': 'Por día',
-                'weekly': 'Por semana',
-                'monthly': 'Por mes',
                 'negotiable': 'Negociable',
               }[type] ?? type;
               
@@ -490,43 +483,6 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 ),
               );
             }).toList(),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Horario de trabajo',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _selectStartTime(),
-                  icon: const Icon(Symbols.schedule),
-                  label: Text(
-                    _startTime != null
-                        ? 'Desde: ${_startTime!.format(context)}'
-                        : 'Hora de inicio',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _selectEndTime(),
-                  icon: const Icon(Symbols.schedule),
-                  label: Text(
-                    _endTime != null
-                        ? 'Hasta: ${_endTime!.format(context)}'
-                        : 'Hora de fin',
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -1165,29 +1121,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     );
   }
 
-  Future<void> _selectStartTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _startTime ?? const TimeOfDay(hour: 9, minute: 0),
-    );
-    if (pickedTime != null) {
-      setState(() {
-        _startTime = pickedTime;
-      });
-    }
-  }
 
-  Future<void> _selectEndTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _endTime ?? const TimeOfDay(hour: 17, minute: 0),
-    );
-    if (pickedTime != null) {
-      setState(() {
-        _endTime = pickedTime;
-      });
-    }
-  }
 
   void _showAddSkillDialog() {
     final controller = TextEditingController();
@@ -1429,13 +1363,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         throw Exception('Usuario no autenticado');
       }
 
-      // Crear string de horario
-      String? timeRange;
-      if (_startTime != null && _endTime != null) {
-        final startStr = '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}';
-        final endStr = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
-        timeRange = '$startStr-$endStr';
-      }
+      // No se requiere horario de trabajo
 
       // Combinar habilidades con experiencia si está presente
       final List<String> finalFeatures = List.from(_selectedSkills);
@@ -1464,7 +1392,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         features: finalFeatures,
         availableDays: _availableDays,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-        timeRange: timeRange,
+        timeRange: null, // Ya no se usa horario de trabajo
       );
 
       // Crear el servicio y obtener su ID real
@@ -1520,6 +1448,9 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       }
 
       if (mounted) {
+        // Notificar que se creó un servicio para que otras páginas se refresquen
+        ServiceRefreshNotifier().notifyServicesChanged();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1529,7 +1460,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             backgroundColor: Colors.green,
           ),
         );
-        context.pop(); // Regresar a la página anterior
+        // Navegar directamente a la página principal
+        context.go('/home');
       }
     } catch (e) {
       if (mounted) {

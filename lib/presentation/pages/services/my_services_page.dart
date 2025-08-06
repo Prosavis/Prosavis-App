@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/injection/injection_container.dart';
+import '../../../core/utils/service_refresh_notifier.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../../domain/usecases/services/get_user_services_usecase.dart';
 import '../../../domain/usecases/services/delete_service_usecase.dart';
@@ -21,22 +22,72 @@ class MyServicesPage extends StatefulWidget {
   State<MyServicesPage> createState() => _MyServicesPageState();
 }
 
-class _MyServicesPageState extends State<MyServicesPage> {
+class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObserver, AutomaticKeepAliveClientMixin {
   late final GetUserServicesUseCase _getUserServicesUseCase;
   late final DeleteServiceUseCase _deleteServiceUseCase;
+  late final ServiceRefreshNotifier _serviceRefreshNotifier;
   List<ServiceEntity> _userServices = [];
   bool _isLoading = true;
   String? _errorMessage;
+  bool _hasLoadedOnce = false;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _getUserServicesUseCase = sl<GetUserServicesUseCase>();
     _deleteServiceUseCase = sl<DeleteServiceUseCase>();
+    _serviceRefreshNotifier = ServiceRefreshNotifier();
+    
+    // Escuchar notificaciones de cambios en servicios
+    _serviceRefreshNotifier.addListener(_onServicesChanged);
+    
+    _loadUserServices();
+  }
+
+  @override
+  void dispose() {
+    _serviceRefreshNotifier.removeListener(_onServicesChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Callback que se ejecuta cuando se notifica un cambio en servicios
+  void _onServicesChanged() {
+    if (mounted) {
+      _forceReload();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Recargar servicios cuando la app vuelva al primer plano
+    if (state == AppLifecycleState.resumed) {
+      _forceReload();
+    }
+  }
+
+  @override
+  void didUpdateWidget(MyServicesPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recargar servicios cuando la página se actualice
+    _forceReload();
+  }
+
+  /// Fuerza la recarga de servicios, útil cuando sabemos que hay cambios
+  void _forceReload() {
+    if (!mounted) return;
+    _hasLoadedOnce = false;
     _loadUserServices();
   }
 
   Future<void> _loadUserServices() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -46,21 +97,30 @@ class _MyServicesPageState extends State<MyServicesPage> {
       final authState = context.read<AuthBloc>().state;
       if (authState is AuthAuthenticated) {
         final services = await _getUserServicesUseCase(authState.user.id);
-        setState(() {
-          _userServices = services;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _userServices = services;
+            _isLoading = false;
+            _hasLoadedOnce = true;
+          });
+        }
       } else {
-        setState(() {
-          _errorMessage = 'Usuario no autenticado';
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _errorMessage = 'Usuario no autenticado';
+            _isLoading = false;
+            _hasLoadedOnce = true;
+          });
+        }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = 'Error al cargar los servicios: $e';
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Error al cargar los servicios: $e';
+          _isLoading = false;
+          _hasLoadedOnce = true;
+        });
+      }
     }
   }
 
@@ -92,6 +152,18 @@ class _MyServicesPageState extends State<MyServicesPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    // Solo recargar si es la primera vez o si específicamente se necesita
+    if (!_hasLoadedOnce) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadUserServices();
+          _hasLoadedOnce = true;
+        }
+      });
+    }
+    
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
@@ -417,7 +489,8 @@ class _MyServicesPageState extends State<MyServicesPage> {
           );
         }
         
-        // Recargar la lista de servicios
+        // Notificar cambios y recargar la lista de servicios
+        ServiceRefreshNotifier().notifyServicesChanged();
         await _loadUserServices();
         
       } catch (e) {

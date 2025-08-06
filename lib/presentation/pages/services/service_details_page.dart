@@ -341,13 +341,15 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       ],
       flexibleSpace: FlexibleSpaceBar(
         background: _currentService!.mainImage != null
-            ? Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                ),
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
+            ? GestureDetector(
+                onTap: () => _showMainImageFullScreen(),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade200,
+                  ),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
                     // Mostrar imagen real si es una URL, o ícono si es simulada
                     _currentService!.mainImage!.startsWith('https://')
                         ? Image.network(
@@ -426,7 +428,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                   ],
                 ),
-              )
+              ),
+            )
             : Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -697,30 +700,82 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 },
                 itemCount: galleryImages.length,
                 itemBuilder: (context, index) {
-                  return Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey.shade200,
-                    ),
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Symbols.image,
-                            size: 48,
-                            color: AppTheme.textTertiary,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Trabajo ${index + 1}',
-                            style: GoogleFonts.inter(
-                              fontSize: 12,
-                              color: AppTheme.textTertiary,
-                            ),
+                  final imageUrl = galleryImages[index];
+                  return GestureDetector(
+                    onTap: () => _showImageFullScreen(imageUrl, index),
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        color: Colors.grey.shade200,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
                           ),
                         ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: imageUrl.startsWith('https://')
+                            ? Image.network(
+                              imageUrl,
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return const Center(
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 3,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Symbols.broken_image,
+                                        size: 32,
+                                        color: AppTheme.textTertiary,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Error al cargar',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 12,
+                                          color: AppTheme.textTertiary,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              },
+                            )
+                          : Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Symbols.image,
+                                    size: 48,
+                                    color: AppTheme.textTertiary,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Trabajo ${index + 1}',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 12,
+                                      color: AppTheme.textTertiary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                       ),
                     ),
                   );
@@ -1444,6 +1499,227 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         content: const LoginRequiredWidget(
           title: 'Inicia sesión para guardar favoritos',
           subtitle: 'Necesitas tener una cuenta para guardar servicios como favoritos.',
+        ),
+      ),
+    );
+  }
+
+  /// Muestra la imagen principal en pantalla completa
+  void _showMainImageFullScreen() {
+    if (_currentService?.mainImage == null) return;
+    
+    final mainImageUrl = _currentService!.mainImage!;
+    
+    if (!mainImageUrl.startsWith('https://')) {
+      // Si no es una URL válida, mostrar mensaje
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Esta imagen principal no está disponible para visualizar',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            // Imagen en pantalla completa
+            Center(
+              child: InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 3.0,
+                child: Image.network(
+                  mainImageUrl,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Symbols.broken_image,
+                            size: 64,
+                            color: Colors.white,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error al cargar la imagen',
+                            style: GoogleFonts.inter(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            // Botón cerrar
+            Positioned(
+              top: MediaQuery.of(context).padding.top + 16,
+              right: 16,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Symbols.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            // Indicador de imagen principal
+            Positioned(
+              bottom: MediaQuery.of(context).padding.bottom + 32,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                margin: const EdgeInsets.symmetric(horizontal: 32),
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Imagen principal',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Muestra una imagen en pantalla completa con navegación entre imágenes
+  void _showImageFullScreen(String imageUrl, int initialIndex) {
+    if (!imageUrl.startsWith('https://')) {
+      // Si no es una URL válida, mostrar mensaje
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Esta imagen no está disponible para visualizar',
+            style: GoogleFonts.inter(),
+          ),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog.fullscreen(
+        backgroundColor: Colors.black,
+        child: Stack(
+          children: [
+            // Imagen en pantalla completa
+            Center(
+              child: InteractiveViewer(
+                maxScale: 3.0,
+                minScale: 0.5,
+                child: Image.network(
+                  imageUrl,
+                  fit: BoxFit.contain,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Symbols.broken_image,
+                            size: 64,
+                            color: Colors.white54,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error al cargar imagen',
+                            style: GoogleFonts.inter(
+                              color: Colors.white54,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+            // Botón de cerrar
+            Positioned(
+              top: 50,
+              right: 20,
+              child: IconButton(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Symbols.close,
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ),
+              ),
+            ),
+            // Indicador de imagen actual si hay múltiples imágenes
+            if (_currentService!.images.length > 1)
+              Positioned(
+                bottom: 50,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${initialIndex + 1} de ${_currentService!.images.length}',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -39,7 +39,7 @@ class _EditProfilePageState extends State<EditProfilePage>
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _bioController = TextEditingController();
+
   final _locationController = TextEditingController();
 
   bool _isLoading = false;
@@ -102,7 +102,7 @@ class _EditProfilePageState extends State<EditProfilePage>
     _nameController.dispose();
     _emailController.dispose();
     _phoneController.dispose();
-    _bioController.dispose();
+
     _locationController.dispose();
     super.dispose();
   }
@@ -118,7 +118,7 @@ class _EditProfilePageState extends State<EditProfilePage>
               _nameController.text = state.user.name;
               _emailController.text = state.user.email;
               _phoneController.text = state.user.phoneNumber ?? '';
-              _bioController.text = state.user.bio ?? '';
+
               _locationController.text = state.user.location ?? '';
               _profileImageUrl = state.user.photoUrl;
             });
@@ -174,17 +174,6 @@ class _EditProfilePageState extends State<EditProfilePage>
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: AppTheme.textPrimary,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: _isLoading ? null : _saveProfile,
-              child: Text(
-                'Guardar',
-                style: GoogleFonts.inter(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: _isLoading ? AppTheme.textTertiary : AppTheme.primaryColor,
                 ),
               ),
             ),
@@ -344,19 +333,6 @@ class _EditProfilePageState extends State<EditProfilePage>
 
               const SizedBox(height: 24),
 
-              _buildSectionTitle('Acerca de ti'),
-              const SizedBox(height: 16),
-
-              _buildTextField(
-                controller: _bioController,
-                label: 'Biografía',
-                icon: Symbols.description,
-                maxLines: 4,
-                maxLength: 200,
-              ),
-
-              const SizedBox(height: 32),
-
               // Información adicional
               Container(
                 padding: const EdgeInsets.all(16),
@@ -386,6 +362,54 @@ class _EditProfilePageState extends State<EditProfilePage>
                       ),
                     ),
                   ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Botón de Guardar
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _saveProfile,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: _isLoading
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Guardando...',
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Text(
+                          'Guardar Cambios',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
 
@@ -998,9 +1022,7 @@ class _EditProfilePageState extends State<EditProfilePage>
         phoneNumber: _phoneController.text.trim().isNotEmpty 
             ? _phoneController.text.trim() 
             : null,
-        bio: _bioController.text.trim().isNotEmpty 
-            ? _bioController.text.trim() 
-            : null,
+        bio: null, // Campo eliminado
         location: _locationController.text.trim().isNotEmpty 
             ? _locationController.text.trim() 
             : null,

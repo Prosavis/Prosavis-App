@@ -41,7 +41,6 @@ class UserEntity extends Equatable {
     return name.isNotEmpty &&
            email.isNotEmpty &&
            phoneNumber != null && phoneNumber!.isNotEmpty &&
-           bio != null && bio!.isNotEmpty &&
            location != null && location!.isNotEmpty;
   }
 } 

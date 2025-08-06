@@ -51,16 +51,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   List<String> _selectedTags = [];
   List<String> _selectedSkills = [];
   List<String> _availableDays = [];
-  TimeOfDay? _startTime;
-  TimeOfDay? _endTime;
 
 
   final List<String> _priceTypes = [
     'fixed',
-    'hourly',
     'daily',
-    'weekly',
-    'monthly',
     'negotiable',
   ];
 
@@ -157,25 +152,6 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
           _selectedSkills.remove(experienceFeature);
         }
       }
-      
-      // Cargar horarios si están disponibles
-      if (service.timeRange != null && service.timeRange!.contains('-')) {
-        final timeParts = service.timeRange!.split('-');
-        if (timeParts.length == 2) {
-          final startParts = timeParts[0].split(':');
-          final endParts = timeParts[1].split(':');
-          if (startParts.length == 2 && endParts.length == 2) {
-            _startTime = TimeOfDay(
-              hour: int.tryParse(startParts[0]) ?? 9,
-              minute: int.tryParse(startParts[1]) ?? 0,
-            );
-            _endTime = TimeOfDay(
-              hour: int.tryParse(endParts[0]) ?? 17,
-              minute: int.tryParse(endParts[1]) ?? 0,
-            );
-          }
-        }
-      }
 
       setState(() {
         _service = service;
@@ -232,13 +208,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         }
       }
 
-      // Crear string de horario
-      String? timeRange;
-      if (_startTime != null && _endTime != null) {
-        final startStr = '${_startTime!.hour.toString().padLeft(2, '0')}:${_startTime!.minute.toString().padLeft(2, '0')}';
-        final endStr = '${_endTime!.hour.toString().padLeft(2, '0')}:${_endTime!.minute.toString().padLeft(2, '0')}';
-        timeRange = '$startStr-$endStr';
-      }
+      // No se requiere horario de trabajo
 
       // Combinar habilidades con experiencia si está presente
       final List<String> finalFeatures = List.from(_selectedSkills);
@@ -263,7 +233,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         features: finalFeatures,
         availableDays: _availableDays,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-        timeRange: timeRange,
+        timeRange: null, // Ya no se usa horario de trabajo
         updatedAt: DateTime.now(),
       );
 
@@ -395,11 +365,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         children: [
           _buildInfoCard(),
           const SizedBox(height: 16),
+          _buildCategorySection(),
+          const SizedBox(height: 16),
           _buildBasicInfoSection(),
           const SizedBox(height: 16),
           _buildPricingSection(),
-          const SizedBox(height: 16),
-          _buildCategorySection(),
           const SizedBox(height: 16),
           _buildExperienceSection(),
           const SizedBox(height: 16),
@@ -534,11 +504,8 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             ),
             items: _priceTypes.map((type) {
               final displayName = {
-                'fixed': 'Precio fijo',
-                'hourly': 'Por hora',
+                'fixed': 'Por servicio',
                 'daily': 'Por día',
-                'weekly': 'Por semana',
-                'monthly': 'Por mes',
                 'negotiable': 'Negociable',
               }[type] ?? type;
               
@@ -691,43 +658,6 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                 ),
               );
             }).toList(),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Horario de trabajo',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _selectStartTime(),
-                  icon: const Icon(Symbols.schedule),
-                  label: Text(
-                    _startTime != null
-                        ? 'Desde: ${_startTime!.format(context)}'
-                        : 'Hora de inicio',
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _selectEndTime(),
-                  icon: const Icon(Symbols.schedule),
-                  label: Text(
-                    _endTime != null
-                        ? 'Hasta: ${_endTime!.format(context)}'
-                        : 'Hora de fin',
-                  ),
-                ),
-              ),
-            ],
           ),
         ],
       ),
@@ -1448,29 +1378,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     );
   }
 
-  Future<void> _selectStartTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _startTime ?? const TimeOfDay(hour: 9, minute: 0),
-    );
-    if (pickedTime != null) {
-      setState(() {
-        _startTime = pickedTime;
-      });
-    }
-  }
 
-  Future<void> _selectEndTime() async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: _endTime ?? const TimeOfDay(hour: 17, minute: 0),
-    );
-    if (pickedTime != null) {
-      setState(() {
-        _endTime = pickedTime;
-      });
-    }
-  }
 
   void _showAddSkillDialog() {
     final controller = TextEditingController();
