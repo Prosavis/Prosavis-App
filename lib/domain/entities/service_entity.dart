@@ -21,7 +21,7 @@ class ServiceEntity extends Equatable {
   final int reviewCount;
   final String? address;
   final Map<String, dynamic>? location;
-  final int availabilityRadius; // en km
+
   final List<String> availableDays;
   final String? timeRange; // "09:00-17:00"
 
@@ -46,7 +46,7 @@ class ServiceEntity extends Equatable {
     required this.reviewCount,
     this.address,
     this.location,
-    required this.availabilityRadius,
+
     required this.availableDays,
     this.timeRange,
   });
@@ -73,7 +73,7 @@ class ServiceEntity extends Equatable {
         reviewCount,
         address,
         location,
-        availabilityRadius,
+
         availableDays,
         timeRange,
       ];
@@ -99,7 +99,7 @@ class ServiceEntity extends Equatable {
     int? reviewCount,
     String? address,
     Map<String, dynamic>? location,
-    int? availabilityRadius,
+
     List<String>? availableDays,
     String? timeRange,
   }) {
@@ -124,7 +124,7 @@ class ServiceEntity extends Equatable {
       reviewCount: reviewCount ?? this.reviewCount,
       address: address ?? this.address,
       location: location ?? this.location,
-      availabilityRadius: availabilityRadius ?? this.availabilityRadius,
+
       availableDays: availableDays ?? this.availableDays,
       timeRange: timeRange ?? this.timeRange,
     );

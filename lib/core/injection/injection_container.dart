@@ -174,7 +174,7 @@ Future<void> init() async {
     developer.log('✅ DeleteServiceUseCase registrado');
 
     sl.registerLazySingleton<CreateReviewUseCase>(
-      () => CreateReviewUseCase(sl<ReviewRepository>()),
+      () => CreateReviewUseCase(sl<ReviewRepository>(), sl<ServiceRepository>()),
     );
     developer.log('✅ CreateReviewUseCase registrado');
 

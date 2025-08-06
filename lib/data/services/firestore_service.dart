@@ -432,7 +432,7 @@ class FirestoreService {
         reviewCount: service.reviewCount,
         address: service.address,
         location: service.location,
-        availabilityRadius: service.availabilityRadius,
+
         availableDays: service.availableDays,
         timeRange: service.timeRange,
       );
@@ -470,7 +470,7 @@ class FirestoreService {
         reviewCount: service.reviewCount,
         address: service.address,
         location: service.location,
-        availabilityRadius: service.availabilityRadius,
+
         availableDays: service.availableDays,
         timeRange: service.timeRange,
       );

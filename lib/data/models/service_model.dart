@@ -23,7 +23,7 @@ class ServiceModel extends ServiceEntity {
     required super.reviewCount,
     super.address,
     super.location,
-    required super.availabilityRadius,
+
     required super.availableDays,
     super.timeRange,
   });
@@ -51,7 +51,7 @@ class ServiceModel extends ServiceEntity {
       reviewCount: entity.reviewCount,
       address: entity.address,
       location: entity.location,
-      availabilityRadius: entity.availabilityRadius,
+
       availableDays: entity.availableDays,
       timeRange: entity.timeRange,
     );
@@ -80,7 +80,7 @@ class ServiceModel extends ServiceEntity {
       reviewCount: (json['reviewCount'] ?? 0).toInt(),
       address: json['address'],
       location: json['location'] != null ? Map<String, dynamic>.from(json['location']) : null,
-      availabilityRadius: (json['availabilityRadius'] ?? 10).toInt(),
+
       availableDays: List<String>.from(json['availableDays'] ?? []),
       timeRange: json['timeRange'],
     );
@@ -109,7 +109,7 @@ class ServiceModel extends ServiceEntity {
       'reviewCount': reviewCount,
       'address': address,
       'location': location,
-      'availabilityRadius': availabilityRadius,
+
       'availableDays': availableDays,
       'timeRange': timeRange,
     };
@@ -131,7 +131,7 @@ class ServiceModel extends ServiceEntity {
     List<String> features = const [],
     String? address,
     Map<String, dynamic>? location,
-    int availabilityRadius = 10,
+
     required List<String> availableDays,
     String? timeRange,
   }) {
@@ -157,7 +157,7 @@ class ServiceModel extends ServiceEntity {
       reviewCount: 0,
       address: address,
       location: location,
-      availabilityRadius: availabilityRadius,
+
       availableDays: availableDays,
       timeRange: timeRange,
     );
@@ -200,7 +200,7 @@ class ServiceModel extends ServiceEntity {
     int? reviewCount,
     String? address,
     Map<String, dynamic>? location,
-    int? availabilityRadius,
+
     List<String>? availableDays,
     String? timeRange,
   }) {
@@ -225,7 +225,7 @@ class ServiceModel extends ServiceEntity {
       reviewCount: reviewCount ?? this.reviewCount,
       address: address ?? this.address,
       location: location ?? this.location,
-      availabilityRadius: availabilityRadius ?? this.availabilityRadius,
+
       availableDays: availableDays ?? this.availableDays,
       timeRange: timeRange ?? this.timeRange,
     );

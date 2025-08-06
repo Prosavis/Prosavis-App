@@ -17,15 +17,18 @@ import '../../widgets/reviews/write_review_dialog.dart';
 import '../../widgets/rating_stars.dart';
 import '../../../domain/entities/review_entity.dart';
 import '../../../domain/usecases/reviews/get_service_reviews_usecase.dart';
+import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
 import '../../../core/injection/injection_container.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
-  final ServiceEntity service;
+  final ServiceEntity? service;
+  final String? serviceId;
 
   const ServiceDetailsPage({
     super.key,
-    required this.service,
-  });
+    this.service,
+    this.serviceId,
+  }) : assert(service != null || serviceId != null, 'Either service or serviceId must be provided');
 
   @override
   State<ServiceDetailsPage> createState() => _ServiceDetailsPageState();
@@ -44,6 +47,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
   List<ReviewEntity> _reviews = []; // Las reseñas se cargarán dinámicamente
   late final GetServiceReviewsUseCase _getServiceReviewsUseCase;
+  late final GetServiceByIdUseCase _getServiceByIdUseCase;
+  
+  ServiceEntity? _currentService;
+  bool _isLoadingService = false;
 
   @override
   void initState() {
@@ -59,16 +66,54 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
     // Inicializar casos de uso
     _getServiceReviewsUseCase = sl<GetServiceReviewsUseCase>();
+    _getServiceByIdUseCase = sl<GetServiceByIdUseCase>();
 
-    _calculateDistance();
-    _loadReviews();
+    // Inicializar servicio
+    _initializeService();
     _fadeController.forward();
   }
 
+  Future<void> _initializeService() async {
+    if (widget.service != null) {
+      // Si ya tenemos el servicio, usarlo directamente
+      _currentService = widget.service;
+      _calculateDistance();
+      _loadReviews();
+    } else if (widget.serviceId != null) {
+      // Cargar servicio por ID
+      setState(() {
+        _isLoadingService = true;
+      });
+      
+      try {
+        final service = await _getServiceByIdUseCase(widget.serviceId!);
+        if (mounted) {
+          setState(() {
+            _currentService = service;
+            _isLoadingService = false;
+          });
+          
+          if (service != null) {
+            _calculateDistance();
+            _loadReviews();
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          setState(() {
+            _isLoadingService = false;
+          });
+        }
+      }
+    }
+  }
+
   Future<void> _loadReviews() async {
+    if (_currentService == null) return;
+    
     try {
       final reviews = await _getServiceReviewsUseCase(GetServiceReviewsParams(
-        serviceId: widget.service.id,
+        serviceId: _currentService!.id,
         limit: 20,
       ));
       if (mounted) {
@@ -87,8 +132,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Future<void> _calculateDistance() async {
+    if (_currentService == null) return;
+    
     final distance = await LocationUtils.calculateDistanceToService(
-      serviceLocation: widget.service.location,
+      serviceLocation: _currentService!.location,
     );
     
     if (mounted) {
@@ -107,16 +154,73 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
   @override
   Widget build(BuildContext context) {
-    // Cargar estado inicial de favorito si el usuario está autenticado
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is AuthAuthenticated) {
-        context.read<FavoritesBloc>().add(CheckFavoriteStatus(
-          userId: authState.user.id,
-          serviceId: widget.service.id,
-        ));
-      }
-    });
+    // Cargar estado inicial de favorito si el usuario está autenticado y el servicio está cargado
+    if (_currentService != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthAuthenticated) {
+          context.read<FavoritesBloc>().add(CheckFavoriteStatus(
+            userId: authState.user.id,
+            serviceId: _currentService!.id,
+          ));
+        }
+      });
+    }
+
+    // Mostrar loading si se está cargando el servicio
+    if (_isLoadingService) {
+      return const Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
+
+    // Mostrar error si no se pudo cargar el servicio
+    if (_currentService == null) {
+      return Scaffold(
+        backgroundColor: AppTheme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: AppTheme.backgroundColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Symbols.error_outline,
+                size: 64,
+                color: AppTheme.textTertiary,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Servicio no encontrado',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'El servicio que buscas no existe o ha sido eliminado',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.textSecondary,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
         backgroundColor: AppTheme.backgroundColor,
@@ -164,11 +268,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   bool isLoading = false;
                   
                   if (favoritesState is FavoritesLoaded) {
-                    isFavorite = favoritesState.isFavorite(widget.service.id);
+                    isFavorite = favoritesState.isFavorite(_currentService!.id);
                   } else if (favoritesState is FavoriteToggling && 
-                            favoritesState.serviceId == widget.service.id) {
+                            favoritesState.serviceId == _currentService!.id) {
                     isLoading = true;
-                    isFavorite = favoritesState.favoriteStatus[widget.service.id] ?? false;
+                    isFavorite = favoritesState.favoriteStatus[_currentService!.id] ?? false;
                   }
                   
                   return IconButton(
@@ -176,7 +280,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       context.read<FavoritesBloc>().add(
                         ToggleFavorite(
                           userId: authState.user.id,
-                          serviceId: widget.service.id,
+                          serviceId: _currentService!.id,
                         ),
                       );
                     },
@@ -236,7 +340,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
-        background: widget.service.mainImage != null
+        background: _currentService!.mainImage != null
             ? Container(
                 decoration: BoxDecoration(
                   color: Colors.grey.shade200,
@@ -245,9 +349,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   fit: StackFit.expand,
                   children: [
                     // Mostrar imagen real si es una URL, o ícono si es simulada
-                    widget.service.mainImage!.startsWith('https://')
+                    _currentService!.mainImage!.startsWith('https://')
                         ? Image.network(
-                            widget.service.mainImage!,
+                            _currentService!.mainImage!,
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
@@ -359,11 +463,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: widget.service.isActive ? Colors.green : Colors.orange,
+                    color: _currentService!.isActive ? Colors.green : Colors.orange,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    widget.service.isActive ? 'Disponible' : 'No disponible',
+                    _currentService!.isActive ? 'Disponible' : 'No disponible',
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -379,7 +483,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    widget.service.category,
+                    _currentService!.category,
                     style: GoogleFonts.inter(
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
@@ -393,7 +497,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             const SizedBox(height: 16),
             
             Text(
-              widget.service.title,
+              _currentService!.title,
               style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -412,7 +516,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  widget.service.providerName,
+                  _currentService!.providerName,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     color: AppTheme.textSecondary,
@@ -423,7 +527,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             const SizedBox(height: 8),
             
-            if (widget.service.address != null || _calculatedDistance != null)
+            if (_currentService!.address != null || _calculatedDistance != null)
               Row(
                 children: [
                   const Icon(
@@ -436,9 +540,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (widget.service.address != null)
+                        if (_currentService!.address != null)
                           Text(
-                            widget.service.address!,
+                            _currentService!.address!,
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: AppTheme.textSecondary,
@@ -473,7 +577,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      widget.service.rating.toStringAsFixed(1),
+                      _currentService!.rating.toStringAsFixed(1),
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -482,7 +586,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      '(${widget.service.reviewCount} reseñas)',
+                      '(${_currentService!.reviewCount} reseñas)',
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         color: AppTheme.textSecondary,
@@ -492,7 +596,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
                 const Spacer(),
                 Text(
-                  '\$${widget.service.price.toStringAsFixed(0)}',
+                  '\$${_currentService!.price.toStringAsFixed(0)}',
                   style: GoogleFonts.inter(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -508,7 +612,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Widget _buildImageGallery() {
-    final galleryImages = widget.service.images;
+    final galleryImages = _currentService!.images;
     
     if (galleryImages.isEmpty) {
       return SliverToBoxAdapter(
@@ -667,7 +771,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             ),
             const SizedBox(height: 12),
             Text(
-              widget.service.description,
+              _currentService!.description,
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.textSecondary,
@@ -683,7 +787,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Widget _buildServiceFeatures() {
-    final features = widget.service.features;
+    final features = _currentService!.features;
 
     if (features.isEmpty) {
       return Column(
@@ -795,12 +899,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 CircleAvatar(
                   radius: 30,
                   backgroundColor: AppTheme.primaryColor,
-                  backgroundImage: widget.service.providerPhotoUrl != null 
-                      ? NetworkImage(widget.service.providerPhotoUrl!)
+                  backgroundImage: _currentService!.providerPhotoUrl != null 
+                      ? NetworkImage(_currentService!.providerPhotoUrl!)
                       : null,
-                  child: widget.service.providerPhotoUrl == null
+                  child: _currentService!.providerPhotoUrl == null
                       ? Text(
-                          widget.service.providerName[0].toUpperCase(),
+                          _currentService!.providerName[0].toUpperCase(),
                           style: GoogleFonts.inter(
                             fontSize: 24,
                             fontWeight: FontWeight.bold,
@@ -815,7 +919,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.service.providerName,
+                        _currentService!.providerName,
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -824,7 +928,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Miembro desde ${widget.service.createdAt.year}',
+                        'Miembro desde ${_currentService!.createdAt.year}',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppTheme.textSecondary,
@@ -840,7 +944,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            widget.service.rating.toStringAsFixed(1),
+                            _currentService!.rating.toStringAsFixed(1),
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               color: Colors.orange.shade700,
@@ -1090,7 +1194,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Categoría: ${widget.service.category}',
+                      'Categoría: ${_currentService!.category}',
                       style: GoogleFonts.inter(
                         fontSize: 12,
                         color: AppTheme.textTertiary,
@@ -1174,7 +1278,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     // Número de teléfono del proveedor (simulado por ahora)
     const phoneNumber = '+573001234567'; // Número colombiano simulado
     final message = Uri.encodeComponent(
-      'Hola! Estoy interesado en tu servicio: ${widget.service.title}. ¿Podrías darme más información?'
+      'Hola! Estoy interesado en tu servicio: ${_currentService!.title}. ¿Podrías darme más información?'
     );
     
     final whatsappUrl = 'https://wa.me/$phoneNumber?text=$message';
@@ -1275,8 +1379,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       context: context,
       builder: (BuildContext context) {
         return WriteReviewDialog(
-          serviceId: widget.service.id,
-          serviceName: widget.service.title,
+          serviceId: _currentService!.id,
+          serviceName: _currentService!.title,
           onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
         );
       },

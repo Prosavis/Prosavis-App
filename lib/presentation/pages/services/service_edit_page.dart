@@ -53,7 +53,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   List<String> _availableDays = [];
   TimeOfDay? _startTime;
   TimeOfDay? _endTime;
-  int _availabilityRadius = 10;
+
 
   final List<String> _priceTypes = [
     'fixed',
@@ -142,7 +142,6 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       _selectedTags = List.from(service.tags);
       _selectedSkills = List.from(service.features);
       _availableDays = List.from(service.availableDays);
-      _availabilityRadius = service.availabilityRadius;
       _addressController.text = service.address ?? '';
       // Cargar experiencia si está disponible en los tags o features
       if (service.features.isNotEmpty) {
@@ -263,7 +262,6 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         tags: _selectedTags,
         features: finalFeatures,
         availableDays: _availableDays,
-        availabilityRadius: _availabilityRadius,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
         timeRange: timeRange,
         updatedAt: DateTime.now(),
@@ -1273,7 +1271,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
 
   Widget _buildLocationSection() {
     return _buildSectionCard(
-      title: 'Ubicación y cobertura',
+      title: 'Ubicación',
       icon: Symbols.location_on,
       child: Column(
         children: [
@@ -1326,61 +1324,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              const Icon(Symbols.radio_button_unchecked, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Radio de cobertura',
-                style: GoogleFonts.inter(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Expanded(
-                child: Slider(
-                  value: _availabilityRadius.toDouble(),
-                  min: 1,
-                  max: 50,
-                  divisions: 49,
-                  label: '$_availabilityRadius km',
-                  onChanged: (value) {
-                    setState(() {
-                      _availabilityRadius = value.toInt();
-                    });
-                  },
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  '$_availabilityRadius km',
-                  style: GoogleFonts.inter(
-                    fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          Text(
-            'Distancia máxima que estás dispuesto a viajar para ofrecer tu servicio',
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              color: AppTheme.textTertiary,
-            ),
-          ),
+
         ],
       ),
     );

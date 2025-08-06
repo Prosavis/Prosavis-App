@@ -164,16 +164,15 @@ final _router = GoRouter(
     GoRoute(
       path: '/services/:serviceId',
       builder: (context, state) {
+        final serviceId = state.pathParameters['serviceId']!;
         final serviceEntity = state.extra as ServiceEntity?;
+        
         if (serviceEntity != null) {
           return ServiceDetailsPage(service: serviceEntity);
+        } else {
+          // Cargar servicio por ID cuando no se pasa el objeto completo
+          return ServiceDetailsPage(serviceId: serviceId);
         }
-        // Fallback si no se pasa el objeto completo
-        return const Scaffold(
-          body: Center(
-            child: Text('Error: Datos del servicio no encontrados'),
-          ),
-        );
       },
     ),
     GoRoute(

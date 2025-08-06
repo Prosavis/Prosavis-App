@@ -56,7 +56,29 @@ service cloud.firestore {
       allow delete: if request.auth != null && 
                    request.auth.uid == resource.data.providerId;
       
-
+      // === RESEÑAS DE SERVICIOS (SUBCOLLECCIÓN) ===
+      // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede leer reseñas de servicios
+      // 🔒 GESTIÓN PERSONAL: Solo el autor puede modificar sus reseñas
+      match /reviews/{reviewId} {
+        allow read: if true; // 📖 Lectura pública para ver reseñas
+        allow create: if request.auth != null && 
+                     request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
+                     // 📋 Validar campos obligatorios
+                     request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating', 'comment']) &&
+                     request.resource.data.rating is number && 
+                     request.resource.data.rating >= 1 && 
+                     request.resource.data.rating <= 5 &&
+                     // 📋 Validar comentario obligatorio (mínimo 10 caracteres)
+                     request.resource.data.comment is string &&
+                     request.resource.data.comment.size() >= 10 &&
+                     request.resource.data.comment.size() <= 500 &&
+                     // 📋 Validar que el serviceId coincida con el documento padre
+                     request.resource.data.serviceId == serviceId &&
+                     // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
+                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId;
+        allow update, delete: if request.auth != null && 
+                             request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
+      }
       
       // === IMÁGENES DE SERVICIOS ===
       // Metadatos de imágenes (las imágenes reales van en Storage)

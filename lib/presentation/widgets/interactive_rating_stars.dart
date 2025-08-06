@@ -104,7 +104,7 @@ class _InteractiveRatingStarsState extends State<InteractiveRatingStars>
                       shadows: isSelected
                           ? [
                               Shadow(
-                                color: widget.activeColor.withOpacity(0.3),
+                                color: widget.activeColor.withValues(alpha: 0.3),
                                 blurRadius: 4,
                                 offset: const Offset(0, 2),
                               ),

@@ -93,6 +93,12 @@ class ImageStorageService {
         return null;
       }
 
+      // Validar que el serviceId no esté vacío
+      if (serviceId.isEmpty) {
+        developer.log('❌ Error: serviceId está vacío');
+        return null;
+      }
+
       // Validar tamaño del archivo (máximo 10MB como en las reglas)
       final fileSize = imageFile.lengthSync();
       if (fileSize > 10 * 1024 * 1024) {
@@ -118,42 +124,57 @@ class ImageStorageService {
         },
       );
 
-      // Subir archivo con reintentos
+      // Subir archivo directamente sin reintentos complejos
       developer.log('📤 Subiendo imagen de servicio: $fileName');
       
-      String? downloadUrl;
-      int attempts = 0;
-      const maxAttempts = 3;
-      
-      while (attempts < maxAttempts && downloadUrl == null) {
-        try {
-          attempts++;
-          developer.log('📤 Intento $attempts/$maxAttempts...');
+      try {
+        final UploadTask uploadTask = ref.putFile(imageFile, metadata);
+        
+        // Monitorear el progreso (opcional)
+        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          final progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          developer.log('🔄 Progreso de subida: ${progress.toStringAsFixed(1)}%');
+        });
+        
+        // Esperar a que se complete la subida
+        final TaskSnapshot snapshot = await uploadTask;
+        
+        // Verificar que la subida fue exitosa
+        if (snapshot.state == TaskState.success) {
+          // Obtener URL de descarga
+          final String downloadUrl = await snapshot.ref.getDownloadURL();
+          developer.log('✅ Imagen de servicio subida exitosamente: $downloadUrl');
+          return downloadUrl;
+        } else {
+          developer.log('❌ Error en el estado de la subida: ${snapshot.state}');
+          return null;
+        }
+        
+      } catch (uploadError) {
+        developer.log('❌ Error durante la subida: $uploadError');
+        
+        // Si el error es de sesión terminada, intentar una vez más
+        if (uploadError.toString().contains('server has terminated') || 
+            uploadError.toString().contains('session')) {
+          developer.log('🔄 Reintentando subida por error de sesión...');
+          await Future.delayed(const Duration(seconds: 2));
           
-          final UploadTask uploadTask = ref.putFile(imageFile, metadata);
-          
-          // Esperar a que se complete la subida
-          final TaskSnapshot snapshot = await uploadTask;
-          
-          // Verificar que la subida fue exitosa
-          if (snapshot.state == TaskState.success) {
-            // Obtener URL de descarga
-            downloadUrl = await snapshot.ref.getDownloadURL();
-            developer.log('✅ Imagen de servicio subida exitosamente: $downloadUrl');
-          } else {
-            developer.log('❌ Error en el estado de la subida: ${snapshot.state}');
-          }
-          
-        } catch (e) {
-          developer.log('❌ Error en intento $attempts: $e');
-          if (attempts < maxAttempts) {
-            // Esperar antes del siguiente intento
-            await Future.delayed(Duration(seconds: attempts * 2));
+          try {
+            final retryTask = ref.putFile(imageFile, metadata);
+            final retrySnapshot = await retryTask;
+            
+            if (retrySnapshot.state == TaskState.success) {
+              final String downloadUrl = await retrySnapshot.ref.getDownloadURL();
+              developer.log('✅ Imagen subida exitosamente en reintento: $downloadUrl');
+              return downloadUrl;
+            }
+          } catch (retryError) {
+            developer.log('❌ Error en reintento: $retryError');
           }
         }
+        
+        return null;
       }
-      
-      return downloadUrl;
       
     } catch (e) {
       developer.log('❌ Error general al subir imagen de servicio: $e');

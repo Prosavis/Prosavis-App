@@ -20,19 +20,26 @@ service firebase.storage {
     }
     
     // === IMÁGENES DE SERVICIOS ===
-    // 🔒 Solo el propietario del servicio puede gestionar las imágenes
+    // 🔒 Solo usuarios autenticados pueden gestionar las imágenes de servicios
     match /service_images/{fileName} {
       // Permitir lectura pública de imágenes de servicios para navegación
       allow read: if true;
       
       // Solo usuarios autenticados pueden subir/modificar imágenes de servicios
+      // Reglas más permisivas para solucionar errores de upload
       allow write: if request.auth != null && 
+                   request.resource != null &&
                    request.resource.size < 10 * 1024 * 1024 && // Máximo 10MB para servicios
+                   request.resource.contentType != null &&
                    request.resource.contentType.matches('image/.*') && // Solo imágenes
                    // Validar formatos permitidos (JPEG, PNG, WebP)
                    (request.resource.contentType == 'image/jpeg' ||
                     request.resource.contentType == 'image/png' ||
-                    request.resource.contentType == 'image/webp');
+                    request.resource.contentType == 'image/webp' ||
+                    request.resource.contentType == 'image/jpg');
+      
+      // Permitir actualización de metadatos
+      allow update: if request.auth != null;
     }
     
     // === DOCUMENTOS Y CERTIFICADOS ===
