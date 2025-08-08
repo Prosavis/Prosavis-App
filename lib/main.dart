@@ -245,13 +245,18 @@ class MyApp extends StatelessWidget {
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {
-          return MaterialApp.router(
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme,
-            darkTheme: AppTheme.darkTheme,
-            themeMode: themeState.themeMode,
-            routerConfig: _router,
+          return AnimatedTheme(
+            data: themeState.isDark ? AppTheme.darkTheme : AppTheme.lightTheme,
+            duration: AppConstants.mediumAnimation,
+            curve: Curves.easeInOut,
+            child: MaterialApp.router(
+              title: AppConstants.appName,
+              debugShowCheckedModeBanner: false,
+              theme: AppTheme.lightTheme,
+              darkTheme: AppTheme.darkTheme,
+              themeMode: themeState.themeMode,
+              routerConfig: _router,
+            ),
           );
         },
       ),

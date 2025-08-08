@@ -8,6 +8,10 @@ import '../profile/profile_page.dart';
 import '../services/my_services_page.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/home/home_bloc.dart';
+import '../../blocs/home/home_event.dart';
+import '../../blocs/favorites/favorites_bloc.dart';
+import '../../blocs/favorites/favorites_event.dart';
 import '../../widgets/common/auth_required_dialog.dart';
 
 
@@ -74,11 +78,26 @@ class _MainNavigationPageState extends State<MainNavigationPage>
       setState(() {
         _selectedIndex = index;
       });
+      _dispatchTabRefreshIfNeeded(index);
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    }
+  }
+
+  void _dispatchTabRefreshIfNeeded(int index) {
+    // 0: Inicio, 1: Ofrecer, 2: Favoritos, 3: Perfil
+    if (index == 0) {
+      // Refrescar Home al volver al tab
+      context.read<HomeBloc>().add(RefreshHomeServices());
+    } else if (index == 2) {
+      // Refrescar Favoritos al volver al tab si hay usuario
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        context.read<FavoritesBloc>().add(RefreshFavorites(authState.user.id));
+      }
     }
   }
 
@@ -118,6 +137,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
             setState(() {
               _selectedIndex = index;
             });
+            _dispatchTabRefreshIfNeeded(index);
           }
         },
         children: pages, // Usar el getter que maneja lazy loading

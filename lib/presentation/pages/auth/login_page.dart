@@ -694,9 +694,10 @@ class _LoginPageState extends State<LoginPage>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Image.asset(
-                      'assets/images/google_logo.png',
+                      'assets/icons/Google.svg.png',
                       height: 24,
                       width: 24,
+                      filterQuality: FilterQuality.high,
                       errorBuilder: (context, error, stackTrace) {
                         return const Icon(
                           Symbols.account_circle,

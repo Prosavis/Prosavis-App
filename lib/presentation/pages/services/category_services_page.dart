@@ -63,20 +63,20 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(Symbols.arrow_back, color: AppTheme.getTextPrimary(context)),
         ),
         title: Text(
           widget.category['name'] as String,
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
       ),
@@ -101,7 +101,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
 
   Widget _buildSearchAndFilters() {
     return Container(
-      color: Colors.white,
+      color: AppTheme.getSurfaceColor(context),
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       child: Row(
         children: [
@@ -111,14 +111,14 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
               onChanged: _filterServices,
               decoration: InputDecoration(
                 hintText: 'Buscar en ${widget.category['name']}...',
-                prefixIcon: const Icon(Symbols.search),
+                prefixIcon: Icon(Symbols.search, color: AppTheme.getTextSecondary(context)),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
                         onPressed: () {
                           _searchController.clear();
                           _filterServices('');
                         },
-                        icon: const Icon(Symbols.clear),
+                        icon: Icon(Symbols.clear, color: AppTheme.getTextSecondary(context)),
                       )
                     : null,
               ),
@@ -127,14 +127,14 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
           const SizedBox(width: 12),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
+              border: Border.all(color: AppTheme.getBorderColor(context)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: IconButton(
               onPressed: _showFilters,
               icon: Stack(
                 children: [
-                  const Icon(Symbols.tune),
+                  Icon(Symbols.tune, color: AppTheme.getTextPrimary(context)),
                   if (_currentFilters.hasActiveFilters)
                     Positioned(
                       top: 0,
@@ -159,7 +159,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
 
   Widget _buildResultsHeader() {
     return Container(
-      color: Colors.white,
+      color: AppTheme.getSurfaceColor(context),
       padding: const EdgeInsets.symmetric(
         horizontal: AppConstants.paddingMedium,
         vertical: 8,
@@ -176,7 +176,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
             '${_filteredServices.length} servicios encontrados',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: AppTheme.textSecondary,
+              color: AppTheme.getTextSecondary(context),
             ),
           ),
           const Spacer(),

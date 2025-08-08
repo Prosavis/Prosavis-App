@@ -1513,15 +1513,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: _contactProvider,
-          icon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                '💬',
-                style: GoogleFonts.inter(fontSize: 18),
-              ),
-              const SizedBox(width: 4),
-            ],
+          icon: Image.asset(
+            'assets/icons/WhatsApp.svg.webp',
+            height: 20,
+            width: 20,
+            errorBuilder: (_, __, ___) => const Icon(Symbols.chat, color: Colors.white),
           ),
           label: Text(
             'Contactar por WhatsApp',

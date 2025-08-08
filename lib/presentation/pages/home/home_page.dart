@@ -108,14 +108,20 @@ class _HomePageState extends State<HomePage>
     return SafeArea(
       child: FadeTransition(
         opacity: _fadeAnimation,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(state),
-            _buildSearchBar(),
-            _buildCategoriesSection(),
-            _buildFeaturedServicesSection(),
-            _buildNearbyServicesSection(),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            context.read<HomeBloc>().add(RefreshHomeServices());
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              _buildAppBar(state),
+              _buildSearchBar(),
+              _buildCategoriesSection(),
+              _buildFeaturedServicesSection(),
+              _buildNearbyServicesSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -125,14 +131,20 @@ class _HomePageState extends State<HomePage>
     return SafeArea(
       child: FadeTransition(
         opacity: _fadeAnimation,
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBarAnonymous(),
-            _buildSearchBar(),
-            _buildCategoriesSection(),
-            _buildFeaturedServicesSection(),
-            _buildNearbyServicesSection(),
-          ],
+        child: RefreshIndicator(
+          onRefresh: () async {
+            context.read<HomeBloc>().add(RefreshHomeServices());
+          },
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              _buildAppBarAnonymous(),
+              _buildSearchBar(),
+              _buildCategoriesSection(),
+              _buildFeaturedServicesSection(),
+              _buildNearbyServicesSection(),
+            ],
+          ),
         ),
       ),
     );
@@ -177,14 +189,14 @@ class _HomePageState extends State<HomePage>
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                 color: AppTheme.getTextPrimary(context),
                     ),
                   ),
                   Text(
                     '¿Qué servicio necesitas hoy?',
-                    style: GoogleFonts.inter(
+                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: AppTheme.textSecondary,
+                       color: AppTheme.getTextSecondary(context),
                     ),
                   ),
                 ],
@@ -260,9 +272,9 @@ class _HomePageState extends State<HomePage>
               onPressed: () {
                 _showAuthRequiredDialog('las notificaciones');
               },
-              icon: const Icon(
+              icon: Icon(
                 Symbols.notifications,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
           ],
@@ -280,23 +292,23 @@ class _HomePageState extends State<HomePage>
             // Navegar a la página de búsqueda independiente
             context.push('/search');
           },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppTheme.getSurfaceColor(context),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppTheme.getBorderColor(context)),
+              ),
             child: Row(
               children: [
-                const Icon(Symbols.search, color: AppTheme.textTertiary),
+                Icon(Symbols.search, color: AppTheme.getTextTertiary(context)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Buscar servicios...',
                     style: GoogleFonts.inter(
                       fontSize: 16,
-                      color: AppTheme.textTertiary,
+                      color: AppTheme.getTextTertiary(context),
                     ),
                   ),
                 ),
@@ -334,7 +346,7 @@ class _HomePageState extends State<HomePage>
                 crossAxisCount: 4,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.85, // Proporción de aspecto para las tarjetas
+                childAspectRatio: 0.68, // Más alto para acomodar iconos de 56px
               ),
               itemCount: AppConstants.serviceCategories.length,
               itemBuilder: (context, index) {
@@ -349,82 +361,81 @@ class _HomePageState extends State<HomePage>
   }
 
   Widget _buildCategoryGridItem(Map<String, dynamic> category) {
-    return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => CategoryServicesPage(category: category),
-          ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0.98, end: 1.0),
+      duration: AppConstants.mediumAnimation,
+      curve: Curves.easeOutCubic,
+      builder: (context, value, child) {
+        return Transform.scale(
+          scale: value,
+          child: child,
         );
       },
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CategoryServicesPage(category: category),
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: _getCategoryColor(category['name']),
-                borderRadius: BorderRadius.circular(12),
+          );
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppTheme.getBorderColor(context)),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildCategoryIconFromAsset(category, size: 56),
+              const SizedBox(height: 8),
+              Text(
+                category['name'],
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppTheme.getTextPrimary(context),
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              child: Icon(
-                category['icon'],
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              category['name'],
-              style: GoogleFonts.inter(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Color _getCategoryColor(String categoryName) {
-    switch (categoryName.toLowerCase()) {
-      case 'limpieza':
-        return const Color(0xFF10B981);
-      case 'belleza y bienestar':
-        return const Color(0xFFDB2777);
-      case 'plomería':
-        return const Color(0xFF3B82F6);
-      case 'electricidad':
-        return const Color(0xFFF59E0B);
-      case 'pintura':
-        return const Color(0xFFDC2626);
-      case 'carpintería':
-        return const Color(0xFF92400E);
-      case 'jardinería':
-        return const Color(0xFF059669);
-      case 'mecánica':
-        return const Color(0xFF374151);
-      default:
-        return AppTheme.primaryColor;
+  Widget _buildCategoryIconFromAsset(Map<String, dynamic> category, {double size = 32}) {
+    final String? asset = category['asset'] as String?;
+    if (asset != null && asset.isNotEmpty) {
+      return Image.asset(
+        asset,
+        height: size,
+        width: size,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.high,
+        errorBuilder: (_, __, ___) => Icon(
+          category['icon'],
+          color: _getCategoryColor(category['name']),
+          size: size,
+        ),
+      );
     }
+    return Icon(
+      category['icon'],
+      color: _getCategoryColor(category['name']),
+      size: size,
+    );
+  }
+ 
+  Color _getCategoryColor(String categoryName) {
+    // Si en el futuro queremos reintroducir colores por categoría, aquí es el punto.
+    // Por ahora, usamos un color de énfasis consistente para simplificar diseño.
+    return AppTheme.primaryColor;
   }
 
   Widget _buildFeaturedServicesSection() {

@@ -46,20 +46,20 @@ class _CategoriesPageState extends State<CategoriesPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         elevation: 0,
         leading: IconButton(
           onPressed: () => Navigator.pop(context),
-          icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(Symbols.arrow_back, color: AppTheme.getTextPrimary(context)),
         ),
         title: Text(
           'Todas las Categorías',
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
       ),
@@ -79,21 +79,21 @@ class _CategoriesPageState extends State<CategoriesPage>
 
   Widget _buildSearchBar() {
     return Container(
-      color: Colors.white,
+      color: AppTheme.getSurfaceColor(context),
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       child: TextField(
         controller: _searchController,
         onChanged: _filterCategories,
         decoration: InputDecoration(
           hintText: 'Buscar categorías...',
-          prefixIcon: const Icon(Symbols.search),
+          prefixIcon: Icon(Symbols.search, color: AppTheme.getTextSecondary(context)),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   onPressed: () {
                     _searchController.clear();
                     _filterCategories('');
                   },
-                  icon: const Icon(Symbols.clear),
+                  icon: Icon(Symbols.clear, color: AppTheme.getTextSecondary(context)),
                 )
               : null,
         ),

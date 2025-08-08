@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:animations/animations.dart';
 
 class AppTheme {
   // Colores principales de Prosavis basados en el logo
@@ -86,18 +87,21 @@ class AppTheme {
 
   // Gradiente de bienvenida para el onboarding/login
   static const LinearGradient welcomeGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
     colors: [
-      Color(0xFF002446), // Azul marino
+      Color(0xFF0A1A2B), // Azul marino oscuro
+      Color(0xFF002446), // Azul marino marca
       Color(0xFF00355F), // Azul intermedio
-      Color(0xFF004D7F), // Azul más claro
+      Color(0xFFFF6A00), // Naranja del logo
     ],
+    stops: [0.0, 0.35, 0.7, 1.0],
   );
 
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
+      visualDensity: VisualDensity.standard,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         brightness: Brightness.light,
@@ -109,6 +113,15 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: backgroundColor,
       fontFamily: GoogleFonts.inter().fontFamily,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.iOS: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeThroughPageTransitionsBuilder(),
+        },
+      ),
       
       // AppBar Theme
       appBarTheme: AppBarTheme(
@@ -258,6 +271,7 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData(
       useMaterial3: true,
+      visualDensity: VisualDensity.standard,
       colorScheme: ColorScheme.fromSeed(
         seedColor: primaryColor,
         brightness: Brightness.dark,
@@ -271,6 +285,15 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: const Color(0xFF0F172A),
       fontFamily: GoogleFonts.inter().fontFamily,
+      pageTransitionsTheme: const PageTransitionsTheme(
+        builders: <TargetPlatform, PageTransitionsBuilder>{
+          TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.iOS: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.windows: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.macOS: FadeThroughPageTransitionsBuilder(),
+          TargetPlatform.linux: FadeThroughPageTransitionsBuilder(),
+        },
+      ),
       
       // AppBar Theme para modo oscuro
       appBarTheme: AppBarTheme(

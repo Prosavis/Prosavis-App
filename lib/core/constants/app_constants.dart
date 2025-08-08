@@ -44,14 +44,14 @@ class AppConstants {
   
   // Service Categories - 8 categorías principales en orden específico
   static const List<Map<String, dynamic>> serviceCategories = [
-    {'name': 'Limpieza', 'icon': Symbols.cleaning_services, 'id': 1},
-    {'name': 'Belleza y Bienestar', 'icon': Symbols.spa, 'id': 2},
-    {'name': 'Plomería', 'icon': Symbols.plumbing, 'id': 3},
-    {'name': 'Electricidad', 'icon': Symbols.electrical_services, 'id': 4},
-    {'name': 'Pintura', 'icon': Symbols.format_paint, 'id': 5},
-    {'name': 'Carpintería', 'icon': Symbols.construction, 'id': 6},
-    {'name': 'Jardinería', 'icon': Symbols.local_florist, 'id': 7},
-    {'name': 'Mecánica', 'icon': Symbols.car_repair, 'id': 8}
+    {'name': 'Limpieza', 'icon': Symbols.cleaning_services, 'asset': 'assets/icons/Limpieza.png', 'id': 1},
+    {'name': 'Belleza', 'icon': Symbols.spa, 'asset': 'assets/icons/Belleza.png', 'id': 2},
+    {'name': 'Plomería', 'icon': Symbols.plumbing, 'asset': 'assets/icons/Plomería.png', 'id': 3},
+    {'name': 'Electricidad', 'icon': Symbols.electrical_services, 'asset': 'assets/icons/Electricidad.png', 'id': 4},
+    {'name': 'Pintura', 'icon': Symbols.format_paint, 'asset': 'assets/icons/Pintura.png', 'id': 5},
+    {'name': 'Carpintería', 'icon': Symbols.construction, 'asset': 'assets/icons/Carpintería.png', 'id': 6},
+    {'name': 'Jardinería', 'icon': Symbols.local_florist, 'asset': 'assets/icons/Jardinería.png', 'id': 7},
+    {'name': 'Mecánica', 'icon': Symbols.car_repair, 'asset': 'assets/icons/Mecánica.png', 'id': 8}
   ];
 
   // Métodos auxiliares para trabajar con categorías

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
@@ -24,6 +25,8 @@ class _SplashPageState extends State<SplashPage>
   late Animation<double> _fadeAnimation;
   late Animation<double> _textFadeAnimation;
   late Animation<Offset> _textSlideAnimation;
+  late AnimationController _bgController;
+  AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
@@ -31,29 +34,36 @@ class _SplashPageState extends State<SplashPage>
     
     // Controlador para la animación de escala del logo
     _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 800),
+      duration: const Duration(milliseconds: 1100),
       vsync: this,
     );
     
     // Controlador para el fade general
     _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 900),
       vsync: this,
     );
     
     // Controlador para la animación del texto
     _textController = AnimationController(
-      duration: const Duration(milliseconds: 500),
+      duration: const Duration(milliseconds: 800),
       vsync: this,
     );
 
+    // Controlador para fondo animado sutil
+    _bgController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 3000),
+    );
+    _audioPlayer = AudioPlayer();
+
     // Configurar animaciones
-    _scaleAnimation = Tween<double>(
-      begin: 0.3,
-      end: 1.0,
-    ).animate(CurvedAnimation(
+    _scaleAnimation = TweenSequence<double>([
+      TweenSequenceItem(tween: Tween(begin: 0.2, end: 1.05), weight: 70),
+      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 30),
+    ]).animate(CurvedAnimation(
       parent: _scaleController,
-      curve: Curves.elasticOut,
+      curve: Curves.easeOutBack,
     ));
 
     _fadeAnimation = Tween<double>(
@@ -73,11 +83,11 @@ class _SplashPageState extends State<SplashPage>
     ));
 
     _textSlideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
+      begin: const Offset(0, 0.6),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _textController,
-      curve: Curves.easeOutCubic,
+      curve: Curves.easeOutExpo,
     ));
 
     _startAnimations();
@@ -94,6 +104,7 @@ class _SplashPageState extends State<SplashPage>
       // Iniciar fade y escala del logo simultáneamente
       _fadeController.forward();
       _scaleController.forward();
+      _bgController.repeat(reverse: true);
       
       // Delay antes de mostrar el texto
       await Future.delayed(const Duration(milliseconds: 400));
@@ -107,8 +118,8 @@ class _SplashPageState extends State<SplashPage>
           _playTextSound();
         }
         
-        // Esperar 2 segundos en total antes de navegar al home
-        await Future.delayed(const Duration(milliseconds: 1400));
+        // Espera total extendida para una intro más notoria (+500ms)
+        await Future.delayed(const Duration(milliseconds: 1900));
         
         if (mounted) {
           context.go('/home');
@@ -119,8 +130,12 @@ class _SplashPageState extends State<SplashPage>
 
   void _playWelcomeSound() {
     try {
-      // Sonido de éxito/bienvenida
-      SystemSound.play(SystemSoundType.alert);
+      // Intentar reproducir sonido desde assets; fallback a SystemSound
+      _audioPlayer
+          ?.play(AssetSource('sounds/transition-fleeting.mp3'))
+          .onError((error, stackTrace) {
+        SystemSound.play(SystemSoundType.alert);
+      });
       
       // Vibración sutil solo para dispositivos móviles (no web)
       if (!kIsWeb) {
@@ -149,6 +164,8 @@ class _SplashPageState extends State<SplashPage>
     _scaleController.dispose();
     _fadeController.dispose();
     _textController.dispose();
+    _bgController.dispose();
+    _audioPlayer?.dispose();
     super.dispose();
   }
 
@@ -164,6 +181,8 @@ class _SplashPageState extends State<SplashPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                // Fondo animado sutil con Lottie (si el asset existe)
+                const SizedBox(height: 40),
                 // Logo con animación
                 FadeTransition(
                   opacity: _fadeAnimation,
