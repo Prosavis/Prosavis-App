@@ -6,6 +6,7 @@ import 'dart:developer' as developer;
 
 import 'core/themes/app_theme.dart';
 import 'core/constants/app_constants.dart';
+import 'core/config/performance_config.dart';
 import 'data/services/firebase_service.dart';
 import 'data/services/firestore_service.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
@@ -26,7 +27,7 @@ import 'presentation/pages/auth/forgot_password_page.dart';
 import 'presentation/pages/settings/notifications_settings_page.dart';
 import 'presentation/pages/settings/language_settings_page.dart';
 import 'presentation/pages/settings/edit_profile_page.dart';
-import 'presentation/pages/settings/privacy_settings_page.dart';
+
 import 'presentation/pages/settings/terms_conditions_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
@@ -48,6 +49,9 @@ void main() async {
   
   try {
     developer.log('🚀 Iniciando aplicación Prosavis...');
+    
+    // Configurar optimizaciones de rendimiento
+    PerformanceConfig.configurePerformance();
     
     // Optimización: Inicialización en paralelo cuando sea posible
     await Future.wait([
@@ -121,10 +125,7 @@ final _router = GoRouter(
       path: '/settings/edit-profile',
       builder: (context, state) => const EditProfilePage(),
     ),
-    GoRoute(
-      path: '/settings/privacy',
-      builder: (context, state) => const PrivacySettingsPage(),
-    ),
+
     GoRoute(
       path: '/settings/terms',
       builder: (context, state) => const TermsConditionsPage(),

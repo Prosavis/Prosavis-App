@@ -13,7 +13,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/profile_completion_dialog.dart';
-import 'category_services_page.dart';
+
 
 class MyServicesPage extends StatefulWidget {
   const MyServicesPage({super.key});
@@ -368,8 +368,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
   }
 
   void _viewServiceDetails(ServiceEntity service) {
-    final serviceItem = _convertToServiceItem(service);
-    context.push('/services/${service.id}', extra: serviceItem);
+    context.push('/services/${service.id}', extra: service);
   }
 
   Future<void> _deleteService(ServiceEntity service) async {
@@ -525,18 +524,5 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     }
   }
 
-  ServiceItem _convertToServiceItem(ServiceEntity service) {
-    return ServiceItem(
-      id: service.id,
-      title: service.title,
-      provider: service.providerName,
-      price: service.price,
-      rating: service.rating,
-      imageUrl: service.images.isNotEmpty ? service.images.first : null,
-      category: service.category,
-      description: service.description,
-      isAvailable: service.isActive,
-      distance: 0.0, // Por defecto, se podría calcular si es necesario
-    );
-  }
+
 }

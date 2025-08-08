@@ -51,6 +51,7 @@ class _SavedPageState extends State<SavedPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[50],
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -115,57 +116,91 @@ class _SavedPageState extends State<SavedPage>
       onRefresh: () async {
         context.read<FavoritesBloc>().add(RefreshFavorites(userId));
       },
-      child: Padding(
+      child: ListView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        children: [
+          _buildFavoritesHeader(state),
+          const SizedBox(height: 16),
+          _buildServicesColumn(state, userId),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFavoritesHeader(FavoritesLoaded state) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(
+              Symbols.favorite,
+              color: Colors.red,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(
-                  Symbols.favorite,
-                  color: Colors.red,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
                 Text(
                   '${state.favorites.length} servicio${state.favorites.length != 1 ? 's' : ''} guardado${state.favorites.length != 1 ? 's' : ''}',
                   style: GoogleFonts.inter(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+                Text(
+                  'Tus servicios favoritos guardados',
+                  style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppTheme.textSecondary,
-                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: ListView.builder(
-                itemCount: state.favorites.length,
-                itemBuilder: (context, index) {
-                  final service = state.favorites[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: ServiceCard(
-                      service: service,
-                      showFavoriteButton: true,
-                      isFavorite: true,
-                      onFavoriteToggle: () {
-                        context.read<FavoritesBloc>().add(
-                          RemoveFromFavorites(
-                            userId: userId,
-                            serviceId: service.id,
-                          ),
-                        );
-                      },
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildServicesColumn(FavoritesLoaded state, String userId) {
+    return Column(
+      children: state.favorites.map((service) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: ServiceCard(
+          service: service,
+          showFavoriteButton: true,
+          isFavorite: true,
+          onFavoriteToggle: () {
+            context.read<FavoritesBloc>().add(
+              RemoveFromFavorites(
+                userId: userId,
+                serviceId: service.id,
+              ),
+            );
+          },
+        ),
+      )).toList(),
     );
   }
 

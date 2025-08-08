@@ -27,6 +27,7 @@ import 'package:prosavis/domain/usecases/services/update_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/delete_service_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/create_review_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/get_service_reviews_usecase.dart';
+import 'package:prosavis/domain/usecases/reviews/check_user_review_usecase.dart';
 import 'package:prosavis/domain/repositories/favorite_repository.dart';
 import 'package:prosavis/data/repositories/favorite_repository_impl.dart';
 import 'package:prosavis/domain/usecases/favorites/add_to_favorites_usecase.dart';
@@ -182,6 +183,11 @@ Future<void> init() async {
       () => GetServiceReviewsUseCase(sl<ReviewRepository>()),
     );
     developer.log('✅ GetServiceReviewsUseCase registrado');
+
+    sl.registerLazySingleton<CheckUserReviewUseCase>(
+      () => CheckUserReviewUseCase(sl<ReviewRepository>()),
+    );
+    developer.log('✅ CheckUserReviewUseCase registrado');
 
     sl.registerLazySingleton<AddToFavoritesUseCase>(
       () => AddToFavoritesUseCase(sl<FavoriteRepository>()),

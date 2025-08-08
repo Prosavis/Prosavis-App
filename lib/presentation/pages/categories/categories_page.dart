@@ -116,8 +116,15 @@ class _CategoriesPageState extends State<CategoriesPage>
           childAspectRatio: 1.1,
         ),
         itemCount: _filteredCategories.length,
+        // Optimizaciones para mejor rendimiento
+        cacheExtent: 1000,
+        physics: const BouncingScrollPhysics(),
+        addAutomaticKeepAlives: false,
+        addRepaintBoundaries: true,
         itemBuilder: (context, index) {
-          return _buildCategoryCard(_filteredCategories[index]);
+          return RepaintBoundary(
+            child: _buildCategoryCard(_filteredCategories[index]),
+          );
         },
       ),
     );

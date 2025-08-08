@@ -6,6 +6,20 @@ import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/service_entity.dart';
 import 'optimized_image.dart';
 
+/// Widget constante para el placeholder de imagen por defecto
+class _DefaultImagePlaceholder extends StatelessWidget {
+  const _DefaultImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Icon(
+      Symbols.image,
+      size: 40,
+      color: Colors.grey,
+    );
+  }
+}
+
 class ServiceCard extends StatelessWidget {
   final ServiceEntity service;
   final bool isHorizontal;
@@ -111,19 +125,17 @@ class ServiceCard extends StatelessWidget {
             child: service.mainImage != null
                 ? OptimizedImage(
                     imageUrl: service.mainImage!,
-                    width: double.infinity,
-                    height: double.infinity,
+                    width: isHorizontal ? 120 : 180,
+                    height: isHorizontal ? 120 : 120,
                     fit: BoxFit.cover,
+                    cacheWidth: isHorizontal ? 120 : 180,
+                    cacheHeight: 120,
                   )
                 : Container(
                     width: double.infinity,
                     height: double.infinity,
                     color: Colors.grey[200],
-                    child: const Icon(
-                      Symbols.image,
-                      size: 40,
-                      color: Colors.grey,
-                    ),
+                    child: const _DefaultImagePlaceholder(),
                   ),
           ),
           // Botón de favorito

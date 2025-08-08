@@ -501,14 +501,18 @@ class FirestoreService {
       developer.log('📝 Creando reseña para servicio: ${review.serviceId}');
       
       final reviewModel = ReviewModel.fromEntity(review);
-      final docRef = await firestore
+      
+      // Usar el userId como ID del documento para garantizar una reseña por usuario
+      final docRef = firestore
           .collection('services')
           .doc(review.serviceId)
           .collection('reviews')
-          .add(reviewModel.toJson());
+          .doc(review.userId);
       
-      developer.log('✅ Reseña creada con ID: ${docRef.id}');
-      return docRef.id;
+      await docRef.set(reviewModel.toJson());
+      
+      developer.log('✅ Reseña creada con ID: ${review.userId}');
+      return review.userId;
     } catch (e) {
       developer.log('⚠️ Error al crear reseña: $e');
       rethrow;
@@ -604,18 +608,38 @@ class FirestoreService {
   /// Verificar si un usuario ya reseñó un servicio
   Future<bool> hasUserReviewedService(String userId, String serviceId) async {
     try {
-      final querySnapshot = await firestore
+      final docSnapshot = await firestore
           .collection('services')
           .doc(serviceId)
           .collection('reviews')
-          .where('userId', isEqualTo: userId)
-          .limit(1)
+          .doc(userId)
           .get();
       
-      return querySnapshot.docs.isNotEmpty;
+      return docSnapshot.exists;
     } catch (e) {
       developer.log('⚠️ Error al verificar reseña existente: $e');
       return false;
+    }
+  }
+
+  /// Obtener la reseña específica de un usuario para un servicio
+  Future<ReviewEntity?> getUserReviewForService(String serviceId, String userId) async {
+    try {
+      final docSnapshot = await firestore
+          .collection('services')
+          .doc(serviceId)
+          .collection('reviews')
+          .doc(userId)
+          .get();
+      
+      if (!docSnapshot.exists) {
+        return null;
+      }
+      
+      return ReviewModel.fromFirestore(docSnapshot).toEntity();
+    } catch (e) {
+      developer.log('⚠️ Error al obtener reseña del usuario: $e');
+      return null;
     }
   }
 

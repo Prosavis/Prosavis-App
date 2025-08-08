@@ -204,14 +204,21 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       itemCount: _filteredServices.length,
+      // Optimizaciones para mejor rendimiento
+      cacheExtent: 1000,
+      physics: const BouncingScrollPhysics(),
+      addAutomaticKeepAlives: false,
+      addRepaintBoundaries: true,
       itemBuilder: (context, index) {
         final service = _filteredServices[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: ServiceCard(
-            service: service,
-            isHorizontal: true,
-            onTap: () => _navigateToServiceDetails(service),
+        return RepaintBoundary(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: ServiceCard(
+              service: service,
+              isHorizontal: true,
+              onTap: () => _navigateToServiceDetails(service),
+            ),
           ),
         );
       },

@@ -46,6 +46,12 @@ class FirebaseService {
   /// Configuración adicional de Firebase para desarrollo
   static Future<void> _configureFirebaseForDevelopment() async {
     try {
+      // Optimización: Deshabilitar funciones que causan warnings en emuladores
+      if (AppConfig.enableFirebaseLogging) {
+        // Configurar configuraciones específicas para desarrollo
+        AppConfig.log('🔧 Configurando Firebase para desarrollo...');
+      }
+      
       if (AppConfig.useFirebaseEmulator) {
         AppConfig.log('🔧 Configurando Firebase Emulator...');
         // Aquí se puede configurar el emulador si está disponible

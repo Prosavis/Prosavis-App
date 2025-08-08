@@ -334,15 +334,33 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '✅ Reseña publicada exitosamente',
-              style: GoogleFonts.inter(),
+            content: Row(
+              children: [
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Reseña publicada • Actualizando calificaciones...',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
             ),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
         
         context.pop();
+        
+        // Llamar al callback para actualizar los datos
         widget.onReviewCreated?.call();
       }
     } catch (e) {

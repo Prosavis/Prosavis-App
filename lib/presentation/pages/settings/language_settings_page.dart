@@ -29,12 +29,56 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
       'name': 'Español',
       'nativeName': 'Español',
       'flag': '🇪🇸',
+      'available': 'true',
     },
     {
       'code': 'en',
       'name': 'Inglés',
       'nativeName': 'English',
       'flag': '🇺🇸',
+      'available': 'false',
+    },
+    {
+      'code': 'pt',
+      'name': 'Portugués',
+      'nativeName': 'Português',
+      'flag': '🇧🇷',
+      'available': 'false',
+    },
+    {
+      'code': 'fr',
+      'name': 'Francés',
+      'nativeName': 'Français',
+      'flag': '🇫🇷',
+      'available': 'false',
+    },
+    {
+      'code': 'it',
+      'name': 'Italiano',
+      'nativeName': 'Italiano',
+      'flag': '🇮🇹',
+      'available': 'false',
+    },
+    {
+      'code': 'de',
+      'name': 'Alemán',
+      'nativeName': 'Deutsch',
+      'flag': '🇩🇪',
+      'available': 'false',
+    },
+    {
+      'code': 'zh',
+      'name': 'Chino',
+      'nativeName': '中文',
+      'flag': '🇨🇳',
+      'available': 'false',
+    },
+    {
+      'code': 'ja',
+      'name': 'Japonés',
+      'nativeName': '日本語',
+      'flag': '🇯🇵',
+      'available': 'false',
     },
   ];
 
@@ -183,13 +227,14 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
 
             const SizedBox(height: 48),
 
-            // Botón Aplicar
+            // Botón Aplicar (Deshabilitado)
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _applyLanguageChange,
+                onPressed: null, // Deshabilitado
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
+                  backgroundColor: Colors.grey.shade300,
+                  disabledBackgroundColor: Colors.grey.shade300,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -200,7 +245,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Colors.grey.shade600,
                   ),
                 ),
               ),
@@ -261,8 +306,8 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
       color: Colors.transparent,
       child: InkWell(
         onTap: () {
-          if (language['code'] == 'en') {
-            _showComingSoonDialog();
+          if (language['available'] == 'false') {
+            _showComingSoonDialog(language['name']!);
           } else {
             setState(() {
               _selectedLanguage = language['code']!;
@@ -306,12 +351,41 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    Text(
-                      language['nativeName']!,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppTheme.getTextSecondary(context),
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          language['nativeName']!,
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: AppTheme.getTextSecondary(context),
+                          ),
+                        ),
+                        if (language['available'] == 'false') ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Colors.orange.withValues(alpha: 0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              'Coming Soon',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.orange.shade700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ],
                 ),
@@ -329,7 +403,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
     );
   }
 
-  void _showComingSoonDialog() {
+  void _showComingSoonDialog(String languageName) {
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -343,7 +417,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
             mainAxisSize: MainAxisSize.min,
             children: [
               const Text(
-                '😎',
+                '🌍',
                 style: TextStyle(fontSize: 48),
               ),
               const SizedBox(height: 16),
@@ -358,7 +432,7 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
               ),
               const SizedBox(height: 8),
               Text(
-                'El soporte para inglés estará disponible pronto',
+                'El soporte para $languageName estará disponible pronto',
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   color: AppTheme.getTextSecondary(context),
@@ -394,126 +468,4 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
     );
   }
 
-  void _applyLanguageChange() async {
-    try {
-      // Mostrar indicador de carga
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                'Aplicando cambio de idioma...',
-                style: GoogleFonts.inter(),
-              ),
-            ],
-          ),
-          backgroundColor: AppTheme.primaryColor,
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-
-      final user = FirebaseAuth.instance.currentUser;
-      
-      if (user != null) {
-        // Guardar en Firestore
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .collection('settings')
-            .doc('preferences')
-            .set({
-          'language': _selectedLanguage,
-          'lastUpdated': FieldValue.serverTimestamp(),
-        }, SetOptions(merge: true));
-
-        // También actualizar en el documento principal del usuario
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .update({
-          'language': _selectedLanguage,
-        });
-      }
-
-      // Guardar también en SharedPreferences como backup
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('app_language', _selectedLanguage);
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.check_circle,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Idioma cambiado a ${_languages.firstWhere((l) => l['code'] == _selectedLanguage)['name']}. Reinicia la app para ver los cambios.',
-                    style: GoogleFonts.inter(),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-
-        // Volver a la pantalla anterior después de un breve retraso
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            context.pop();
-          }
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                const Icon(
-                  Icons.error,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Error al cambiar idioma: ${e.toString()}',
-                    style: GoogleFonts.inter(),
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      }
-      debugPrint('Error guardando configuración de idioma: $e');
-    }
-  }
 }

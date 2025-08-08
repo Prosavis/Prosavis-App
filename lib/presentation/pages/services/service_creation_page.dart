@@ -92,6 +92,23 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     _fadeController.forward();
   }
 
+  /// Convierte días en español a inglés para guardar en la base de datos
+  List<String> _convertDaysToEnglish(List<String> spanishDays) {
+    const Map<String, String> dayTranslation = {
+      'Lunes': 'monday',
+      'Martes': 'tuesday',
+      'Miércoles': 'wednesday',
+      'Jueves': 'thursday',
+      'Viernes': 'friday',
+      'Sábado': 'saturday',
+      'Domingo': 'sunday',
+    };
+
+    return spanishDays
+        .map((day) => dayTranslation[day] ?? day.toLowerCase())
+        .toList();
+  }
+
   @override
   void dispose() {
     _fadeController.dispose();
@@ -1390,7 +1407,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         images: const [], // Se añadirán después
         tags: _selectedTags,
         features: finalFeatures,
-        availableDays: _availableDays,
+        availableDays: _convertDaysToEnglish(_availableDays),
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
         timeRange: null, // Ya no se usa horario de trabajo
       );

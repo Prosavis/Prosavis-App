@@ -280,16 +280,6 @@ class _ProfilePageState extends State<ProfilePage>
               
               const SizedBox(height: 12),
               
-              _buildOptionTile(
-                icon: Symbols.security,
-                title: 'Privacidad y Seguridad',
-                subtitle: 'Gestiona la privacidad de tu cuenta',
-                onTap: () => context.push('/settings/privacy'),
-                showArrow: true,
-              ),
-              
-              const SizedBox(height: 12),
-              
               // Cerrar Sesión
               _buildOptionTile(
                 icon: Symbols.logout,

@@ -75,7 +75,9 @@ service cloud.firestore {
                      // 📋 Validar que el serviceId coincida con el documento padre
                      request.resource.data.serviceId == serviceId &&
                      // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
-                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId;
+                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId &&
+                     // 🚫 No permitir múltiples reseñas del mismo usuario para el mismo servicio
+                     !exists(/databases/$(database)/documents/services/$(serviceId)/reviews/$(request.auth.uid));
         allow update, delete: if request.auth != null && 
                              request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
       }
@@ -115,7 +117,7 @@ service cloud.firestore {
                    // 📋 Validar comentario obligatorio (mínimo 10 caracteres)
                    request.resource.data.comment is string &&
                    request.resource.data.comment.size() >= 10 &&
-                   request.resource.data.comment.size() <= 200 &&
+                   request.resource.data.comment.size() <= 500 &&
                    // 📋 Validar que el servicio existe
                    exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId)) &&
                    // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)

@@ -1080,32 +1080,82 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                 
                 // Mostrar imágenes existentes primero
                 if (index < _selectedImages.length) {
+                  final imageUrl = _selectedImages[index];
                   return Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Stack(
                       children: [
-                        const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Symbols.image,
-                                color: AppTheme.textTertiary,
-                                size: 30,
-                              ),
-                              SizedBox(height: 4),
-                              Text(
-                                'Existente',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppTheme.textTertiary,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: imageUrl.startsWith('https://')
+                              ? Image.network(
+                                  imageUrl,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, loadingProgress) {
+                                    if (loadingProgress == null) return child;
+                                    return Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: Colors.grey.shade200,
+                                      child: const Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Symbols.broken_image,
+                                              color: AppTheme.textTertiary,
+                                              size: 30,
+                                            ),
+                                            SizedBox(height: 4),
+                                            Text(
+                                              'Error',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: AppTheme.textTertiary,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Container(
+                                  color: Colors.grey.shade200,
+                                  child: const Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Symbols.image,
+                                          color: AppTheme.textTertiary,
+                                          size: 30,
+                                        ),
+                                        SizedBox(height: 4),
+                                        Text(
+                                          'Existente',
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            color: AppTheme.textTertiary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
                         ),
                         Positioned(
                           top: 4,
@@ -1122,6 +1172,25 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                                 Symbols.close,
                                 color: Colors.white,
                                 size: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 4,
+                          left: 4,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.8),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              'Existente',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w600,
                               ),
                             ),
                           ),

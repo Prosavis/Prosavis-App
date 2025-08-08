@@ -42,4 +42,9 @@ class ReviewRepositoryImpl implements ReviewRepository {
   Future<Map<String, dynamic>> getServiceReviewStats(String serviceId) async {
     return await _firestoreService.getServiceReviewStats(serviceId);
   }
+
+  @override
+  Future<ReviewEntity?> getUserReviewForService(String serviceId, String userId) async {
+    return await _firestoreService.getUserReviewForService(serviceId, userId);
+  }
 }

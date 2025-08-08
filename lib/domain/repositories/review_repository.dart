@@ -19,6 +19,9 @@ abstract class ReviewRepository {
   /// Verificar si un usuario ya reseñó un servicio
   Future<bool> hasUserReviewedService(String userId, String serviceId);
   
+  /// Obtener la reseña específica de un usuario para un servicio
+  Future<ReviewEntity?> getUserReviewForService(String serviceId, String userId);
+  
   /// Obtener estadísticas de reseñas de un servicio
   Future<Map<String, dynamic>> getServiceReviewStats(String serviceId);
 }

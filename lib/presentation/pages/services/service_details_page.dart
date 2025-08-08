@@ -14,10 +14,13 @@ import '../../blocs/favorites/favorites_event.dart';
 import '../../blocs/favorites/favorites_state.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/reviews/write_review_dialog.dart';
+import '../../widgets/reviews/review_restriction_dialog.dart';
 import '../../widgets/rating_stars.dart';
 import '../../../domain/entities/review_entity.dart';
 import '../../../domain/usecases/reviews/get_service_reviews_usecase.dart';
+import '../../../domain/usecases/reviews/check_user_review_usecase.dart';
 import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
+import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../../core/injection/injection_container.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
@@ -46,11 +49,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
 
   List<ReviewEntity> _reviews = []; // Las reseñas se cargarán dinámicamente
+  List<ServiceEntity> _similarServices = []; // Servicios similares
   late final GetServiceReviewsUseCase _getServiceReviewsUseCase;
   late final GetServiceByIdUseCase _getServiceByIdUseCase;
+  late final CheckUserReviewUseCase _checkUserReviewUseCase;
+  late final SearchServicesUseCase _searchServicesUseCase;
   
   ServiceEntity? _currentService;
   bool _isLoadingService = false;
+  bool _isUpdatingRating = false;
+  bool _isLoadingSimilarServices = false;
 
   @override
   void initState() {
@@ -67,6 +75,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     // Inicializar casos de uso
     _getServiceReviewsUseCase = sl<GetServiceReviewsUseCase>();
     _getServiceByIdUseCase = sl<GetServiceByIdUseCase>();
+    _checkUserReviewUseCase = sl<CheckUserReviewUseCase>();
+    _searchServicesUseCase = sl<SearchServicesUseCase>();
 
     // Inicializar servicio
     _initializeService();
@@ -77,8 +87,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     if (widget.service != null) {
       // Si ya tenemos el servicio, usarlo directamente
       _currentService = widget.service;
-      _calculateDistance();
-      _loadReviews();
+      // Ejecutar operaciones en paralelo para mejor rendimiento
+      await Future.wait([
+        _calculateDistance(),
+        _loadReviews(),
+        _loadSimilarServices(),
+      ]);
     } else if (widget.serviceId != null) {
       // Cargar servicio por ID
       setState(() {
@@ -94,8 +108,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           });
           
           if (service != null) {
-            _calculateDistance();
-            _loadReviews();
+            // Ejecutar operaciones en paralelo para mejor rendimiento
+            await Future.wait([
+              _calculateDistance(),
+              _loadReviews(),
+              _loadSimilarServices(),
+            ]);
           }
         }
       } catch (e) {
@@ -111,14 +129,28 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Future<void> _loadReviews() async {
     if (_currentService == null) return;
     
+    setState(() {
+      _isUpdatingRating = true;
+    });
+    
     try {
-      final reviews = await _getServiceReviewsUseCase(GetServiceReviewsParams(
-        serviceId: _currentService!.id,
-        limit: 20,
-      ));
+      // Ejecutar ambas operaciones en paralelo para mejor rendimiento
+      final results = await Future.wait([
+        _getServiceReviewsUseCase(GetServiceReviewsParams(
+          serviceId: _currentService!.id,
+          limit: 20,
+        )),
+        _getServiceByIdUseCase(_currentService!.id), // Recargar servicio actualizado
+      ]);
+      
       if (mounted) {
         setState(() {
-          _reviews = reviews;
+          _reviews = results[0] as List<ReviewEntity>;
+          // Actualizar servicio con rating y reviewCount actualizados
+          if (results[1] != null) {
+            _currentService = results[1] as ServiceEntity;
+          }
+          _isUpdatingRating = false;
         });
       }
     } catch (e) {
@@ -126,6 +158,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       if (mounted) {
         setState(() {
           _reviews = [];
+          _isUpdatingRating = false;
         });
       }
     }
@@ -142,6 +175,47 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       setState(() {
         _calculatedDistance = distance;
       });
+    }
+  }
+
+  Future<void> _loadSimilarServices() async {
+    if (_currentService == null) return;
+
+    setState(() {
+      _isLoadingSimilarServices = true;
+    });
+
+    try {
+      // Debug: Buscando servicios similares de categoría
+      
+      final services = await _searchServicesUseCase(
+        SearchServicesParams(
+          category: _currentService!.category,
+          limit: 10, // Cargar máximo 10 servicios similares
+        ),
+      );
+
+      // Filtrar el servicio actual de los resultados
+      final filteredServices = services
+          .where((service) => service.id != _currentService!.id)
+          .take(6) // Mostrar máximo 6 servicios similares
+          .toList();
+
+      if (mounted) {
+        setState(() {
+          _similarServices = filteredServices;
+          _isLoadingSimilarServices = false;
+        });
+        // Debug: Servicios similares cargados: ${filteredServices.length}
+      }
+    } catch (e) {
+      // Error al cargar servicios similares: $e
+      if (mounted) {
+        setState(() {
+          _similarServices = [];
+          _isLoadingSimilarServices = false;
+        });
+      }
     }
   }
 
@@ -232,6 +306,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               _buildServiceInfo(),
               _buildImageGallery(),
               _buildDescription(),
+              _buildAvailability(),
               _buildProviderInfo(),
               _buildReviews(),
               _buildSimilarServices(),
@@ -251,8 +326,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         onPressed: () => Navigator.pop(context),
         icon: Container(
           padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+                      decoration: const BoxDecoration(
+              color: Colors.white,
               shape: BoxShape.circle,
             ),
             child: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
@@ -595,6 +670,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                         color: AppTheme.textSecondary,
                       ),
                     ),
+                    if (_isUpdatingRating) ...[
+                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: Colors.orange,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
                 const Spacer(),
@@ -931,6 +1017,102 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
+  Widget _buildAvailability() {
+    // Debug: Información de disponibilidad
+    // Días disponibles cargados: ${_currentService!.availableDays}
+    
+    if (_currentService!.availableDays.isEmpty) {
+      // No hay días disponibles configurados para este servicio
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+
+    // Mapeo de días completos en español
+    const Map<String, String> dayNames = {
+      'monday': 'Lunes',
+      'tuesday': 'Martes',
+      'wednesday': 'Miércoles',
+      'thursday': 'Jueves',
+      'friday': 'Viernes',
+      'saturday': 'Sábado',
+      'sunday': 'Domingo',
+      // También manejar días que ya estén en español (compatibilidad)
+      'lunes': 'Lunes',
+      'martes': 'Martes',
+      'miércoles': 'Miércoles',
+      'jueves': 'Jueves',
+      'viernes': 'Viernes',
+      'sábado': 'Sábado',
+      'domingo': 'Domingo',
+    };
+
+    // Convertir días disponibles a nombres completos
+    final availableDayNames = _currentService!.availableDays
+        .map((day) => dayNames[day.toLowerCase()] ?? day)
+        .toList();
+
+    return SliverToBoxAdapter(
+      child: Container(
+        color: Colors.white,
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(AppConstants.paddingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(
+                  Symbols.schedule,
+                  size: 20,
+                  color: AppTheme.textSecondary,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Disponibilidad',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.textPrimary,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Mostrar días disponibles en lista
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: availableDayNames.map((dayName) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: const BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        dayName,
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildProviderInfo() {
     return SliverToBoxAdapter(
       child: Container(
@@ -1221,47 +1403,99 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             ),
             const SizedBox(height: 16),
             
-            // Implementar carga real de servicios similares desde Firestore
-            Container(
-              width: double.infinity,
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade50,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade200),
-              ),
-              child: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Symbols.search_off,
-                      size: 32,
-                      color: AppTheme.textTertiary,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'No hay servicios similares disponibles',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppTheme.textTertiary,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Categoría: ${_currentService!.category}',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: AppTheme.textTertiary,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            // Mostrar servicios similares o estado de carga
+            _buildSimilarServicesContent(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSimilarServicesContent() {
+    if (_isLoadingSimilarServices) {
+      return Container(
+        width: double.infinity,
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.primaryColor,
+          ),
+        ),
+      );
+    }
+    
+    if (_similarServices.isEmpty) {
+      return Container(
+        width: double.infinity,
+        height: 120,
+        decoration: BoxDecoration(
+          color: Colors.grey.shade50,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Symbols.search_off,
+                size: 32,
+                color: AppTheme.textTertiary,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'No hay servicios similares disponibles',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppTheme.textTertiary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Categoría: ${_currentService!.category}',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: AppTheme.textTertiary,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    // Mostrar lista horizontal de servicios similares
+    return SizedBox(
+      height: 180,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: _similarServices.length,
+        itemBuilder: (context, index) {
+          final service = _similarServices[index];
+          return Container(
+            width: 160,
+            margin: const EdgeInsets.only(right: 12),
+            child: ServiceCard(
+              service: service,
+              onTap: () {
+                // Navegar al detalle del servicio similar
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ServiceDetailsPage(
+                      service: service,
+                    ),
+                  ),
+                );
+              },
+            ),
+          );
+        },
       ),
     );
   }
@@ -1422,7 +1656,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
-  void _showAddReviewDialog() {
+  Future<void> _showAddReviewDialog() async {
     // Verificar si el usuario está autenticado
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthAuthenticated) {
@@ -1430,13 +1664,76 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       return;
     }
 
+    final currentUser = authState.user;
+
+    // Verificar si es su propio servicio
+    if (_currentService!.providerId == currentUser.id) {
+      _showReviewRestrictionDialog(
+        ReviewRestrictionType.ownService,
+        _currentService!.title,
+      );
+      return;
+    }
+
+    // Verificar si ya tiene una reseña
+    try {
+      final existingReview = await _checkUserReviewUseCase(
+        CheckUserReviewParams(
+          serviceId: _currentService!.id,
+          userId: currentUser.id,
+        ),
+      );
+
+      if (!mounted) return; // Verificar si el widget sigue montado
+
+      if (existingReview != null) {
+        _showReviewRestrictionDialog(
+          ReviewRestrictionType.alreadyReviewed,
+          _currentService!.title,
+          existingReviewComment: existingReview.comment,
+          existingReviewRating: existingReview.rating,
+        );
+        return;
+      }
+
+      // Si pasa todas las validaciones, mostrar el diálogo de escribir reseña
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return WriteReviewDialog(
+            serviceId: _currentService!.id,
+            serviceName: _currentService!.title,
+            onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
+          );
+        },
+      );
+    } catch (e) {
+      // En caso de error, mostrar mensaje
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al verificar permisos de reseña: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showReviewRestrictionDialog(
+    ReviewRestrictionType restrictionType,
+    String serviceName, {
+    String? existingReviewComment,
+    double? existingReviewRating,
+  }) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return WriteReviewDialog(
-          serviceId: _currentService!.id,
-          serviceName: _currentService!.title,
-          onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
+        return ReviewRestrictionDialog(
+          restrictionType: restrictionType,
+          serviceName: serviceName,
+          existingReviewComment: existingReviewComment,
+          existingReviewRating: existingReviewRating,
         );
       },
     );
@@ -1465,11 +1762,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                // Navegar a página de login
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Navegación a login próximamente')),
-                );
+                if (mounted) {
+                  Navigator.of(context).pop();
+                  // Navegar a página de login
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Navegación a login próximamente')),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryColor,
