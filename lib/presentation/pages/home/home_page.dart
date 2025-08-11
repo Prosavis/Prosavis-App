@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/config/performance_config.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/home/home_bloc.dart';
@@ -531,6 +532,7 @@ class _HomePageState extends State<HomePage>
       return ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+        cacheExtent: PerformanceConfig.optimizedCacheExtent,
         itemCount: state.featuredServices.length,
         itemBuilder: (context, index) {
           final service = state.featuredServices[index];
