@@ -220,6 +220,6 @@ Si tienes preguntas o problemas:
 
 ---
 
-**¡Gracias por usar ServicioConecta!** 🚀
+**¡Gracias por usar Prosavis!** 🚀
 
 Desarrollado con ❤️ usando Flutter y Firebase.
