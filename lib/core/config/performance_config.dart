@@ -4,28 +4,39 @@ import 'package:flutter/rendering.dart';
 
 /// Configuración de rendimiento para la aplicación
 class PerformanceConfig {
-  
+  /// Referencia al callback registrado para poder controlarlo
+  static FrameCallback? _callbackRef;
+
+  /// Flag para detener la lógica del callback sin eliminarlo
+  static bool _monitoring = true;
+
   /// Configurar optimizaciones globales de rendimiento
   static void configurePerformance() {
     if (!kDebugMode) {
       // En release mode, configuraciones específicas para rendimiento
       debugPaintSizeEnabled = false;
     }
-    
+
     // Configurar timings para mejor rendimiento
-    SchedulerBinding.instance.addPersistentFrameCallback(_frameCallback);
+    if (_callbackRef == null) {
+      _callbackRef = _frameCallback;
+      SchedulerBinding.instance.addPersistentFrameCallback(_callbackRef!);
+    }
   }
-  
+
   /// Callback para monitorear frames perdidos
   static void _frameCallback(Duration timeStamp) {
-    if (kDebugMode) {
-      // Solo en debug mode para evitar overhead en producción
-      const frameBudget = Duration(microseconds: 16667); // 60 FPS = 16.67ms por frame
-      final lastFrameDuration = SchedulerBinding.instance.currentFrameTimeStamp - timeStamp;
-      
-      if (lastFrameDuration > frameBudget) {
-        debugPrint('⚠️ Frame perdido: ${lastFrameDuration.inMilliseconds}ms');
-      }
+    if (!_monitoring || !kDebugMode) {
+      return;
+    }
+
+    // Solo en debug mode para evitar overhead en producción
+    const frameBudget = Duration(microseconds: 16667); // 60 FPS = 16.67ms por frame
+    final lastFrameDuration =
+        SchedulerBinding.instance.currentFrameTimeStamp - timeStamp;
+
+    if (lastFrameDuration > frameBudget) {
+      debugPrint('⚠️ Frame perdido: ${lastFrameDuration.inMilliseconds}ms');
     }
   }
   
@@ -42,6 +53,7 @@ class PerformanceConfig {
   
   /// Detener monitoreo de rendimiento
   static void dispose() {
-    SchedulerBinding.instance.addPersistentFrameCallback(_frameCallback);
+    _monitoring = false;
+    _callbackRef = null;
   }
 }
