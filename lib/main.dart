@@ -40,6 +40,7 @@ import 'presentation/pages/services/service_edit_page.dart';
 import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
@@ -79,9 +80,22 @@ void main() async {
 
 /// Optimización: Precargar activos críticos para mejorar rendimiento inicial
 Future<void> _preloadCriticalAssets() async {
-  // Aquí se pueden precargar imágenes, fuentes o datos críticos
-  // Por ahora es un placeholder para futuras optimizaciones
-  await Future.delayed(Duration.zero);
+  // Trigger font loading for commonly used fonts
+  GoogleFonts.inter();
+
+  await Future.wait([
+    // Precache critical images
+    precacheImage(
+      const AssetImage('assets/images/logo-no-background.png'),
+      null,
+    ),
+    precacheImage(
+      const AssetImage('assets/images/logo-color.png'),
+      null,
+    ),
+    // Ensure fonts are loaded
+    ...GoogleFonts.pendingFontLoads,
+  ]);
 }
 
 final _router = GoRouter(
