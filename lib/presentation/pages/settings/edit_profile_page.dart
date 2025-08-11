@@ -161,9 +161,9 @@ class _EditProfilePageState extends State<EditProfilePage>
           children: [
             IconButton(
               onPressed: () => context.pop(),
-              icon: const Icon(
+              icon: Icon(
                 Symbols.arrow_back,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(width: 8),
@@ -173,7 +173,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                 style: GoogleFonts.inter(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
             ),
@@ -243,7 +243,9 @@ class _EditProfilePageState extends State<EditProfilePage>
                           right: 0,
                           child: Container(
                             decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? AppTheme.darkSurfaceVariant
+                                  : AppTheme.primaryColor,
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: Colors.white,
@@ -337,18 +339,24 @@ class _EditProfilePageState extends State<EditProfilePage>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkSurface
+                      : AppTheme.primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: AppTheme.primaryColor.withValues(alpha: 0.2),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkBorder
+                        : AppTheme.primaryColor.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(
+                    Icon(
                       Symbols.info,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppTheme.primaryColor,
                       size: 24,
                     ),
                     const SizedBox(width: 12),
@@ -357,7 +365,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                         'Tu información personal está protegida y solo será visible para los proveedores cuando solicites un servicio, o para los clientes cuando ofrezcas uno.',
                         style: GoogleFonts.inter(
                           fontSize: 13,
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.getTextSecondary(context),
                         ),
                       ),
                     ),
@@ -427,7 +435,7 @@ class _EditProfilePageState extends State<EditProfilePage>
       style: GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppTheme.textPrimary,
+        color: AppTheme.getTextPrimary(context),
       ),
     );
   }
@@ -452,18 +460,29 @@ class _EditProfilePageState extends State<EditProfilePage>
       maxLength: maxLength,
       inputFormatters: inputFormatters,
       style: GoogleFonts.inter(
-        color: enabled ? AppTheme.textPrimary : AppTheme.textTertiary,
+        color: enabled ? AppTheme.getTextPrimary(context) : AppTheme.getTextTertiary(context),
       ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon),
+        prefixIcon: Icon(
+          icon,
+          color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBorder
+                : Colors.grey.shade300,
+          ),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBorder
+                : Colors.grey.shade300,
+          ),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -471,11 +490,19 @@ class _EditProfilePageState extends State<EditProfilePage>
         ),
         disabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade200),
+          borderSide: BorderSide(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBorder
+                : Colors.grey.shade200,
+          ),
         ),
-        labelStyle: GoogleFonts.inter(color: AppTheme.textSecondary),
+        labelStyle: GoogleFonts.inter(color: AppTheme.getTextSecondary(context)),
         filled: !enabled,
-        fillColor: enabled ? null : Colors.grey.shade50,
+        fillColor: enabled
+            ? null
+            : (Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkSurface
+                : Colors.grey.shade50),
       ),
     );
   }
@@ -835,22 +862,33 @@ class _EditProfilePageState extends State<EditProfilePage>
             decoration: InputDecoration(
               labelText: 'Ubicación',
               hintText: 'Ej: Calle 123 #45-67, Bogotá',
-              prefixIcon: const Icon(Symbols.location_on),
+              prefixIcon: Icon(
+                Symbols.location_on,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkBorder
+                      : Colors.grey.shade300,
+                ),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: BorderSide(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkBorder
+                      : Colors.grey.shade300,
+                ),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
               ),
-              labelStyle: GoogleFonts.inter(color: AppTheme.textSecondary),
+              labelStyle: GoogleFonts.inter(color: AppTheme.getTextSecondary(context)),
             ),
-            style: GoogleFonts.inter(color: AppTheme.textPrimary),
+            style: GoogleFonts.inter(color: AppTheme.getTextPrimary(context)),
             maxLength: 200,
           ),
         ),

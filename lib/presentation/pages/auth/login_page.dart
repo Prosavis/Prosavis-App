@@ -65,12 +65,15 @@ class _LoginPageState extends State<LoginPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+          icon: Icon(
+            Symbols.arrow_back,
+            color: AppTheme.getTextPrimary(context),
+          ),
           onPressed: () => context.go('/home'),
         ),
         title: Text(
@@ -78,7 +81,7 @@ class _LoginPageState extends State<LoginPage>
           style: GoogleFonts.inter(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
       ),
@@ -190,14 +193,14 @@ class _LoginPageState extends State<LoginPage>
               style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             Text(
               'Conectando servicios de calidad',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
           ],
@@ -212,10 +215,10 @@ class _LoginPageState extends State<LoginPage>
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color: AppTheme.getBorderColor(context),
           width: 1,
         ),
       ),
@@ -229,7 +232,7 @@ class _LoginPageState extends State<LoginPage>
             style: GoogleFonts.inter(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: AppTheme.getTextPrimary(context),
             ),
           ),
           
@@ -278,23 +281,37 @@ class _LoginPageState extends State<LoginPage>
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
-              width: 1,
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? (Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.6)
+                      : AppTheme.primaryColor.withValues(alpha: 0.1))
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected
+                    ? AppTheme.primaryColor
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkBorder
+                        : Colors.grey.shade300),
+                width: 1,
+              ),
             ),
-          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 icon,
                 size: 18,
-                color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                color: isSelected
+                    ? (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor)
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.textSecondary),
               ),
               const SizedBox(width: 8),
               Text(
@@ -302,7 +319,13 @@ class _LoginPageState extends State<LoginPage>
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: isSelected ? AppTheme.primaryColor : AppTheme.textSecondary,
+                  color: isSelected
+                      ? (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppTheme.primaryColor)
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextSecondary
+                          : AppTheme.textSecondary),
                 ),
               ),
             ],
@@ -393,7 +416,9 @@ class _LoginPageState extends State<LoginPage>
                 'Olvidé mi contraseña',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                 ),
               ),
             ),
@@ -444,7 +469,7 @@ class _LoginPageState extends State<LoginPage>
               _isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             TextButton(
@@ -458,7 +483,9 @@ class _LoginPageState extends State<LoginPage>
                 _isSignUp ? 'Iniciar sesión' : 'Crear cuenta',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -584,7 +611,7 @@ class _LoginPageState extends State<LoginPage>
           style: GoogleFonts.inter(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
         const SizedBox(height: 8),
@@ -596,16 +623,30 @@ class _LoginPageState extends State<LoginPage>
           onChanged: onChanged,
           decoration: InputDecoration(
             hintText: hintText,
-            prefixIcon: Icon(icon, color: AppTheme.textSecondary),
+            hintStyle: GoogleFonts.inter(color: AppTheme.getTextTertiary(context)),
+            prefixIcon: Icon(
+              icon,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : AppTheme.textSecondary,
+            ),
             prefix: prefix,
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.grey.shade300,
+              ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey.shade300),
+              borderSide: BorderSide(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.grey.shade300,
+              ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
@@ -620,7 +661,9 @@ class _LoginPageState extends State<LoginPage>
               borderSide: const BorderSide(color: AppTheme.errorColor),
             ),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkSurface
+                : Colors.white,
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
         ),
@@ -631,18 +674,30 @@ class _LoginPageState extends State<LoginPage>
   Widget _buildDivider() {
     return Row(
       children: [
-        Expanded(child: Divider(color: Colors.grey.shade300)),
+        Expanded(
+          child: Divider(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBorder
+                : Colors.grey.shade300,
+          ),
+        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
             'O continúa con',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: AppTheme.textSecondary,
+              color: AppTheme.getTextSecondary(context),
             ),
           ),
         ),
-        Expanded(child: Divider(color: Colors.grey.shade300)),
+        Expanded(
+          child: Divider(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? AppTheme.darkBorder
+                : Colors.grey.shade300,
+          ),
+        ),
       ],
     );
   }
@@ -650,91 +705,60 @@ class _LoginPageState extends State<LoginPage>
   Widget _buildGoogleSignInButton(AuthState state) {
     final isLoading = state is AuthLoading;
     
-    return Container(
-      padding: const EdgeInsets.all(6),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: ElevatedButton(
-          onPressed: isLoading ? null : () {
-            context.read<AuthBloc>().add(AuthSignInWithGoogleRequested());
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.white,
-            foregroundColor: AppTheme.textPrimary,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 20),
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: isLoading
+            ? null
+            : () {
+                context.read<AuthBloc>().add(AuthSignInWithGoogleRequested());
+              },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: AppTheme.textPrimary,
+          elevation: 0,
+          side: BorderSide(color: AppTheme.getBorderColor(context)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
-          child: isLoading
-              ? const SizedBox(
-                  height: 24,
-                  width: 24,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      AppTheme.primaryColor,
+          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        ),
+        child: isLoading
+            ? const SizedBox(
+                height: 22,
+                width: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    'assets/icons/Google.svg.png',
+                    height: 20,
+                    width: 20,
+                    filterQuality: FilterQuality.high,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Icon(
+                        Symbols.account_circle,
+                        size: 20,
+                        color: AppTheme.primaryColor,
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Continuar con Google',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      'assets/icons/Google.svg.png',
-                      height: 24,
-                      width: 24,
-                      filterQuality: FilterQuality.high,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Symbols.account_circle,
-                          size: 24,
-                          color: AppTheme.primaryColor,
-                        );
-                      },
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Continuar con Google',
-                      style: GoogleFonts.inter(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [AppTheme.primaryColor, AppTheme.secondaryColor],
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        'Recomendado',
-                        style: GoogleFonts.inter(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-        ),
+                ],
+              ),
       ),
     );
   }
@@ -747,13 +771,20 @@ class _LoginPageState extends State<LoginPage>
           onPressed: () {
             // Navegar a la página de ayuda
           },
-          icon: const Icon(Symbols.help, size: 18),
+          icon: Icon(
+            Symbols.help,
+            size: 18,
+            color: AppTheme.getTextSecondary(context),
+          ),
           label: Text(
             'Ayuda',
-            style: GoogleFonts.inter(fontSize: 14),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppTheme.getTextSecondary(context),
+            ),
           ),
           style: TextButton.styleFrom(
-            foregroundColor: AppTheme.textSecondary,
+            foregroundColor: AppTheme.getTextSecondary(context),
           ),
         ),
         const SizedBox(width: 24),
@@ -761,13 +792,20 @@ class _LoginPageState extends State<LoginPage>
           onPressed: () {
             // Navegar a soporte
           },
-          icon: const Icon(Symbols.support_agent, size: 18),
+          icon: Icon(
+            Symbols.support_agent,
+            size: 18,
+            color: AppTheme.getTextSecondary(context),
+          ),
           label: Text(
             'Soporte',
-            style: GoogleFonts.inter(fontSize: 14),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: AppTheme.getTextSecondary(context),
+            ),
           ),
           style: TextButton.styleFrom(
-            foregroundColor: AppTheme.textSecondary,
+            foregroundColor: AppTheme.getTextSecondary(context),
           ),
         ),
       ],
@@ -781,7 +819,7 @@ class _LoginPageState extends State<LoginPage>
           'Al continuar, aceptas nuestros',
           style: GoogleFonts.inter(
             fontSize: 12,
-            color: AppTheme.textTertiary,
+            color: AppTheme.getTextSecondary(context),
           ),
         ),
         const SizedBox(height: 4),
@@ -801,7 +839,9 @@ class _LoginPageState extends State<LoginPage>
                 'Términos de Servicio',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),
@@ -810,7 +850,7 @@ class _LoginPageState extends State<LoginPage>
               ' y ',
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: AppTheme.textTertiary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             TextButton(
@@ -826,7 +866,9 @@ class _LoginPageState extends State<LoginPage>
                 'Política de Privacidad',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                   decoration: TextDecoration.underline,
                 ),
               ),
