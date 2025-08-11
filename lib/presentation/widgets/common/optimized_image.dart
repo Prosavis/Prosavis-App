@@ -1,5 +1,17 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
+
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+
+/// Administrador de cache personalizado para controlar el tamaño y periodo de validez
+final CacheManager _customCacheManager = CacheManager(
+  Config(
+    'optimizedImageCache',
+    stalePeriod: const Duration(days: 7),
+    maxNrOfCacheObjects: 100,
+  ),
+);
 
 /// Widget optimizado para mostrar imágenes con cache y manejo de errores
 /// Previene reconstrucciones innecesarias y mejora el rendimiento
@@ -75,20 +87,16 @@ class _OptimizedImageState extends State<OptimizedImage>
   }
 
   Widget _buildNetworkImage() {
-    return Image.network(
-      widget.imageUrl!,
+    return CachedNetworkImage(
+      imageUrl: widget.imageUrl!,
       width: widget.width,
       height: widget.height,
       fit: widget.fit,
-      cacheWidth: widget.cacheWidth.toInt(),
-      cacheHeight: widget.cacheHeight.toInt(),
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _buildPlaceholder();
-      },
-      errorBuilder: (context, error, stackTrace) {
-        return _buildErrorWidget();
-      },
+      placeholder: (context, url) => _buildPlaceholder(),
+      errorWidget: (context, url, error) => _buildErrorWidget(),
+      cacheManager: _customCacheManager,
+      memCacheWidth: widget.cacheWidth.toInt(),
+      memCacheHeight: widget.cacheHeight.toInt(),
     );
   }
 
