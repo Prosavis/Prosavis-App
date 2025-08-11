@@ -86,9 +86,9 @@ class _SearchPageState extends State<SearchPage>
             // Botón de atrás para ir al inicio
             IconButton(
               onPressed: () => Navigator.pop(context),
-              icon: const Icon(
+              icon: Icon(
                 Symbols.arrow_back,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
               tooltip: 'Volver al inicio',
             ),
@@ -99,7 +99,7 @@ class _SearchPageState extends State<SearchPage>
               style: GoogleFonts.inter(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
           ],
@@ -119,7 +119,12 @@ class _SearchPageState extends State<SearchPage>
               onSubmitted: (query) => _performSearch(query),
               decoration: InputDecoration(
                 hintText: 'Buscar servicios, profesionales...',
-                prefixIcon: const Icon(Symbols.search),
+                 prefixIcon: Icon(
+                   Symbols.search,
+                   color: Theme.of(context).brightness == Brightness.dark
+                       ? Colors.white
+                       : null,
+                 ),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -129,7 +134,12 @@ class _SearchPageState extends State<SearchPage>
                           _searchController.clear();
                           context.read<SearchBloc>().add(ClearSearchResults());
                         },
-                        icon: const Icon(Symbols.close),
+                        icon: Icon(
+                          Symbols.close,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : null,
+                        ),
                       ),
                     IconButton(
                       onPressed: () {
@@ -144,7 +154,12 @@ class _SearchPageState extends State<SearchPage>
                           ),
                         );
                       },
-                      icon: const Icon(Symbols.tune),
+                      icon: Icon(
+                        Symbols.tune,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -176,7 +191,7 @@ class _SearchPageState extends State<SearchPage>
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
                 TextButton(
@@ -218,10 +233,10 @@ class _SearchPageState extends State<SearchPage>
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Symbols.history,
                 size: 20,
-                color: AppTheme.textTertiary,
+                color: AppTheme.getTextTertiary(context),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -229,16 +244,16 @@ class _SearchPageState extends State<SearchPage>
                   search,
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
               ),
               IconButton(
                 onPressed: onRemove,
-                icon: const Icon(
+                icon: Icon(
                   Symbols.close,
                   size: 16,
-                  color: AppTheme.textTertiary,
+                  color: AppTheme.getTextTertiary(context),
                 ),
               ),
             ],
@@ -260,7 +275,7 @@ class _SearchPageState extends State<SearchPage>
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -370,9 +385,9 @@ class _SearchPageState extends State<SearchPage>
               padding: const EdgeInsets.all(AppConstants.paddingMedium),
               child: Column(
                 children: [
-                  const Icon(
+                  Icon(
                     Symbols.search_off,
-                    color: AppTheme.textTertiary,
+                    color: AppTheme.getTextTertiary(context),
                     size: 48,
                   ),
                   const SizedBox(height: 16),
@@ -381,7 +396,7 @@ class _SearchPageState extends State<SearchPage>
                     style: GoogleFonts.inter(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.getTextPrimary(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -390,7 +405,7 @@ class _SearchPageState extends State<SearchPage>
                     'Intenta con diferentes términos de búsqueda o filtros.',
                     style: GoogleFonts.inter(
                       fontSize: 14,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.getTextSecondary(context),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -421,7 +436,7 @@ class _SearchPageState extends State<SearchPage>
                     style: GoogleFonts.inter(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppTheme.textPrimary,
+                      color: AppTheme.getTextPrimary(context),
                     ),
                   ),
                   TextButton(

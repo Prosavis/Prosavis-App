@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/injection/injection_container.dart';
+import '../../../core/themes/app_theme.dart';
 import '../../../core/utils/service_refresh_notifier.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../../domain/usecases/services/get_user_services_usecase.dart';
@@ -165,21 +166,20 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     }
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
         title: Text(
           'Mis servicios',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
           ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Symbols.add, color: Colors.black87),
+            icon: const Icon(Symbols.add),
             onPressed: _validateProfileAndCreateService,
             tooltip: 'Crear nuevo servicio',
           ),
@@ -207,14 +207,14 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
             Icon(
               Symbols.error_outline,
               size: 64,
-              color: Colors.grey[400],
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: AppTheme.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -239,7 +239,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
             Icon(
               Symbols.work_outline,
               size: 64,
-              color: Colors.grey[400],
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 16),
             Text(
@@ -247,7 +247,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[700],
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 8),
@@ -255,7 +255,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
               'Crea tu primer servicio para empezar a ofrecer tus habilidades',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: Colors.grey[600],
+                color: AppTheme.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -290,7 +290,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -324,14 +324,14 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
                 Text(
                   'Gestiona y edita tus ofertas de servicio',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: Colors.grey[600],
+                    color: AppTheme.getTextSecondary(context),
                   ),
                 ),
               ],
@@ -450,7 +450,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
           child: Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppTheme.getSurfaceColor(context),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(

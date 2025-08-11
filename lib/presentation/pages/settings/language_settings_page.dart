@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -279,14 +278,6 @@ class _LanguageSettingsPageState extends State<LanguageSettingsPage>
       if (savedLanguage == null) {
         final prefs = await SharedPreferences.getInstance();
         savedLanguage = prefs.getString('app_language');
-      }
-
-      // Si no hay idioma guardado, usar el idioma del sistema o español por defecto
-      if (savedLanguage == null) {
-        final systemLocale = PlatformDispatcher.instance.locale.languageCode;
-        savedLanguage = _languages.any((l) => l['code'] == systemLocale) 
-            ? systemLocale 
-            : 'es';
       }
 
       if (mounted) {

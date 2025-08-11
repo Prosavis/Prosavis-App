@@ -63,7 +63,7 @@ class _SplashPageState extends State<SplashPage>
       TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 30),
     ]).animate(CurvedAnimation(
       parent: _scaleController,
-      curve: Curves.easeOutBack,
+      curve: Curves.easeOut,
     ));
 
     _fadeAnimation = Tween<double>(

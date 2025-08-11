@@ -96,7 +96,7 @@ class _ProfilePageState extends State<ProfilePage>
           style: GoogleFonts.inter(
             fontSize: 28,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
       ),
@@ -203,7 +203,7 @@ class _ProfilePageState extends State<ProfilePage>
                 style: GoogleFonts.inter(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
               const SizedBox(height: 4),
@@ -211,7 +211,7 @@ class _ProfilePageState extends State<ProfilePage>
                 authState.user.email,
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
               ),
             ] else ...[
@@ -230,7 +230,7 @@ class _ProfilePageState extends State<ProfilePage>
                 style: GoogleFonts.inter(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
               const SizedBox(height: 4),
@@ -238,7 +238,7 @@ class _ProfilePageState extends State<ProfilePage>
                 'Inicia sesión para acceder a todas las funciones',
                 style: GoogleFonts.inter(
                   fontSize: 16,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -363,7 +363,7 @@ class _ProfilePageState extends State<ProfilePage>
       style: GoogleFonts.inter(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppTheme.textPrimary,
+        color: AppTheme.getTextPrimary(context),
       ),
     );
   }
@@ -384,10 +384,10 @@ class _ProfilePageState extends State<ProfilePage>
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: AppTheme.surfaceColor,
+            color: AppTheme.getSurfaceColor(context),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: Colors.grey.shade200,
+              color: AppTheme.getBorderColor(context),
               width: 1,
             ),
           ),
@@ -396,7 +396,11 @@ class _ProfilePageState extends State<ProfilePage>
               Icon(
                 icon,
                 size: 24,
-                color: isDestructive ? AppTheme.errorColor : AppTheme.primaryColor,
+                color: isDestructive
+                    ? AppTheme.errorColor
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -408,7 +412,7 @@ class _ProfilePageState extends State<ProfilePage>
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: isDestructive ? AppTheme.errorColor : AppTheme.textPrimary,
+                        color: isDestructive ? AppTheme.errorColor : AppTheme.getTextPrimary(context),
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -416,17 +420,19 @@ class _ProfilePageState extends State<ProfilePage>
                       subtitle,
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AppTheme.textSecondary,
+                        color: AppTheme.getTextSecondary(context),
                       ),
                     ),
                   ],
                 ),
               ),
               if (showArrow)
-                const Icon(
+                Icon(
                   Symbols.chevron_right,
                   size: 20,
-                  color: AppTheme.textTertiary,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.getTextTertiary(context),
                 ),
             ],
           ),
@@ -439,19 +445,25 @@ class _ProfilePageState extends State<ProfilePage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceColor,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.shade200,
+          color: AppTheme.getBorderColor(context),
           width: 1,
         ),
       ),
       child: Row(
         children: [
           Icon(
-            themeState.isDark ? Symbols.dark_mode : Symbols.light_mode,
+            themeState is ThemeDark
+                ? Symbols.dark_mode
+                : (themeState is ThemeSystem
+                    ? Symbols.brightness_auto
+                    : Symbols.light_mode),
             size: 24,
-            color: AppTheme.primaryColor,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppTheme.primaryColor,
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -463,7 +475,7 @@ class _ProfilePageState extends State<ProfilePage>
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -471,7 +483,7 @@ class _ProfilePageState extends State<ProfilePage>
                   _getThemeDescription(themeState),
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                   ),
                 ),
               ],
@@ -526,7 +538,9 @@ class _ProfilePageState extends State<ProfilePage>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.6)
+                    : AppTheme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Row(
@@ -537,14 +551,18 @@ class _ProfilePageState extends State<ProfilePage>
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppTheme.primaryColor,
                     ),
                   ),
                   const SizedBox(width: 4),
-                  const Icon(
+                  Icon(
                     Symbols.expand_more,
                     size: 16,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor,
                   ),
                 ],
               ),

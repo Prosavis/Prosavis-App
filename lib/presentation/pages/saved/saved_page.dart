@@ -51,7 +51,7 @@ class _SavedPageState extends State<SavedPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.getBackgroundColor(context),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -131,7 +131,7 @@ class _SavedPageState extends State<SavedPage>
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -146,12 +146,16 @@ class _SavedPageState extends State<SavedPage>
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.red.withValues(alpha: 0.1),
+              color: (Theme.of(context).brightness == Brightness.dark
+                  ? Colors.red.withValues(alpha: 0.25)
+                  : Colors.red.withValues(alpha: 0.1)),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(
+            child: Icon(
               Symbols.favorite,
-              color: Colors.red,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : Colors.red,
               size: 24,
             ),
           ),
@@ -165,14 +169,14 @@ class _SavedPageState extends State<SavedPage>
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
                 Text(
                   'Tus servicios favoritos guardados',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                   ),
                 ),
               ],
@@ -211,10 +215,10 @@ class _SavedPageState extends State<SavedPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
+            Icon(
               Symbols.favorite_border,
               size: 80,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 24),
             Text(
@@ -222,7 +226,7 @@ class _SavedPageState extends State<SavedPage>
               style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -231,7 +235,7 @@ class _SavedPageState extends State<SavedPage>
               'Explora servicios y guarda tus favoritos tocando el ícono de corazón. Aparecerán aquí para acceso rápido.',
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,

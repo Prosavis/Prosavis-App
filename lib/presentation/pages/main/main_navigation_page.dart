@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_symbols_icons/symbols.dart';
-import '../../../core/themes/app_theme.dart';
 import '../home/home_page.dart';
 import '../saved/saved_page.dart';
 import '../profile/profile_page.dart';
@@ -161,18 +160,9 @@ class _MainNavigationPageState extends State<MainNavigationPage>
         currentIndex: _selectedIndex,
         onTap: onItemTapped,
         type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
-        selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: AppTheme.textTertiary,
+        // Dejar que el Theme controle colores y estilos para respetar
+        // los modos claro/oscuro definidos en AppTheme
         elevation: 0,
-        selectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
-        ),
-        unselectedLabelStyle: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Symbols.home),

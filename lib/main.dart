@@ -80,22 +80,11 @@ void main() async {
 
 /// Optimización: Precargar activos críticos para mejorar rendimiento inicial
 Future<void> _preloadCriticalAssets() async {
-  // Trigger font loading for commonly used fonts
+  // Forzar la resolución de la tipografía más usada para evitar jank inicial.
+  // No realizamos precache de imágenes aquí porque no disponemos de un
+  // BuildContext válido en esta fase de inicio.
   GoogleFonts.inter();
-
-  await Future.wait([
-    // Precache critical images
-    precacheImage(
-      const AssetImage('assets/images/logo-no-background.png'),
-      null,
-    ),
-    precacheImage(
-      const AssetImage('assets/images/logo-color.png'),
-      null,
-    ),
-    // Ensure fonts are loaded
-    ...GoogleFonts.pendingFontLoads,
-  ]);
+  return;
 }
 
 final _router = GoRouter(

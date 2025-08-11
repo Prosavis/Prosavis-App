@@ -123,12 +123,17 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Symbols.arrow_back, color: Colors.black87),
+          icon: Icon(
+            Symbols.arrow_back,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppTheme.textPrimary,
+          ),
           onPressed: () => context.go('/home'),
         ),
         title: Text(
@@ -136,7 +141,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           style: GoogleFonts.inter(
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
       ),
@@ -183,15 +188,23 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.6)
+            : AppTheme.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkBorder
+              : AppTheme.primaryColor.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Symbols.add_business,
-            color: AppTheme.primaryColor,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppTheme.primaryColor,
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -204,14 +217,18 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor,
                   ),
                 ),
                 Text(
                   'Completa la información de tu servicio',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.primaryColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -233,7 +250,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             decoration: InputDecoration(
               labelText: 'Título del servicio',
               hintText: 'Ej: Plomería residencial',
-              prefixIcon: const Icon(Symbols.title),
+              prefixIcon: Icon(
+                Symbols.title,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -255,7 +275,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             decoration: InputDecoration(
               labelText: 'Descripción',
               hintText: 'Describe tu servicio en detalle...',
-              prefixIcon: const Icon(Symbols.description),
+              prefixIcon: Icon(
+                Symbols.description,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -287,7 +310,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             value: _priceType,
             decoration: InputDecoration(
               labelText: 'Tipo de precio',
-              prefixIcon: const Icon(Symbols.schedule),
+              prefixIcon: Icon(
+                Symbols.schedule,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -315,7 +341,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
               decoration: InputDecoration(
                 labelText: 'Precio (\$)',
                 hintText: '0.00',
-                prefixIcon: const Icon(Symbols.attach_money),
+                prefixIcon: Icon(
+                  Symbols.attach_money,
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -347,7 +376,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         value: _selectedCategory,
         decoration: InputDecoration(
           labelText: 'Categoría del servicio',
-          prefixIcon: const Icon(Symbols.work),
+          prefixIcon: Icon(
+            Symbols.work,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -386,7 +418,10 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         decoration: InputDecoration(
           labelText: 'Años de experiencia (opcional)',
           hintText: 'Ej: 5 años en plomería residencial',
-          prefixIcon: const Icon(Symbols.timeline),
+          prefixIcon: Icon(
+            Symbols.timeline,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+          ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -404,7 +439,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -420,21 +455,28 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurface
+                  : Colors.grey[50],
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
             ),
             child: Row(
               children: [
-                Icon(icon, color: AppTheme.primaryColor),
+                Icon(
+                  icon,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
               ],
@@ -457,11 +499,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Días disponibles',
+                   'Días disponibles',
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
+                     color: AppTheme.getTextSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -483,17 +525,27 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: isSelected ? AppTheme.primaryColor : Colors.transparent,
+                    color: isSelected
+                        ? AppTheme.primaryColor
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? AppTheme.darkSurface
+                            : Colors.transparent),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: isSelected ? AppTheme.primaryColor : Colors.grey.shade300,
+                      color: isSelected
+                          ? AppTheme.primaryColor
+                          : (Theme.of(context).brightness == Brightness.dark
+                              ? AppTheme.darkBorder
+                              : Colors.grey.shade300),
                     ),
                   ),
                   child: Text(
                     day,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: isSelected ? Colors.white : AppTheme.textSecondary,
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.getTextSecondary(context),
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
@@ -563,8 +615,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.backgroundColor,
+               decoration: BoxDecoration(
+                 color: AppTheme.getBackgroundColor(context),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
                   color: AppTheme.primaryColor,
@@ -574,19 +626,23 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(
+                  Icon(
                     Symbols.add,
                     size: 18,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     'Agregar habilidad personalizada',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                     style: GoogleFonts.inter(
+                       fontSize: 14,
+                       color: Theme.of(context).brightness == Brightness.dark
+                           ? Colors.white
+                           : AppTheme.primaryColor,
+                       fontWeight: FontWeight.w600,
+                     ),
                   ),
                 ],
               ),
@@ -615,16 +671,24 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurface
+                  : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.blue.shade200,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Symbols.info,
                   size: 14,
-                  color: Colors.blue.shade700,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.blue.shade700,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -632,7 +696,9 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                     'Esta imagen se mostrará como portada principal del servicio',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.blue.shade800,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextSecondary
+                          : Colors.blue.shade800,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -785,16 +851,24 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurface
+                  : Colors.amber.shade50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade200),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.amber.shade200,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Symbols.info,
                   size: 14,
-                  color: Colors.amber.shade700,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.amber.shade700,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -802,7 +876,9 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                     'Máximo 4 imágenes • 10MB cada una • Solo JPEG, PNG, WebP',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.amber.shade800,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextSecondary
+                          : Colors.amber.shade800,
                       fontWeight: FontWeight.w500,
                     ),
                   ),

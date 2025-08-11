@@ -435,11 +435,11 @@ class AppTheme {
         ),
       ),
       
-      // BottomNavigationBar Theme para modo oscuro
+      // BottomNavigationBar Theme para modo oscuro (alto contraste)
       bottomNavigationBarTheme: BottomNavigationBarThemeData(
         backgroundColor: const Color(0xFF1E293B),
-        selectedItemColor: primaryColor,
-        unselectedItemColor: const Color(0xFF94A3B8),
+        selectedItemColor: Colors.white,
+        unselectedItemColor: const Color(0xFFE2E8F0),
         selectedLabelStyle: GoogleFonts.inter(
           fontWeight: FontWeight.w600,
           fontSize: 12,
