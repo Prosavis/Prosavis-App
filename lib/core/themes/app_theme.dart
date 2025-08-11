@@ -226,12 +226,12 @@ class AppTheme {
         ),
         headlineMedium: GoogleFonts.inter(
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           color: textPrimary,
         ),
         headlineSmall: GoogleFonts.inter(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           color: textPrimary,
         ),
         titleLarge: GoogleFonts.inter(
@@ -263,6 +263,11 @@ class AppTheme {
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: textTertiary,
+        ),
+        labelMedium: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: textPrimary,
         ),
       ),
     );
@@ -364,7 +369,7 @@ class AppTheme {
         ),
         headlineSmall: GoogleFonts.inter(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
         titleLarge: GoogleFonts.inter(
@@ -396,6 +401,11 @@ class AppTheme {
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: const Color(0xFF94A3B8), // Gris más suave para texto terciario
+        ),
+        labelMedium: GoogleFonts.inter(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
         ),
       ),
       

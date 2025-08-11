@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 
@@ -187,18 +186,11 @@ class _HomePageState extends State<HomePage>
                 children: [
                   Text(
                     '¡Hola, ${state.user.name.split(' ').first}!',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                 color: AppTheme.getTextPrimary(context),
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(
                     '¿Qué servicio necesitas hoy?',
-                     style: GoogleFonts.inter(
-                      fontSize: 14,
-                       color: AppTheme.getTextSecondary(context),
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
@@ -251,18 +243,11 @@ class _HomePageState extends State<HomePage>
                 children: [
                   Text(
                     '¡Hola!',
-                    style: GoogleFonts.inter(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
+                    style: Theme.of(context).textTheme.headlineSmall,
                   ),
                   Text(
                     '¿Qué servicio necesitas hoy?',
-                    style: GoogleFonts.inter(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ],
               ),
@@ -307,10 +292,10 @@ class _HomePageState extends State<HomePage>
                 Expanded(
                   child: Text(
                     'Buscar servicios...',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: AppTheme.getTextTertiary(context),
-                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodyLarge
+                        ?.copyWith(color: AppTheme.getTextTertiary(context)),
                   ),
                 ),
               ],
@@ -333,11 +318,7 @@ class _HomePageState extends State<HomePage>
             children: [
               Text(
                 'Categorías',
-                style: GoogleFonts.inter(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
-                ),
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               const SizedBox(height: 16),
             ],
@@ -402,11 +383,7 @@ class _HomePageState extends State<HomePage>
               const SizedBox(height: 8),
               Text(
                 category['name'],
-                style: GoogleFonts.inter(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppTheme.getTextPrimary(context),
-                ),
+                style: Theme.of(context).textTheme.labelMedium,
                 textAlign: TextAlign.center,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -461,11 +438,7 @@ class _HomePageState extends State<HomePage>
                   children: [
                     Text(
                       'Servicios Destacados',
-                      style: GoogleFonts.inter(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                      ),
+                      style: Theme.of(context).textTheme.headlineMedium,
                     ),
                     if (state is HomeLoading)
                       const SizedBox(
@@ -507,10 +480,7 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 8),
             Text(
               'Error al cargar servicios',
-              style: GoogleFonts.inter(
-                color: AppTheme.textSecondary,
-                fontSize: 14,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -529,10 +499,7 @@ class _HomePageState extends State<HomePage>
         return Center(
           child: Text(
             'No hay servicios disponibles',
-            style: GoogleFonts.inter(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         );
       }
@@ -576,11 +543,7 @@ class _HomePageState extends State<HomePage>
               children: [
                 Text(
                   'Cerca de ti',
-                  style: GoogleFonts.inter(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
-                  ),
+                  style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 16),
                 _buildNearbyServicesList(state),
@@ -611,10 +574,7 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 8),
             Text(
               'Error al cargar servicios cercanos',
-              style: GoogleFonts.inter(
-                color: AppTheme.textSecondary,
-                fontSize: 14,
-              ),
+              style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 8),
             TextButton(
@@ -633,10 +593,7 @@ class _HomePageState extends State<HomePage>
         return Center(
           child: Text(
             'No hay servicios cercanos disponibles',
-            style: GoogleFonts.inter(
-              color: AppTheme.textSecondary,
-              fontSize: 14,
-            ),
+            style: Theme.of(context).textTheme.bodyMedium,
           ),
         );
       }
