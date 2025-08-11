@@ -1,225 +1,168 @@
-# ServicioConecta 🤝
+# Prosavis 🤝
 
-Una aplicación móvil moderna que conecta prestadores de servicios con clientes, brindando una plataforma segura y confiable para encontrar servicios de calidad.
+Plataforma móvil para conectar prestadores de servicios con clientes. Enfocada en seguridad, rendimiento y una experiencia moderna.
 
-## ✨ Características
+## ✨ Características Clave
 
-- **Autenticación con Google**: Inicio de sesión rápido y seguro
-- **Interfaz moderna**: Diseño atractivo con animaciones suaves
-- **Marketplace de servicios**: Encuentra desde plomería hasta tutoría
-- **Arquitectura escalable**: Clean Architecture con BLoC pattern
-- **Firebase Backend**: Base de datos en tiempo real y autenticación
-- **Categorías diversas**: 10+ categorías de servicios disponibles
+- **Autenticación completa**: Google, Email/Contraseña, Teléfono (SMS), Anónimo y MFA (multi-factor). Ver guía MFA en `presentation/pages/auth/mfa_documentation.md`.
+- **Marketplace**: Publicación, edición y eliminación de servicios; favoritos; reseñas y calificaciones.
+- **Búsqueda avanzada**: Por categoría, rango de precio y filtros; soporte de geolocalización para servicios cercanos.
+- **Arquitectura escalable**: Clean Architecture con BLoC y DI (`get_it`).
+- **Firebase**: Auth, Cloud Firestore, Storage y configuración con FlutterFire.
+- **UI moderna**: Material 3, animaciones, imágenes SVG, tipografías Google Fonts.
 
-## 🛠️ Tecnologías Utilizadas
+## 🛠️ Tecnologías
 
-- **Flutter**: Framework multiplataforma
-- **Firebase**: Backend como servicio
-- **BLoC**: Gestión de estado
-- **Get It**: Inyección de dependencias
-- **Google Fonts**: Tipografías modernas
-- **Material Symbols**: Iconografía moderna
+- **Flutter** (Android, iOS, Web)
+- **Dart** (>= 3.2.3)
+- **BLoC** (`flutter_bloc`), **DI** (`get_it`), **Routing** (`go_router`)
+- **Firebase**: `firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_storage`, `google_sign_in`
+- **Geolocalización**: `geolocator`, `geocoding`
+- **UI/UX**: `google_fonts`, `material_symbols_icons`, `animations`, `shimmer`, `flutter_svg`, `lottie`
+
+Consulta versiones exactas en `pubspec.yaml`.
 
 ## 🏗️ Arquitectura
 
-El proyecto sigue los principios de Clean Architecture:
+El proyecto sigue Clean Architecture con separación por capas y BLoC por feature.
 
 ```
 lib/
-├── core/                    # Configuraciones y utilidades
-│   ├── constants/          # Constantes de la aplicación
-│   ├── themes/             # Temas y colores
-│   ├── injection/          # Inyección de dependencias
-│   └── usecases/           # Casos de uso base
-├── data/                   # Capa de datos
-│   ├── models/             # Modelos de datos
-│   ├── repositories/       # Implementaciones de repositorios
-│   └── services/           # Servicios externos (Firebase)
-├── domain/                 # Lógica de negocio
-│   ├── entities/           # Entidades del dominio
-│   ├── repositories/       # Contratos de repositorios
-│   └── usecases/           # Casos de uso
-└── presentation/           # Capa de presentación
-    ├── blocs/              # BLoCs para gestión de estado
-    ├── pages/              # Pantallas de la aplicación
-    └── widgets/            # Widgets reutilizables
+├── core/                    # Configuración, temas, DI, utilidades
+├── data/                    # Models, repositorios (impl), servicios (Firebase)
+├── domain/                  # Entidades, contratos de repos y casos de uso
+└── presentation/            # BLoCs, páginas y widgets reutilizables
 ```
+
+Referencias:
+- Firestore: `lib/data/services/firestore_service.dart`
+- Auth & MFA: `lib/data/services/firebase_service.dart`
+- Repositorios: `lib/data/repositories/*`
+- Estructura DB: `lib/data/firestore_structure.md`
 
 ## 🚀 Configuración Inicial
 
 ### Prerrequisitos
 
-1. **Flutter SDK** (versión 3.8.0+)
-   ```bash
-   # Descargar desde: https://flutter.dev/docs/get-started/install
-   ```
-
-2. **Dart SDK** (incluido con Flutter)
-
-3. **Android Studio** o **VS Code** con extensiones de Flutter
-
-4. **Firebase CLI**
-   ```bash
-   npm install -g firebase-tools
-   ```
-
-### Configuración del Proyecto
-
-1. **Clonar el repositorio**
-   ```bash
-   git clone https://github.com/tu-usuario/myapp.git
-   cd myapp
-   ```
-
-2. **Instalar dependencias**
-   ```bash
-   flutter pub get
-   ```
-
-3. **Configurar Firebase**
-   
-   a. Crear un proyecto en [Firebase Console](https://console.firebase.google.com/)
-   
-   b. Habilitar servicios:
-   - Authentication (Google Sign-In)
-   - Cloud Firestore
-   - Firebase Analytics (opcional)
-   
-   c. Descargar `google-services.json` para Android y `GoogleService-Info.plist` para iOS
-
-4. **Configurar variables de entorno**
-   
-   Editar el archivo `.env` con tus credenciales:
-   ```env
-   FIREBASE_PROJECT_ID=tu-proyecto-firebase
-   FIREBASE_API_KEY=tu-api-key
-   FIREBASE_APP_ID=tu-app-id
-   FIREBASE_MESSAGING_SENDER_ID=tu-sender-id
-   GOOGLE_CLIENT_ID=tu-google-client-id
-   ENV=development
-   ```
-
-5. **Configurar autenticación de Google**
-   
-   En Firebase Console > Authentication > Sign-in method:
-   - Habilitar Google Sign-In
-   - Configurar SHA-1 para Android
-   - Configurar Bundle ID para iOS
-
-## 📱 Ejecutar la Aplicación
+- Flutter 3.19+ (para compatibilidad con Dart >= 3.2.3)
+- Android Studio o VS Code con extensión Flutter
+- Firebase CLI instalado
 
 ```bash
-# Verificar dispositivos disponibles
-flutter devices
-
-# Ejecutar en modo debug
-flutter run
-
-# Ejecutar en modo release
-flutter run --release
+npm install -g firebase-tools
 ```
 
-## 🏗️ Compilar para Producción
+### 1) Clonar e instalar dependencias
 
-### Android
 ```bash
-flutter build apk --release
-# o para App Bundle
-flutter build appbundle --release
+git clone https://github.com/tu-usuario/prosavis-app.git
+cd prosavis-app
+flutter pub get
 ```
 
-### iOS
+### 2) Configurar Firebase con FlutterFire
+
+Este proyecto incluye `firebase_options.dart`, pero debes regenerarlo para tu proyecto:
+
 ```bash
-flutter build ios --release
+dart pub global activate flutterfire_cli
+flutterfire configure --project <tu-project-id>
 ```
 
-## 🔧 Comandos Útiles
+Esto creará/actualizará `firebase_options.dart` con tus credenciales para Android, iOS y Web.
+
+Recomendado en Firebase Console:
+- Habilitar proveedores: Google, Email/Contraseña y Teléfono (para MFA/SMS)
+- Cloud Firestore y Storage
+- Descargar `google-services.json` (Android) y `GoogleService-Info.plist` (iOS) si corresponde
+
+Para Google Sign-In en Android, registra SHA-1/SHA-256; en iOS, configura tu Bundle ID.
+
+### 3) Variables de entorno (opcional)
+
+Puedes usar `.env` con `flutter_dotenv` para valores adicionales (no secretos de Firebase):
+
+```env
+ENV=development
+FEATURE_FLAGS=
+```
+
+### 4) Lints y calidad de código
+
+Este repo incluye `analysis_options.yaml` con `flutter_lints`. Ejecuta:
 
 ```bash
-# Analizar código
 flutter analyze
-
-# Ejecutar tests
-flutter test
-
-# Limpiar build
-flutter clean
-
-# Actualizar dependencias
-flutter pub upgrade
+dart fix --apply
 ```
 
-## 📋 Funcionalidades Principales
+## 📱 Ejecutar la aplicación
 
-### 🔐 Autenticación
-- Inicio de sesión con Google
-- Gestión automática de sesiones
-- Estados de autenticación en tiempo real
+```bash
+flutter devices
+flutter run            # debug
+flutter run --release  # release
+```
 
-### 🏠 Pantalla Principal
-- Búsqueda de servicios
-- Categorías de servicios
-- Servicios destacados
-- Servicios cercanos
+## 🏗️ Compilar para producción
 
-### 🎨 Interfaz de Usuario
-- Tema moderno con Material 3
-- Animaciones suaves
-- Iconos llamativos
-- Gradientes atractivos
+- Android APK: `flutter build apk --release`
+- Android App Bundle: `flutter build appbundle --release`
+- iOS: `flutter build ios --release`
 
-### 📱 Navegación
-- Onboarding para nuevos usuarios
-- Navegación fluida entre pantallas
-- Bottom navigation bar
+## 🔒 Autenticación soportada
 
-## 🚧 Estado del Proyecto
+- Google (`google_sign_in`) con Firebase Auth
+- Email/Contraseña (registro, login, recuperación de contraseña)
+- Teléfono (SMS) y verificación de código
+- MFA: inscripción y resolución de segundo factor vía SMS
+- Sesiones y stream de estado de usuario en tiempo real
 
-✅ **Completado:**
-- Arquitectura base
-- Autenticación con Google
-- Pantallas principales
-- Configuración de Firebase
-- Widgets reutilizables
+Ver pantallas en `presentation/pages/auth/*` y la documentación MFA.
 
-🔄 **En Desarrollo:**
-- Funcionalidad de servicios
-- Chat en tiempo real
-- Sistema de reservas
-- Pagos integrados
+## 🔥 Base de datos y datos
+
+- Cloud Firestore con colecciones: `users`, `services`, `favorites` y subcolección `reviews` bajo `services/{id}`.
+- Operaciones implementadas: creación/edición/eliminación de servicios, favoritos, reseñas, búsqueda con filtros, streams en tiempo real.
+- Consulta ejemplos y reglas en `lib/data/firestore_structure.md`.
+
+## 🧭 Navegación y pantallas
+
+- Splash, Login, Verificación de teléfono, Olvidé mi contraseña
+- Home, Búsqueda, Categorías, Notificaciones, Perfil
+- Crear/Editar/Detalle de Servicio, Mis Servicios
+- Favoritos y reseñas (crear, listar, estadísticas)
+
+Router: `go_router` definido en `lib/main.dart`.
+
+## 🧪 Desarrollo y utilidades
+
+```bash
+flutter analyze         # estática de código
+flutter test            # tests
+flutter clean           # limpiar build
+flutter pub upgrade     # actualizar dependencias
+```
+
+Emuladores Firebase (opcional): configura puertos en `AppConfig` si deseas usar Emulator Suite en desarrollo.
+
+## 🚧 Estado del proyecto
+
+- Completado: arquitectura base, Auth (Google/Email/Teléfono/MFA), servicios, favoritos, reseñas, theming, navegación, assets.
+- En progreso: chat en tiempo real, sistema de reservas, pagos integrados, notificaciones push, mapa de servicios, modo oscuro avanzado y multi-idioma.
 
 ## 🤝 Contribuir
 
-1. Fork el proyecto
-2. Crea una rama para tu feature (`git checkout -b feature/nueva-funcionalidad`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/nueva-funcionalidad`)
-5. Abre un Pull Request
+1) Fork del repositorio
+2) Crea una rama: `git checkout -b feature/nueva-funcionalidad`
+3) Commit: `git commit -m "feat: agrega <detalle>"`
+4) Push: `git push origin feature/nueva-funcionalidad`
+5) Abre un Pull Request
 
 ## 📄 Licencia
 
-Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 📞 Soporte
-
-Si tienes preguntas o problemas:
-
-1. Revisa la documentación
-2. Busca en Issues existentes
-3. Crea un nuevo Issue con detalles
-
-## 🎯 Roadmap
-
-- [ ] Sistema de calificaciones
-- [ ] Notificaciones push
-- [ ] Mapa de servicios
-- [ ] Modo oscuro
-- [ ] Soporte multi-idioma
-- [ ] Pagos con Stripe
-- [ ] Sistema de referidos
+MIT. Ver `LICENSE`.
 
 ---
 
-**¡Gracias por usar Prosavis!** 🚀
-
-Desarrollado con ❤️ usando Flutter y Firebase.
+Hecho con ❤️ en Flutter y Firebase.
