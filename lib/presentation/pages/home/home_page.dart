@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage>
             slivers: [
               _buildAppBar(state),
               _buildSearchBar(),
-              _buildCategoriesSection(),
+              ..._buildCategoriesSection(),
               _buildFeaturedServicesSection(),
               _buildNearbyServicesSection(),
             ],
@@ -140,7 +140,7 @@ class _HomePageState extends State<HomePage>
             slivers: [
               _buildAppBarAnonymous(),
               _buildSearchBar(),
-              _buildCategoriesSection(),
+              ..._buildCategoriesSection(),
               _buildFeaturedServicesSection(),
               _buildNearbyServicesSection(),
             ],
@@ -322,42 +322,50 @@ class _HomePageState extends State<HomePage>
 
 
 
-  Widget _buildCategoriesSection() {
-    return SliverToBoxAdapter(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Categorías',
-              style: GoogleFonts.inter(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+  List<Widget> _buildCategoriesSection() {
+    return [
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.paddingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Categorías',
+                style: GoogleFonts.inter(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            // Grid de categorías 4x2
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.68, // Más alto para acomodar iconos de 56px
-              ),
-              itemCount: AppConstants.serviceCategories.length,
-              itemBuilder: (context, index) {
-                final category = AppConstants.serviceCategories[index];
-                return _buildCategoryGridItem(category);
-              },
-            ),
-          ],
+              const SizedBox(height: 16),
+            ],
+          ),
         ),
       ),
-    );
+      SliverPadding(
+        padding: const EdgeInsets.only(
+          left: AppConstants.paddingMedium,
+          right: AppConstants.paddingMedium,
+          bottom: AppConstants.paddingMedium,
+        ),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 4,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.68, // Más alto para acomodar iconos de 56px
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final category = AppConstants.serviceCategories[index];
+              return _buildCategoryGridItem(category);
+            },
+            childCount: AppConstants.serviceCategories.length,
+          ),
+        ),
+      ),
+    ];
   }
 
   Widget _buildCategoryGridItem(Map<String, dynamic> category) {
