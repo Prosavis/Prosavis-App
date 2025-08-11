@@ -1,4 +1,4 @@
-# ServicioConecta 🤝
+# Prosavis 🤝
 
 Una aplicación móvil moderna que conecta prestadores de servicios con clientes, brindando una plataforma segura y confiable para encontrar servicios de calidad.
 
