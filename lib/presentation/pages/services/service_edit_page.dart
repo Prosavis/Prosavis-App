@@ -686,23 +686,97 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     return _buildSectionCard(
       title: 'Contacto',
       icon: Symbols.chat,
-      child: TextFormField(
-        controller: _whatsappController,
-        decoration: InputDecoration(
-          labelText: 'WhatsApp (opcional)',
-          hintText: 'Ej: 3001234567',
-          prefixIcon: const Icon(Symbols.chat),
-          helperText: 'Se usará para el botón «Contactar por WhatsApp»',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _whatsappController,
+            decoration: InputDecoration(
+              labelText: 'WhatsApp (opcional)',
+              hintText: 'Ej: 3001234567',
+              prefixIcon: const Icon(Symbols.chat),
+              helperText: 'Se usará para el botón «Contactar por WhatsApp»',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            maxLength: 10,
           ),
-        ),
-        keyboardType: TextInputType.phone,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(10),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _phone1Controller,
+                  decoration: InputDecoration(
+                    labelText: 'Teléfono 1',
+                    hintText: 'Ej: 3001234567',
+                    prefixIcon: const Icon(Symbols.call),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _phone2Controller,
+                  decoration: InputDecoration(
+                    labelText: 'Teléfono 2',
+                    hintText: 'Ej: 3009876543',
+                    prefixIcon: const Icon(Symbols.call),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _instagramController,
+            decoration: InputDecoration(
+              labelText: 'Instagram (usuario o enlace)',
+              hintText: '@usuario o https://instagram.com/usuario',
+              prefixIcon: const Icon(Symbols.camera_alt),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _xController,
+            decoration: InputDecoration(
+              labelText: 'X/Twitter (usuario o enlace)',
+              hintText: '@usuario o https://x.com/usuario',
+              prefixIcon: const Icon(Symbols.alternate_email),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _tiktokController,
+            decoration: InputDecoration(
+              labelText: 'TikTok (usuario o enlace)',
+              hintText: '@usuario o https://www.tiktok.com/@usuario',
+              prefixIcon: const Icon(Symbols.music_note),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ],
-        maxLength: 10,
       ),
     );
   }
