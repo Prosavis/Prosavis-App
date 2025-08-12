@@ -1309,6 +1309,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                           ],
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      _buildContactIconsRow(),
                     ],
                   ),
                 ),
@@ -1318,6 +1320,74 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
       ),
     );
+  }
+
+  Widget _buildContactIconsRow() {
+    final List<Widget> icons = [];
+
+    void addIcon({required Widget child, required VoidCallback onTap}) {
+      icons.add(GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Container(
+          margin: const EdgeInsets.only(right: 10),
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: AppTheme.getContainerColor(context, alpha: 1.0),
+            border: Border.all(color: AppTheme.getBorderColor(context)),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: child,
+        ),
+      ));
+    }
+
+    if ((_currentService!.callPhones).isNotEmpty) {
+      for (final phone in _currentService!.callPhones.take(2)) {
+        addIcon(
+          child: const Icon(Symbols.call, size: 18, color: AppTheme.primaryColor),
+          onTap: () => _callPhone(phone),
+        );
+      }
+    }
+
+    if ((_currentService!.instagram ?? '').isNotEmpty) {
+      addIcon(
+        child: Image.asset(
+          'assets/icons/instagram.png',
+          width: 18,
+          height: 18,
+          errorBuilder: (_, __, ___) => const Icon(Symbols.camera_alt, size: 18, color: AppTheme.primaryColor),
+        ),
+        onTap: _openInstagram,
+      );
+    }
+    if ((_currentService!.xProfile ?? '').isNotEmpty) {
+      addIcon(
+        child: Image.asset(
+          'assets/icons/X-Logo.png',
+          width: 18,
+          height: 18,
+          errorBuilder: (_, __, ___) => const Icon(Symbols.alternate_email, size: 18, color: AppTheme.primaryColor),
+        ),
+        onTap: _openX,
+      );
+    }
+    if ((_currentService!.tiktok ?? '').isNotEmpty) {
+      addIcon(
+        child: Image.asset(
+          'assets/icons/tiktok-logo.png',
+          width: 18,
+          height: 18,
+          errorBuilder: (_, __, ___) => const Icon(Symbols.music_note, size: 18, color: AppTheme.primaryColor),
+        ),
+        onTap: _openTikTok,
+      );
+    }
+
+    if (icons.isEmpty) return const SizedBox.shrink();
+
+    return Wrap(children: icons);
   }
 
   Widget _buildReviews() {
@@ -1658,6 +1728,66 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           ),
         );
       }
+    }
+  }
+
+  void _callPhone(String phone) async {
+    final digits = phone.replaceAll(RegExp(r'[^0-9+]'), '');
+    final uri = Uri.parse('tel:$digits');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se pudo iniciar la llamada.')),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error al intentar llamar.')),
+      );
+    }
+  }
+
+  String _normalizeHandle(String raw) {
+    var handle = raw.trim();
+    if (handle.startsWith('http')) return handle;
+    if (handle.startsWith('@')) handle = handle.substring(1);
+    return handle;
+  }
+
+  Future<void> _openInstagram() async {
+    final raw = _currentService!.instagram!;
+    final handle = _normalizeHandle(raw);
+    final url = handle.startsWith('http') ? handle : 'https://instagram.com/$handle';
+    final uri = Uri.parse(url);
+    if (!mounted) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openX() async {
+    final raw = _currentService!.xProfile!;
+    final handle = _normalizeHandle(raw);
+    final url = handle.startsWith('http') ? handle : 'https://x.com/$handle';
+    final uri = Uri.parse(url);
+    if (!mounted) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  Future<void> _openTikTok() async {
+    final raw = _currentService!.tiktok!;
+    final handle = _normalizeHandle(raw);
+    final clean = handle.startsWith('http') ? handle : 'https://www.tiktok.com/@$handle';
+    final uri = Uri.parse(clean);
+    if (!mounted) return;
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 

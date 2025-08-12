@@ -11,6 +11,11 @@ class ServiceEntity extends Equatable {
   final String providerName;
   final String? providerPhotoUrl;
   final String? whatsappNumber; // Número de contacto para WhatsApp
+  // Redes y teléfonos para llamadas (opcional)
+  final String? instagram; // username o URL
+  final String? xProfile; // username o URL
+  final String? tiktok; // username o URL
+  final List<String> callPhones; // hasta 2 números para llamadas
   final String? mainImage; // Imagen principal del servicio
   final List<String> images; // Galería de trabajos
   final List<String> tags;
@@ -37,6 +42,10 @@ class ServiceEntity extends Equatable {
     required this.providerName,
     this.providerPhotoUrl,
     this.whatsappNumber,
+    this.instagram,
+    this.xProfile,
+    this.tiktok,
+    this.callPhones = const [],
     this.mainImage,
     required this.images,
     required this.tags,
@@ -65,6 +74,10 @@ class ServiceEntity extends Equatable {
         providerName,
         providerPhotoUrl,
         whatsappNumber,
+        instagram,
+        xProfile,
+        tiktok,
+        callPhones,
         mainImage,
         images,
         tags,
@@ -92,6 +105,10 @@ class ServiceEntity extends Equatable {
     String? providerName,
     String? providerPhotoUrl,
     String? whatsappNumber,
+    String? instagram,
+    String? xProfile,
+    String? tiktok,
+    List<String>? callPhones,
     String? mainImage,
     List<String>? images,
     List<String>? tags,
@@ -118,6 +135,10 @@ class ServiceEntity extends Equatable {
       providerName: providerName ?? this.providerName,
       providerPhotoUrl: providerPhotoUrl ?? this.providerPhotoUrl,
       whatsappNumber: whatsappNumber ?? this.whatsappNumber,
+      instagram: instagram ?? this.instagram,
+      xProfile: xProfile ?? this.xProfile,
+      tiktok: tiktok ?? this.tiktok,
+      callPhones: callPhones ?? this.callPhones,
       mainImage: mainImage ?? this.mainImage,
       images: images ?? this.images,
       tags: tags ?? this.tags,

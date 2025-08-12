@@ -44,6 +44,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   final _experienceController = TextEditingController();
   final _addressController = TextEditingController();
   final _whatsappController = TextEditingController();
+  final _phone1Controller = TextEditingController();
+  final _phone2Controller = TextEditingController();
+  final _instagramController = TextEditingController();
+  final _xController = TextEditingController();
+  final _tiktokController = TextEditingController();
 
   String? _selectedCategory;
   String _priceType = 'fixed';
@@ -99,6 +104,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     _experienceController.dispose();
     _addressController.dispose();
     _whatsappController.dispose();
+    _phone1Controller.dispose();
+    _phone2Controller.dispose();
+    _instagramController.dispose();
+    _xController.dispose();
+    _tiktokController.dispose();
     super.dispose();
   }
 
@@ -143,6 +153,15 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       _availableDays = List.from(service.availableDays);
       _addressController.text = service.address ?? '';
       _whatsappController.text = service.whatsappNumber ?? '';
+      if (service.callPhones.isNotEmpty) {
+        _phone1Controller.text = service.callPhones.first;
+        if (service.callPhones.length > 1) {
+          _phone2Controller.text = service.callPhones[1];
+        }
+      }
+      _instagramController.text = service.instagram ?? '';
+      _xController.text = service.xProfile ?? '';
+      _tiktokController.text = service.tiktok ?? '';
       // Cargar experiencia si está disponible en los tags o features
       if (service.features.isNotEmpty) {
         final experienceFeature = service.features.firstWhere(
@@ -241,6 +260,13 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         whatsappNumber: _whatsappController.text.trim().isNotEmpty
             ? Validators.formatColombianPhone(_whatsappController.text.trim())
             : null,
+        callPhones: [
+          if (_phone1Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone1Controller.text.trim()),
+          if (_phone2Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone2Controller.text.trim()),
+        ],
+        instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
+        xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
+        tiktok: _tiktokController.text.trim().isNotEmpty ? _tiktokController.text.trim() : null,
         timeRange: null, // Ya no se usa horario de trabajo
         updatedAt: DateTime.now(),
       );

@@ -40,6 +40,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final _experienceController = TextEditingController();
   final _addressController = TextEditingController();
   final _whatsappController = TextEditingController();
+  final _phone1Controller = TextEditingController();
+  final _phone2Controller = TextEditingController();
+  final _instagramController = TextEditingController();
+  final _xController = TextEditingController();
+  final _tiktokController = TextEditingController();
   final _listViewController = ScrollController();
   String? _whatsappHint;
 
@@ -136,6 +141,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     _experienceController.dispose();
     _addressController.dispose();
     _whatsappController.dispose();
+    _phone1Controller.dispose();
+    _phone2Controller.dispose();
+    _instagramController.dispose();
+    _xController.dispose();
+    _tiktokController.dispose();
     super.dispose();
   }
 
@@ -557,28 +567,102 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     return _buildSectionCard(
       title: 'Contacto',
       icon: Symbols.chat,
-      child: TextFormField(
-        controller: _whatsappController,
-        decoration: InputDecoration(
-          labelText: 'WhatsApp (opcional)',
-          hintText: _whatsappHint ?? 'Ej: 3001234567',
-          prefixIcon: Icon(
-            Symbols.chat,
-            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: _whatsappController,
+            decoration: InputDecoration(
+              labelText: 'WhatsApp (opcional)',
+              hintText: _whatsappHint ?? 'Ej: 3001234567',
+              prefixIcon: Icon(
+                Symbols.chat,
+                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+              ),
+              helperText: _whatsappHint != null
+                  ? 'Déjalo vacío para usar tu número: ${_whatsappHint!}'
+                  : 'Se usará para el botón «Contactar por WhatsApp»',
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            keyboardType: TextInputType.phone,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            maxLength: 10,
           ),
-          helperText: _whatsappHint != null
-              ? 'Déjalo vacío para usar tu número: ${_whatsappHint!}'
-              : 'Se usará para el botón «Contactar por WhatsApp»',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: _phone1Controller,
+                  decoration: InputDecoration(
+                    labelText: 'Teléfono 1 (llamadas)',
+                    hintText: 'Ej: 3001234567',
+                    prefixIcon: const Icon(Symbols.call),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: _phone2Controller,
+                  decoration: InputDecoration(
+                    labelText: 'Teléfono 2 (opcional)',
+                    hintText: 'Ej: 3009876543',
+                    prefixIcon: const Icon(Symbols.call),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
+              ),
+            ],
           ),
-        ),
-        keyboardType: TextInputType.phone,
-        inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          LengthLimitingTextInputFormatter(10),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _instagramController,
+            decoration: InputDecoration(
+              labelText: 'Instagram (usuario o enlace)',
+              hintText: '@usuario o https://instagram.com/usuario',
+              prefixIcon: const Icon(Symbols.camera_alt),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _xController,
+            decoration: InputDecoration(
+              labelText: 'X/Twitter (usuario o enlace)',
+              hintText: '@usuario o https://x.com/usuario',
+              prefixIcon: const Icon(Symbols.alternate_email),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _tiktokController,
+            decoration: InputDecoration(
+              labelText: 'TikTok (usuario o enlace)',
+              hintText: '@usuario o https://www.tiktok.com/@usuario',
+              prefixIcon: const Icon(Symbols.music_note),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
         ],
-        maxLength: 10,
       ),
     );
   }
@@ -1580,6 +1664,13 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
             : (authState.user.phoneNumber != null && authState.user.phoneNumber!.isNotEmpty
                 ? Validators.formatColombianPhone(authState.user.phoneNumber!)
                 : null),
+        instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
+        xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
+        tiktok: _tiktokController.text.trim().isNotEmpty ? _tiktokController.text.trim() : null,
+        callPhones: [
+          if (_phone1Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone1Controller.text.trim()),
+          if (_phone2Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone2Controller.text.trim()),
+        ],
         mainImage: null, // Se añadirá después
         images: const [], // Se añadirán después
         tags: _selectedTags,
