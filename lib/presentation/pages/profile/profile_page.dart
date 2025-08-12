@@ -192,6 +192,19 @@ class _ProfilePageState extends State<ProfilePage>
                   color: AppTheme.getTextSecondary(context),
                 ),
               ),
+              if (authState.user.phoneNumber != null && authState.user.phoneNumber!.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  // Mostrar número sin prefijo si es Colombia
+                  authState.user.phoneNumber!.startsWith('+57') && authState.user.phoneNumber!.length >= 13
+                      ? authState.user.phoneNumber!.substring(3)
+                      : authState.user.phoneNumber!,
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    color: AppTheme.getTextSecondary(context),
+                  ),
+                ),
+              ],
             ] else ...[
               const CircleAvatar(
                 radius: 50,

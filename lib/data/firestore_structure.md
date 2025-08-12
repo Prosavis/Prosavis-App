@@ -182,6 +182,10 @@ Almacena las reseñas y calificaciones de servicios.
 4. **Escribir reseñas** → Verás datos en `/reviews`
 5. **Si hay consultas lentas** → Firestore sugerirá índices automáticamente
 
+### Índices recomendados
+
+- `favorites`: índice compuesto `userId` asc, `createdAt` desc. Mejora paginación y orden por usuario.
+
 ## 🔒 **Reglas de Seguridad (Opcional)**
 
 Cuando tengas datos reales, puedes configurar reglas:

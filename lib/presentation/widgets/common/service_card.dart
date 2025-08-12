@@ -31,6 +31,9 @@ class ServiceCard extends StatelessWidget {
   final bool showFavoriteButton;
   final bool isFavorite;
   final VoidCallback? onFavoriteToggle;
+  // Controla si la tarjeta vertical ocupa todo el ancho disponible
+  // (útil para la pantalla de Mis servicios)
+  final bool fullWidth;
 
   const ServiceCard({
     super.key,
@@ -44,6 +47,7 @@ class ServiceCard extends StatelessWidget {
     this.showFavoriteButton = false,
     this.isFavorite = false,
     this.onFavoriteToggle,
+    this.fullWidth = false,
   });
 
   @override
@@ -58,7 +62,7 @@ class ServiceCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap ?? () => context.push('/services/${service.id}'),
       child: Container(
-        width: 180,
+        width: fullWidth ? double.infinity : 180,
         decoration: BoxDecoration(
           color: AppTheme.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
@@ -129,11 +133,9 @@ class ServiceCard extends StatelessWidget {
             child: service.mainImage != null
                 ? OptimizedImage(
                     imageUrl: service.mainImage!,
-                    width: isHorizontal ? 120 : 180,
-                    height: isHorizontal ? 120 : 120,
+                    width: isHorizontal ? 120 : double.infinity,
+                    height: isHorizontal ? 120 : double.infinity,
                     fit: BoxFit.cover,
-                    cacheWidth: isHorizontal ? 120 : 180,
-                    cacheHeight: 120,
                   )
                 : Container(
                     width: double.infinity,
@@ -170,48 +172,45 @@ class ServiceCard extends StatelessWidget {
                 ),
               ),
             ),
-          // Botones de acción (editar/eliminar)
-          if (showEditButton || showDeleteButton)
+          // Botones de acción (eliminar izquierda, editar derecha)
+          if (showDeleteButton)
             Positioned(
               top: 8,
               left: 8,
-              child: Row(
-                children: [
-                  if (showEditButton)
-                    GestureDetector(
-                      onTap: onEditPressed,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Symbols.edit,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                  if (showEditButton && showDeleteButton)
-                    const SizedBox(width: 8),
-                  if (showDeleteButton)
-                    GestureDetector(
-                      onTap: onDeletePressed,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.9),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Symbols.delete,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                    ),
-                ],
+              child: GestureDetector(
+                onTap: onDeletePressed,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Symbols.delete,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
+              ),
+            ),
+          if (showEditButton)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: onEditPressed,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Symbols.edit,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                ),
               ),
             ),
         ],

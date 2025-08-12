@@ -16,13 +16,15 @@ import '../../blocs/favorites/favorites_state.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/reviews/write_review_dialog.dart';
 import '../../widgets/reviews/review_restriction_dialog.dart';
-import '../../widgets/rating_stars.dart';
+// import '../../widgets/rating_stars.dart';
 import '../../../domain/entities/review_entity.dart';
 import '../../../domain/usecases/reviews/get_service_reviews_usecase.dart';
 import '../../../domain/usecases/reviews/check_user_review_usecase.dart';
 import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
 import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../../core/injection/injection_container.dart';
+import '../../widgets/reviews/review_card.dart';
+import '../../../data/services/firestore_service.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
   final ServiceEntity? service;
@@ -66,25 +68,36 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   final GlobalKey _reviewsSectionKey = GlobalKey();
   final GlobalKey _addReviewButtonKey = GlobalKey();
 
-  void _scrollToReviews({bool focusOnAddButton = true}) {
+  Future<void> _scrollToReviews({
+    bool focusOnAddButton = true,
+    bool openWriteDialog = false,
+  }) async {
     final targetContext = (focusOnAddButton
             ? _addReviewButtonKey.currentContext
             : _reviewsSectionKey.currentContext) ??
         _reviewsSectionKey.currentContext;
 
     if (targetContext != null) {
-      Scrollable.ensureVisible(
+      await Scrollable.ensureVisible(
         targetContext,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,
         alignment: 0.1,
       );
     } else if (_scrollController.hasClients) {
-      _scrollController.animateTo(
+      await _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 450),
         curve: Curves.easeInOut,
       );
+    }
+
+    if (!mounted) return;
+    if (openWriteDialog) {
+      // Breve retraso para asegurar que el scroll ha finalizado visualmente
+      await Future.delayed(const Duration(milliseconds: 120));
+      if (!mounted) return;
+      await _showAddReviewDialog();
     }
   }
 
@@ -171,9 +184,29 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         _getServiceByIdUseCase(_currentService!.id), // Recargar servicio actualizado
       ]);
       
+      // Enriquecer reseñas que no tengan userPhotoUrl consultando el usuario
+      var fetchedReviews = results[0] as List<ReviewEntity>;
+      final reviewsNeedingPhoto = fetchedReviews
+          .where((r) => r.userPhotoUrl == null || r.userPhotoUrl!.isEmpty)
+          .toList();
+      if (reviewsNeedingPhoto.isNotEmpty) {
+        final firestoreService = FirestoreService();
+        final uniqueUserIds = reviewsNeedingPhoto.map((r) => r.userId).toSet().toList();
+        final users = await Future.wait(uniqueUserIds.map((id) => firestoreService.getUserById(id)));
+        final userIdToPhoto = <String, String?>{};
+        for (var i = 0; i < uniqueUserIds.length; i++) {
+          userIdToPhoto[uniqueUserIds[i]] = users[i]?.photoUrl;
+        }
+        fetchedReviews = fetchedReviews
+            .map((r) => (r.userPhotoUrl == null || r.userPhotoUrl!.isEmpty)
+                ? r.copyWith(userPhotoUrl: userIdToPhoto[r.userId])
+                : r)
+            .toList();
+      }
+
       if (mounted) {
         setState(() {
-          _reviews = results[0] as List<ReviewEntity>;
+          _reviews = fetchedReviews;
 
           // Servicio retornado desde base de datos (puede no reflejar aún los agregados de CF)
           final fetchedService = results[1] as ServiceEntity?;
@@ -730,7 +763,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             Row(
               children: [
                 GestureDetector(
-                  onTap: () => _scrollToReviews(),
+                  onTap: () => _scrollToReviews(openWriteDialog: true),
                   behavior: HitTestBehavior.opaque,
                   child: Row(
                     children: [
@@ -1255,7 +1288,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       ),
                       const SizedBox(height: 4),
                       GestureDetector(
-                        onTap: () => _scrollToReviews(),
+                        onTap: () => _scrollToReviews(openWriteDialog: true),
                         behavior: HitTestBehavior.opaque,
                         child: Row(
                           children: [
@@ -1277,15 +1310,6 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                         ),
                       ),
                     ],
-                  ),
-                ),
-                OutlinedButton(
-                  onPressed: _contactProvider,
-                  child: Text(
-                    'Contactar',
-                    style: GoogleFonts.inter(
-                      fontWeight: FontWeight.w600,
-                    ),
                   ),
                 ),
               ],
@@ -1402,72 +1426,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildReviewItem(ReviewEntity review) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                                  backgroundColor: AppTheme.primaryColor.withValues(alpha: 0.1),
-                child: Text(
-                  review.userName[0].toUpperCase(),
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      review.userName,
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                 color: AppTheme.getTextPrimary(context),
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        RatingStars(
-                          rating: review.rating,
-                          size: 14,
-                          color: Colors.amber.shade600,
-                          unratedColor: Colors.grey.shade300,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _formatDate(review.createdAt),
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: AppTheme.getTextTertiary(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Padding(
-            padding: const EdgeInsets.only(left: 44),
-            child: Text(
-              review.comment,
-              style: GoogleFonts.inter(
-                fontSize: 14,
-                color: AppTheme.getTextSecondary(context),
-                height: 1.4,
-              ),
-            ),
-          ),
-        ],
+      child: ReviewCard(
+        review: review,
+        isCompact: true,
       ),
     );
   }
@@ -1630,18 +1591,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays < 7) {
-      return 'Hace ${difference.inDays} días';
-    } else if (difference.inDays < 30) {
-      return 'Hace ${(difference.inDays / 7).floor()} semanas';
-    } else {
-      return '${date.day}/${date.month}/${date.year}';
-    }
-  }
+  // String _formatDate(DateTime date) {
+  //   final now = DateTime.now();
+  //   final difference = now.difference(date);
+  //   if (difference.inDays < 7) {
+  //     return 'Hace \\${difference.inDays} días';
+  //   } else if (difference.inDays < 30) {
+  //     return 'Hace \\${(difference.inDays / 7).floor()} semanas';
+  //   } else {
+  //     return '\\${date.day}/\\${date.month}/\\${date.year}';
+  //   }
+  // }
 
   void _shareService() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1650,8 +1610,27 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   void _contactProvider() async {
-    // Número de teléfono del proveedor (simulado por ahora)
-    const phoneNumber = '+573001234567'; // Número colombiano simulado
+    // Tomar número desde el servicio; si no hay, intentar con el teléfono del proveedor si el usuario actual lo está viendo
+    // Normalizar el número a formato internacional si viene con 10 dígitos
+    String phoneNumber = _currentService!.whatsappNumber ?? '';
+    if (phoneNumber.isNotEmpty) {
+      final digits = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
+      if (digits.length == 10) {
+        phoneNumber = '+57$digits';
+      } else if (phoneNumber.startsWith('57') && digits.length == 12) {
+        phoneNumber = '+$digits';
+      }
+    }
+    if (phoneNumber.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Este servicio no tiene número de WhatsApp configurado.'),
+          ),
+        );
+      }
+      return;
+    }
     final message = Uri.encodeComponent(
       'Hola! Estoy interesado en tu servicio: ${_currentService!.title}. ¿Podrías darme más información?'
     );

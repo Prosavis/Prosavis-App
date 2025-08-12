@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
@@ -16,6 +17,7 @@ import '../../../data/services/image_storage_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/image_picker_bottom_sheet.dart';
+import '../../../core/utils/validators.dart';
 
 class ServiceEditPage extends StatefulWidget {
   final String serviceId;
@@ -41,6 +43,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   final _priceController = TextEditingController();
   final _experienceController = TextEditingController();
   final _addressController = TextEditingController();
+  final _whatsappController = TextEditingController();
 
   String? _selectedCategory;
   String _priceType = 'fixed';
@@ -95,6 +98,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     _priceController.dispose();
     _experienceController.dispose();
     _addressController.dispose();
+    _whatsappController.dispose();
     super.dispose();
   }
 
@@ -138,6 +142,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       _selectedSkills = List.from(service.features);
       _availableDays = List.from(service.availableDays);
       _addressController.text = service.address ?? '';
+      _whatsappController.text = service.whatsappNumber ?? '';
       // Cargar experiencia si está disponible en los tags o features
       if (service.features.isNotEmpty) {
         final experienceFeature = service.features.firstWhere(
@@ -233,6 +238,9 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         features: finalFeatures,
         availableDays: _availableDays,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        whatsappNumber: _whatsappController.text.trim().isNotEmpty
+            ? Validators.formatColombianPhone(_whatsappController.text.trim())
+            : null,
         timeRange: null, // Ya no se usa horario de trabajo
         updatedAt: DateTime.now(),
       );
@@ -293,27 +301,48 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             color: AppTheme.getTextPrimary(context),
           ),
         ),
-        actions: [
-          if (!_isLoading && _service != null)
-            TextButton(
+        actions: const [],
+      ),
+      body: _buildBody(),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
               onPressed: _isUpdating ? null : _updateService,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
               child: _isUpdating
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Actualizando...'),
+                      ],
                     )
                   : Text(
-                      'Guardar',
+                      'Guardar cambios',
                       style: GoogleFonts.inter(
+                        fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.primaryColor,
                       ),
                     ),
             ),
-        ],
+          ),
+        ),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -378,6 +407,8 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
           const SizedBox(height: 16),
           _buildExperienceSection(),
           const SizedBox(height: 16),
+          _buildContactSection(),
+          const SizedBox(height: 16),
           _buildAvailabilitySection(),
           const SizedBox(height: 16),
           _buildSkillsSection(),
@@ -387,8 +418,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
           _buildImagesSection(),
           const SizedBox(height: 16),
           _buildLocationSection(),
-          const SizedBox(height: 24),
-          _buildActionButtons(),
+          const SizedBox(height: 120),
         ],
       ),
     );
@@ -461,6 +491,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
               labelText: 'Título del servicio',
               hintText: 'Ej: Plomería residencial',
               prefixIcon: const Icon(Symbols.title),
+              helperText: 'Obligatorio · mínimo 5 caracteres · máximo 60',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -483,6 +514,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
               labelText: 'Descripción',
               hintText: 'Describe tu servicio en detalle...',
               prefixIcon: const Icon(Symbols.description),
+              helperText: 'Obligatorio · mínimo 20 · máximo 500',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -620,6 +652,31 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         ),
         maxLines: 2,
         maxLength: 200,
+      ),
+    );
+  }
+
+  Widget _buildContactSection() {
+    return _buildSectionCard(
+      title: 'Contacto',
+      icon: Symbols.chat,
+      child: TextFormField(
+        controller: _whatsappController,
+        decoration: InputDecoration(
+          labelText: 'WhatsApp (opcional)',
+          hintText: 'Ej: 3001234567',
+          prefixIcon: const Icon(Symbols.chat),
+          helperText: 'Se usará para el botón «Contactar por WhatsApp»',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        keyboardType: TextInputType.phone,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(10),
+        ],
+        maxLength: 10,
       ),
     );
   }
@@ -1429,73 +1486,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: _isUpdating ? null : _updateService,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isUpdating
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text('Actualizando...'),
-                    ],
-                  )
-                : Text(
-                    'Guardar cambios',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: OutlinedButton(
-            onPressed: _isUpdating ? null : () => context.pop(),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.grey[300]!),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
+  
 
   void _showAddSkillDialog() {
     final controller = TextEditingController();

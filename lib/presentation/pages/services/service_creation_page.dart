@@ -4,11 +4,13 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
+import 'package:flutter/services.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
 import '../../../core/utils/service_refresh_notifier.dart';
+import '../../../core/utils/validators.dart';
 import '../../../domain/usecases/services/create_service_usecase.dart';
 import '../../../domain/usecases/services/update_service_usecase.dart';
 import '../../../data/models/service_model.dart';
@@ -37,6 +39,9 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final _priceController = TextEditingController();
   final _experienceController = TextEditingController();
   final _addressController = TextEditingController();
+  final _whatsappController = TextEditingController();
+  final _listViewController = ScrollController();
+  String? _whatsappHint;
 
   String? _selectedCategory;
   String _priceType = 'fixed';
@@ -90,6 +95,19 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     );
 
     _fadeController.forward();
+
+    // Definir placeholder con el número del usuario, si existe
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authState = context.read<AuthBloc>().state;
+      if (authState is AuthAuthenticated) {
+        final phone = authState.user.phoneNumber;
+        if (phone != null && phone.isNotEmpty) {
+          final clean = phone.replaceAll(RegExp(r'[^0-9]'), '');
+          _whatsappHint = clean.length >= 10 ? clean.substring(clean.length - 10) : clean;
+          setState(() {});
+        }
+      }
+    });
   }
 
   /// Convierte días en español a inglés para guardar en la base de datos
@@ -117,6 +135,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     _priceController.dispose();
     _experienceController.dispose();
     _addressController.dispose();
+    _whatsappController.dispose();
     super.dispose();
   }
 
@@ -149,6 +168,48 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         opacity: _fadeAnimation,
         child: _buildCreationForm(),
       ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: _isCreatingService ? null : _submitService,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: _isCreatingService
+                  ? const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Creando servicio...'),
+                      ],
+                    )
+                  : Text(
+                      'Crear servicio',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -156,6 +217,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     return Form(
       key: _formKey,
       child: ListView(
+        controller: _listViewController,
         padding: const EdgeInsets.all(16),
         children: [
           _buildInfoCard(),
@@ -168,6 +230,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           const SizedBox(height: 16),
           _buildExperienceSection(),
           const SizedBox(height: 16),
+          _buildContactSection(),
+          const SizedBox(height: 16),
           _buildAvailabilitySection(),
           const SizedBox(height: 16),
           _buildSkillsSection(),
@@ -177,10 +241,65 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
           _buildImagesSection(),
           const SizedBox(height: 16),
           _buildLocationSection(),
-          const SizedBox(height: 24),
-          _buildActionButtons(),
+          const SizedBox(height: 120),
         ],
       ),
+    );
+  }
+
+  /// Construye un listado de errores de validación basado en las mismas
+  /// reglas visibles en la UI y usadas por las reglas de seguridad.
+  List<String> _collectValidationErrors() {
+    final List<String> errors = [];
+
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      errors.add('Categoría');
+    }
+
+    final String title = _titleController.text.trim();
+    if (title.isEmpty || title.length < 5) {
+      errors.add('Título (mín. 5)');
+    }
+
+    final String description = _descriptionController.text.trim();
+    if (description.isEmpty || description.length < 20) {
+      errors.add('Descripción (mín. 20)');
+    }
+
+    if (_priceType != 'negotiable') {
+      final String priceText = _priceController.text.trim();
+      final double? price = double.tryParse(priceText);
+      if (priceText.isEmpty || price == null || price <= 0) {
+        errors.add('Precio válido (> 0)');
+      }
+    }
+
+    return errors;
+  }
+
+  void _showMissingFieldsSnackBar(List<String> missing) {
+    if (!mounted || missing.isEmpty) return;
+
+    final String message =
+        'Te falta completar: ${missing.join(', ')}.';
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          '⚠️ $message',
+          style: GoogleFonts.inter(),
+        ),
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 5),
+      ),
+    );
+
+    // Desplazar hacia el inicio del formulario para que el usuario vea
+    // los primeros campos con error.
+    _listViewController.animateTo(
+      0,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOut,
     );
   }
 
@@ -254,6 +373,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 Symbols.title,
                 color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
               ),
+              helperText: 'Obligatorio · mínimo 5 caracteres · máximo 60',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -279,6 +399,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 Symbols.description,
                 color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
               ),
+              helperText: 'Obligatorio · mínimo 20 · máximo 500',
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
@@ -428,6 +549,36 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         ),
         maxLines: 2,
         maxLength: 200,
+      ),
+    );
+  }
+
+  Widget _buildContactSection() {
+    return _buildSectionCard(
+      title: 'Contacto',
+      icon: Symbols.chat,
+      child: TextFormField(
+        controller: _whatsappController,
+        decoration: InputDecoration(
+          labelText: 'WhatsApp (opcional)',
+          hintText: _whatsappHint ?? 'Ej: 3001234567',
+          prefixIcon: Icon(
+            Symbols.chat,
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+          ),
+          helperText: _whatsappHint != null
+              ? 'Déjalo vacío para usar tu número: ${_whatsappHint!}'
+              : 'Se usará para el botón «Contactar por WhatsApp»',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        keyboardType: TextInputType.phone,
+        inputFormatters: [
+          FilteringTextInputFormatter.digitsOnly,
+          LengthLimitingTextInputFormatter(10),
+        ],
+        maxLength: 10,
       ),
     );
   }
@@ -1148,73 +1299,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     );
   }
 
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: _isCreatingService ? null : _submitService,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryColor,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: _isCreatingService
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text('Creando servicio...'),
-                    ],
-                  )
-                : Text(
-                    'Crear servicio',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-          ),
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: OutlinedButton(
-            onPressed: _isCreatingService ? null : () => context.go('/home'),
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(color: Colors.grey[300]!),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-
+  
 
   void _showAddSkillDialog() {
     final controller = TextEditingController();
@@ -1446,7 +1531,18 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
 
 
   Future<void> _submitService() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Validación visual por campo
+    if (!_formKey.currentState!.validate()) {
+      _showMissingFieldsSnackBar(_collectValidationErrors());
+      return;
+    }
+
+    // Validación adicional de negocio antes de llamar a Firestore
+    final missing = _collectValidationErrors();
+    if (missing.isNotEmpty) {
+      _showMissingFieldsSnackBar(missing);
+      return;
+    }
 
     setState(() => _isCreatingService = true);
 
@@ -1479,6 +1575,11 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         providerId: authState.user.id,
         providerName: authState.user.name,
         providerPhotoUrl: authState.user.photoUrl,
+        whatsappNumber: _whatsappController.text.trim().isNotEmpty
+            ? Validators.formatColombianPhone(_whatsappController.text.trim())
+            : (authState.user.phoneNumber != null && authState.user.phoneNumber!.isNotEmpty
+                ? Validators.formatColombianPhone(authState.user.phoneNumber!)
+                : null),
         mainImage: null, // Se añadirá después
         images: const [], // Se añadirán después
         tags: _selectedTags,
@@ -1558,13 +1659,29 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       }
     } catch (e) {
       if (mounted) {
+        String message = '❌ Error al crear: $e';
+        final errorText = e.toString();
+        if (errorText.contains('permission-denied') ||
+            errorText.contains('PERMISSION_DENIED')) {
+          final missingFields = _collectValidationErrors();
+          if (missingFields.isNotEmpty) {
+            message =
+                'Completa los siguientes campos: ${missingFields.join(', ')}';
+          } else {
+            message =
+                'No tienes permisos para crear este servicio. Verifica tu sesión e inténtalo de nuevo.';
+          }
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              '❌ Error al crear: $e',
+              message,
               style: GoogleFonts.inter(),
             ),
-            backgroundColor: Colors.red,
+            backgroundColor:
+                message.startsWith('Completa') ? Colors.orange : Colors.red,
+            duration: const Duration(seconds: 6),
           ),
         );
       }

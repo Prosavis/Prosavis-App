@@ -50,24 +50,39 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final keyboardInset = mediaQuery.viewInsets.bottom;
+
     return Dialog(
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildHeader(),
-            const SizedBox(height: 20),
-            _buildRatingSelector(),
-            const SizedBox(height: 20),
-            _buildCommentField(),
-            const SizedBox(height: 24),
-            _buildActions(),
-          ],
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          // Evita overflow limitando la altura del diálogo; cuando el
+          // teclado aparece, el padding de abajo permite el scroll.
+          maxHeight: mediaQuery.size.height * 0.9,
+        ),
+        child: SingleChildScrollView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: EdgeInsets.only(bottom: keyboardInset),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: 20),
+                _buildRatingSelector(),
+                const SizedBox(height: 20),
+                _buildCommentField(),
+                const SizedBox(height: 24),
+                _buildActions(),
+              ],
+            ),
+          ),
         ),
       ),
     );

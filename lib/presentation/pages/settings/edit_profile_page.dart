@@ -117,7 +117,11 @@ class _EditProfilePageState extends State<EditProfilePage>
             setState(() {
               _nameController.text = state.user.name;
               _emailController.text = state.user.email;
-              _phoneController.text = state.user.phoneNumber ?? '';
+              // Normalizar teléfono guardado en Firestore (+57XXXXXXXXXX -> mostrar solo 10 dígitos)
+              final storedPhone = state.user.phoneNumber ?? '';
+              _phoneController.text = storedPhone.startsWith('+57') && storedPhone.length >= 13
+                  ? storedPhone.substring(3)
+                  : storedPhone;
 
               _locationController.text = state.user.location ?? '';
               _profileImageUrl = state.user.photoUrl;
@@ -293,7 +297,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                 label: 'Correo Electrónico',
                 icon: Symbols.email,
                 keyboardType: TextInputType.emailAddress,
-                enabled: false, // Email no editable
+                enabled: true, // Email editable bajo responsabilidad del usuario
                 validator: (value) {
                   if (value == null || value.isEmpty) {
                     return 'El correo es requerido';
@@ -316,6 +320,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
                 ],
+                prefixText: '+57',
                 validator: (value) {
                   if (value != null && value.isNotEmpty) {
                     if (value.length != 10) {
@@ -450,6 +455,7 @@ class _EditProfilePageState extends State<EditProfilePage>
     int maxLines = 1,
     int? maxLength,
     List<TextInputFormatter>? inputFormatters,
+    String? prefixText,
   }) {
     return TextFormField(
       controller: controller,
@@ -464,6 +470,7 @@ class _EditProfilePageState extends State<EditProfilePage>
       ),
       decoration: InputDecoration(
         labelText: label,
+        prefixText: prefixText,
         prefixIcon: Icon(
           icon,
           color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
@@ -1058,9 +1065,12 @@ class _EditProfilePageState extends State<EditProfilePage>
       final updatedUser = UserEntity(
         id: currentUser.id,
         name: _nameController.text.trim(),
-        email: _emailController.text.trim(), // Email no se puede cambiar por seguridad
+        email: _emailController.text.trim(),
+        // Guardar número con prefijo +57 si tiene 10 dígitos
         phoneNumber: _phoneController.text.trim().isNotEmpty 
-            ? _phoneController.text.trim() 
+            ? (_phoneController.text.trim().length == 10
+                ? '+57${_phoneController.text.trim()}'
+                : _phoneController.text.trim()) 
             : null,
         bio: null, // Campo eliminado
         location: _locationController.text.trim().isNotEmpty 

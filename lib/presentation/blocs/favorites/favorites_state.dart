@@ -80,3 +80,12 @@ class FavoriteToggled extends FavoritesState {
   @override
   List<Object?> get props => [serviceId, isFavorite, favorites, favoriteStatus];
 }
+
+/// Error no bloqueante para acciones (agregar/quitar)
+class FavoritesActionError extends FavoritesState {
+  final String message;
+  const FavoritesActionError(this.message);
+
+  @override
+  List<Object?> get props => [message];
+}

@@ -368,6 +368,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
         padding: const EdgeInsets.only(bottom: 12),
         child: ServiceCard(
           service: service,
+          fullWidth: true,
           onTap: () => _viewServiceDetails(service),
           showEditButton: true,
           onEditPressed: () => _editService(service),

@@ -10,6 +10,7 @@ class ServiceEntity extends Equatable {
   final String providerId;
   final String providerName;
   final String? providerPhotoUrl;
+  final String? whatsappNumber; // Número de contacto para WhatsApp
   final String? mainImage; // Imagen principal del servicio
   final List<String> images; // Galería de trabajos
   final List<String> tags;
@@ -35,6 +36,7 @@ class ServiceEntity extends Equatable {
     required this.providerId,
     required this.providerName,
     this.providerPhotoUrl,
+    this.whatsappNumber,
     this.mainImage,
     required this.images,
     required this.tags,
@@ -62,6 +64,7 @@ class ServiceEntity extends Equatable {
         providerId,
         providerName,
         providerPhotoUrl,
+        whatsappNumber,
         mainImage,
         images,
         tags,
@@ -88,6 +91,7 @@ class ServiceEntity extends Equatable {
     String? providerId,
     String? providerName,
     String? providerPhotoUrl,
+    String? whatsappNumber,
     String? mainImage,
     List<String>? images,
     List<String>? tags,
@@ -113,6 +117,7 @@ class ServiceEntity extends Equatable {
       providerId: providerId ?? this.providerId,
       providerName: providerName ?? this.providerName,
       providerPhotoUrl: providerPhotoUrl ?? this.providerPhotoUrl,
+      whatsappNumber: whatsappNumber ?? this.whatsappNumber,
       mainImage: mainImage ?? this.mainImage,
       images: images ?? this.images,
       tags: tags ?? this.tags,

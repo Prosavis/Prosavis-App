@@ -215,6 +215,12 @@ Future<void> init() async {
     );
     developer.log('✅ CheckFavoriteStatusUseCase registrado');
 
+    // Stream de favoritos en tiempo real
+    sl.registerLazySingleton<WatchUserFavoritesUseCase>(
+      () => WatchUserFavoritesUseCase(sl<FavoriteRepository>()),
+    );
+    developer.log('✅ WatchUserFavoritesUseCase registrado');
+
     // BLoCs
     sl.registerFactory(
       () => AuthBloc(
@@ -246,6 +252,7 @@ Future<void> init() async {
     sl.registerFactory(
       () => FavoritesBloc(
         getUserFavoritesUseCase: sl<GetUserFavoritesUseCase>(),
+        watchUserFavoritesUseCase: sl<WatchUserFavoritesUseCase>(),
         addToFavoritesUseCase: sl<AddToFavoritesUseCase>(),
         removeFromFavoritesUseCase: sl<RemoveFromFavoritesUseCase>(),
         checkFavoriteStatusUseCase: sl<CheckFavoriteStatusUseCase>(),

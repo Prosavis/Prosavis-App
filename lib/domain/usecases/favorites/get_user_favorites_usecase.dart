@@ -16,3 +16,14 @@ class GetUserFavoritesUseCase implements UseCase<List<ServiceEntity>, String> {
     return await repository.getUserFavoriteServices(userId);
   }
 }
+
+/// Versión reactiva: emite actualizaciones en tiempo real
+class WatchUserFavoritesUseCase {
+  final FavoriteRepository repository;
+
+  WatchUserFavoritesUseCase(this.repository);
+
+  Stream<List<ServiceEntity>> call(String userId) {
+    return repository.watchUserFavoriteServices(userId);
+  }
+}

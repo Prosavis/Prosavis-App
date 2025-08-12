@@ -32,4 +32,11 @@ abstract class FavoriteRepository {
 
   /// Obtener cantidad de favoritos de un usuario
   Future<int> getFavoritesCount(String userId);
+
+  /// Suscripción en tiempo real a los favoritos del usuario (documentos)
+  Stream<List<FavoriteEntity>> watchUserFavorites(String userId);
+
+  /// Suscripción en tiempo real a los servicios favoritos del usuario
+  /// Devuelve únicamente servicios existentes y activos, ordenados por `createdAt` desc
+  Stream<List<ServiceEntity>> watchUserFavoriteServices(String userId);
 }

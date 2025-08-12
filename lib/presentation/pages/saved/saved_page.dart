@@ -119,7 +119,7 @@ class _SavedPageState extends State<SavedPage>
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          _buildFavoritesHeader(state),
+           _buildFavoritesHeader(state),
           const SizedBox(height: 16),
           _buildServicesColumn(state, userId),
         ],
@@ -193,15 +193,11 @@ class _SavedPageState extends State<SavedPage>
         padding: const EdgeInsets.only(bottom: 12),
         child: ServiceCard(
           service: service,
+          fullWidth: true,
           showFavoriteButton: true,
           isFavorite: true,
           onFavoriteToggle: () {
-            context.read<FavoritesBloc>().add(
-              RemoveFromFavorites(
-                userId: userId,
-                serviceId: service.id,
-              ),
-            );
+            context.read<FavoritesBloc>().add(ToggleFavorite(userId: userId, serviceId: service.id));
           },
         ),
       )).toList(),

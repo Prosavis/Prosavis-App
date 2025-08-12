@@ -214,6 +214,25 @@ class ImagePickerBottomSheet extends StatelessWidget {
       );
 
       if (pickedFile != null && context.mounted) {
+        final String lowerPath = pickedFile.path.toLowerCase();
+        const List<String> allowedExtensions = ['.jpg', '.jpeg', '.png', '.webp'];
+
+        final bool isAllowed = allowedExtensions.any((ext) => lowerPath.endsWith(ext));
+
+        if (!isAllowed) {
+          // Rechazar formatos no soportados (p. ej., .svg)
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Formato no soportado. Usa JPG, JPEG, PNG o WEBP.',
+                style: GoogleFonts.inter(),
+              ),
+              backgroundColor: AppTheme.errorColor,
+            ),
+          );
+          return;
+        }
+
         Navigator.pop(context);
         onImageSelected(File(pickedFile.path));
       }

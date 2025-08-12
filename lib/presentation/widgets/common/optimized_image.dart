@@ -101,6 +101,11 @@ class _OptimizedImageState extends State<OptimizedImage>
   }
 
   Widget _buildFileImage(String path) {
+    final String lowerPath = path.toLowerCase();
+    // Evitar intentar decodificar formatos vectoriales como SVG con Image.file
+    if (lowerPath.endsWith('.svg')) {
+      return _buildErrorWidget();
+    }
     return Image.file(
       File(path),
       width: widget.width,

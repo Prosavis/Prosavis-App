@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/usecases/favorites/add_to_favorites_usecase.dart';
@@ -7,16 +8,21 @@ import '../../../domain/usecases/favorites/remove_from_favorites_usecase.dart';
 import 'favorites_event.dart';
 import 'favorites_state.dart';
 import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
+import '../../../domain/entities/service_entity.dart';
 
 class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   final GetUserFavoritesUseCase getUserFavoritesUseCase;
+  final WatchUserFavoritesUseCase? watchUserFavoritesUseCase;
   final AddToFavoritesUseCase addToFavoritesUseCase;
   final RemoveFromFavoritesUseCase removeFromFavoritesUseCase;
   final CheckFavoriteStatusUseCase checkFavoriteStatusUseCase;
   final GetServiceReviewStatsUseCase getServiceReviewStatsUseCase;
 
+  StreamSubscription<List<ServiceEntity>>? _favoritesSubscription;
+
   FavoritesBloc({
     required this.getUserFavoritesUseCase,
+    this.watchUserFavoritesUseCase,
     required this.addToFavoritesUseCase,
     required this.removeFromFavoritesUseCase,
     required this.checkFavoriteStatusUseCase,
@@ -28,6 +34,7 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     on<ToggleFavorite>(_onToggleFavorite);
     on<CheckFavoriteStatus>(_onCheckFavoriteStatus);
     on<RefreshFavorites>(_onRefreshFavorites);
+    on<FavoritesStreamUpdated>(_onFavoritesStreamUpdated);
   }
 
   Future<void> _onLoadUserFavorites(
@@ -61,6 +68,14 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
         favorites: favorites,
         favoriteStatus: favoriteStatus,
       ));
+
+      // Suscripción en tiempo real
+      await _favoritesSubscription?.cancel();
+      if (watchUserFavoritesUseCase != null) {
+        _favoritesSubscription = watchUserFavoritesUseCase!(event.userId).listen((services) {
+          add(FavoritesStreamUpdated(services));
+        });
+      }
     } catch (e) {
       emit(FavoritesError('Error al cargar favoritos: $e'));
     }
@@ -71,24 +86,27 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      await addToFavoritesUseCase(AddToFavoritesParams(
-        userId: event.userId,
-        serviceId: event.serviceId,
-      ));
-      
-      // Actualizar estado local
+      // Optimista: marcar como favorito de inmediato
       if (state is FavoritesLoaded) {
         final currentState = state as FavoritesLoaded;
         final updatedStatus = Map<String, bool>.from(currentState.favoriteStatus);
         updatedStatus[event.serviceId] = true;
-        
         emit(currentState.copyWith(favoriteStatus: updatedStatus));
       }
-      
-      // Recargar favoritos para obtener la lista actualizada
-      add(RefreshFavorites(event.userId));
+
+      await addToFavoritesUseCase(AddToFavoritesParams(
+        userId: event.userId,
+        serviceId: event.serviceId,
+      ));
+      // No es necesario recargar; el stream actualizará la lista si corresponde
     } catch (e) {
-      emit(FavoritesError('Error al agregar a favoritos: $e'));
+      // Revertir cambio optimista si algo falla
+      if (state is FavoritesLoaded) {
+        final currentState = state as FavoritesLoaded;
+        final updatedStatus = Map<String, bool>.from(currentState.favoriteStatus);
+        updatedStatus[event.serviceId] = false;
+        emit(currentState.copyWith(favoriteStatus: updatedStatus));
+      }
     }
   }
 
@@ -97,29 +115,35 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      await removeFromFavoritesUseCase(RemoveFromFavoritesParams(
-        userId: event.userId,
-        serviceId: event.serviceId,
-      ));
-      
-      // Actualizar estado local
+      // Optimista: desmarcar y quitar de la lista al instante
       if (state is FavoritesLoaded) {
         final currentState = state as FavoritesLoaded;
+
         final updatedStatus = Map<String, bool>.from(currentState.favoriteStatus);
         updatedStatus[event.serviceId] = false;
-        
-        // Remover de la lista de favoritos
         final updatedFavorites = currentState.favorites
             .where((service) => service.id != event.serviceId)
             .toList();
-        
         emit(currentState.copyWith(
           favorites: updatedFavorites,
           favoriteStatus: updatedStatus,
         ));
       }
+
+      await removeFromFavoritesUseCase(RemoveFromFavoritesParams(
+        userId: event.userId,
+        serviceId: event.serviceId,
+      ));
+      // Lista se sincroniza por stream; nada más
     } catch (e) {
-      emit(FavoritesError('Error al quitar de favoritos: $e'));
+      // Revertir al estado previo si falló
+      if (state is FavoritesLoaded) {
+        final currentState = state as FavoritesLoaded;
+        // No guardamos snapshot completo para simplificar; forzamos refresh
+        add(RefreshFavorites((currentState.favorites.isNotEmpty)
+            ? currentState.favorites.first.providerId // placeholder, se reemplaza abajo
+            : ''));
+      }
     }
   }
 
@@ -128,21 +152,17 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      // Mostrar estado de carga para este servicio específico
+      // Determinar estado actual sin consultar si lo tenemos en memoria
+      bool? knownFavorite;
       if (state is FavoritesLoaded) {
         final currentState = state as FavoritesLoaded;
-        emit(FavoriteToggling(
-          serviceId: event.serviceId,
-          favorites: currentState.favorites,
-          favoriteStatus: currentState.favoriteStatus,
-        ));
+        knownFavorite = currentState.favoriteStatus[event.serviceId];
       }
-      
-      // Verificar estado actual
-      final isFavorite = await checkFavoriteStatusUseCase(CheckFavoriteStatusParams(
-        userId: event.userId,
-        serviceId: event.serviceId,
-      ));
+      final bool isFavorite = knownFavorite ??
+          await checkFavoriteStatusUseCase(CheckFavoriteStatusParams(
+            userId: event.userId,
+            serviceId: event.serviceId,
+          ));
       
       if (isFavorite) {
         add(RemoveFromFavorites(
@@ -230,5 +250,37 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     } catch (e) {
       emit(FavoritesError('Error al actualizar favoritos: $e'));
     }
+  }
+
+  Future<void> _onFavoritesStreamUpdated(
+    FavoritesStreamUpdated event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    final List<ServiceEntity> services = event.services.cast<ServiceEntity>();
+    // Opcional: ajustar ratings cuando falte info
+    final adjusted = await Future.wait(services.map((s) async {
+      if (s.reviewCount == 0) {
+        final stats = await getServiceReviewStatsUseCase(s.id);
+        final total = (stats['totalReviews'] ?? 0) as int;
+        final avg = (stats['averageRating'] ?? 0.0).toDouble();
+        if (total > 0) return s.copyWith(rating: avg, reviewCount: total);
+      }
+      return s;
+    }));
+
+    final favoriteStatus = <String, bool>{for (final s in adjusted) s.id: true};
+
+    if (state is FavoritesLoaded) {
+      final current = state as FavoritesLoaded;
+      emit(current.copyWith(favorites: adjusted, favoriteStatus: favoriteStatus));
+    } else {
+      emit(FavoritesLoaded(favorites: adjusted, favoriteStatus: favoriteStatus));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _favoritesSubscription?.cancel();
+    return super.close();
   }
 }

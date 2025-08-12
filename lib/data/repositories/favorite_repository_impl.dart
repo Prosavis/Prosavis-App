@@ -6,6 +6,9 @@ import '../../domain/repositories/favorite_repository.dart';
 import '../models/favorite_model.dart';
 import '../models/service_model.dart';
 
+/// Cache simple en memoria por instancia para minimizar lecturas repetidas
+final Map<String, ServiceEntity> _favoriteServicesCache = {};
+
 class FavoriteRepositoryImpl implements FavoriteRepository {
   final FirebaseFirestore _firestore;
 
@@ -117,31 +120,36 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
       final serviceIds = favorites.map((f) => f.serviceId).toList();
 
       // Obtener servicios en lotes (Firestore tiene límite de 10 en whereIn)
-      final List<ServiceEntity> services = [];
-      
+      // Realizamos las lecturas en paralelo para reducir la latencia total.
+      final List<Future<QuerySnapshot<Map<String, dynamic>>>> queryFutures = [];
       for (int i = 0; i < serviceIds.length; i += 10) {
         final batch = serviceIds.skip(i).take(10).toList();
-        
-        final query = await _firestore
-            .collection('services')
-            .where(FieldPath.documentId, whereIn: batch)
-            .where('isActive', isEqualTo: true)
-            .get();
-
-        final batchServices = query.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return ServiceModel.fromJson(data);
-        }).toList();
-
-        services.addAll(batchServices);
+        queryFutures.add(
+          _firestore
+              .collection('services')
+              .where(FieldPath.documentId, whereIn: batch)
+              .where('isActive', isEqualTo: true)
+              .get(),
+        );
       }
 
-      // Ordenar por fecha de favorito (más reciente primero)
+      final queryResults = await Future.wait(queryFutures);
+      final List<ServiceEntity> services = queryResults
+          .expand((query) => query.docs.map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return ServiceModel.fromJson(data);
+              }))
+          .toList();
+
+      // Ordenar por fecha de favorito (más reciente primero) usando un mapa O(1)
+      final Map<String, DateTime> serviceIdToCreatedAt = {
+        for (final f in favorites) f.serviceId: f.createdAt,
+      };
       services.sort((a, b) {
-        final favoriteA = favorites.firstWhere((f) => f.serviceId == a.id);
-        final favoriteB = favorites.firstWhere((f) => f.serviceId == b.id);
-        return favoriteB.createdAt.compareTo(favoriteA.createdAt);
+        final aDate = serviceIdToCreatedAt[a.id] ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = serviceIdToCreatedAt[b.id] ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
       });
 
       return services;
@@ -203,6 +211,75 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
       return query.docs.length;
     } catch (e) {
       return 0;
+    }
+  }
+
+  @override
+  Stream<List<FavoriteEntity>> watchUserFavorites(String userId) {
+    return _firestore
+        .collection('favorites')
+        .where('userId', isEqualTo: userId)
+        .orderBy('createdAt', descending: true)
+        .snapshots()
+        .map((snapshot) => snapshot.docs.map((doc) {
+              final data = doc.data();
+              data['id'] = doc.id;
+              return FavoriteModel.fromJson(data);
+            }).toList());
+  }
+
+  @override
+  Stream<List<ServiceEntity>> watchUserFavoriteServices(String userId) async* {
+    await for (final favorites in watchUserFavorites(userId)) {
+      if (favorites.isEmpty) {
+        yield [];
+        continue;
+      }
+
+      // IDs y fechas (para ordenar)
+      final Map<String, DateTime> serviceIdToCreatedAt = {
+        for (final f in favorites) f.serviceId: f.createdAt,
+      };
+
+      // Determinar qué servicios faltan en cache
+      final List<String> needed = favorites
+          .map((f) => f.serviceId)
+          .where((id) => !_favoriteServicesCache.containsKey(id))
+          .toList();
+
+      if (needed.isNotEmpty) {
+        final List<Future<QuerySnapshot<Map<String, dynamic>>>> queryFutures = [];
+        for (int i = 0; i < needed.length; i += 10) {
+          final batch = needed.skip(i).take(10).toList();
+          queryFutures.add(_firestore
+              .collection('services')
+              .where(FieldPath.documentId, whereIn: batch)
+              .where('isActive', isEqualTo: true)
+              .get());
+        }
+        final results = await Future.wait(queryFutures);
+        for (final query in results) {
+          for (final doc in query.docs) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            _favoriteServicesCache[doc.id] = ServiceModel.fromJson(data);
+          }
+        }
+      }
+
+      // Construir lista ordenada por createdAt desc y filtrar solo activos presentes
+      final services = favorites
+          .map((f) => _favoriteServicesCache[f.serviceId])
+          .whereType<ServiceEntity>()
+          .toList();
+
+      services.sort((a, b) {
+        final aDate = serviceIdToCreatedAt[a.id] ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDate = serviceIdToCreatedAt[b.id] ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDate.compareTo(aDate);
+      });
+
+      yield services;
     }
   }
 }

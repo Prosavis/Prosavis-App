@@ -76,3 +76,13 @@ class RefreshFavorites extends FavoritesEvent {
   @override
   List<Object?> get props => [userId];
 }
+
+/// Evento interno para propagar actualizaciones del stream
+class FavoritesStreamUpdated extends FavoritesEvent {
+  final List<Object> _marker = const [];
+  final List<dynamic> services;
+  const FavoritesStreamUpdated(this.services);
+
+  @override
+  List<Object?> get props => [_marker, services];
+}
