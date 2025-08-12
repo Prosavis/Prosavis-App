@@ -273,20 +273,25 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            Symbols.arrow_back,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppTheme.textPrimary,
+          ),
+          onPressed: () => context.pop(),
+        ),
         title: Text(
           'Editar servicio',
           style: GoogleFonts.inter(
             fontWeight: FontWeight.w600,
-            color: Colors.black87,
+            color: AppTheme.getTextPrimary(context),
           ),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Symbols.arrow_back, color: Colors.black87),
-          onPressed: () => context.pop(),
         ),
         actions: [
           if (!_isLoading && _service != null)
@@ -334,14 +339,14 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             Icon(
               Symbols.error_outline,
               size: 64,
-              color: Colors.grey[400],
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 16),
             Text(
               _errorMessage!,
               style: GoogleFonts.inter(
                 fontSize: 16,
-                color: Colors.grey[600],
+                color: AppTheme.getTextSecondary(context),
               ),
               textAlign: TextAlign.center,
             ),
@@ -393,15 +398,23 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor.withValues(alpha: 0.1),
+        color: Theme.of(context).brightness == Brightness.dark
+            ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.6)
+            : AppTheme.primaryColor.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.2)),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? AppTheme.darkBorder
+              : AppTheme.primaryColor.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
-          const Icon(
+          Icon(
             Symbols.edit_note,
-            color: AppTheme.primaryColor,
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : AppTheme.primaryColor,
             size: 24,
           ),
           const SizedBox(width: 12),
@@ -414,14 +427,18 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.primaryColor,
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : AppTheme.primaryColor,
                   ),
                 ),
                 Text(
                   'Actualiza la información de tu servicio',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.primaryColor.withValues(alpha: 0.8),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkTextSecondary
+                        : AppTheme.primaryColor.withValues(alpha: 0.8),
                   ),
                 ),
               ],
@@ -619,7 +636,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textSecondary,
+              color: AppTheme.getTextSecondary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -651,7 +668,9 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                     day,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: isSelected ? Colors.white : AppTheme.textSecondary,
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.getTextSecondary(context),
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
@@ -675,7 +694,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             'Selecciona las habilidades que aplican a tu servicio',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
           ),
           const SizedBox(height: 16),
@@ -707,7 +726,9 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                     skill,
                     style: GoogleFonts.inter(
                       fontSize: 12,
-                      color: isSelected ? Colors.white : AppTheme.textSecondary,
+                      color: isSelected
+                          ? Colors.white
+                          : AppTheme.getTextSecondary(context),
                       fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                     ),
                   ),
@@ -766,23 +787,31 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             'Selecciona la imagen que se mostrará como banner principal de tu servicio',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.4)
+                  : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.blue.shade200,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Symbols.info,
                   size: 14,
-                  color: Colors.blue.shade700,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.blue.shade700,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -790,7 +819,9 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                     'Esta imagen se mostrará como portada principal del servicio',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.blue.shade800,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextSecondary
+                          : Colors.blue.shade800,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -966,31 +997,41 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
             'Agrega fotos de trabajos anteriores para mostrar tu calidad',
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppTheme.textTertiary,
+              color: AppTheme.getTextTertiary(context),
             ),
           ),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.amber.shade50,
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurfaceVariant.withValues(alpha: 0.4)
+                  : Colors.amber.shade50,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.amber.shade200),
+              border: Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? AppTheme.darkBorder
+                    : Colors.amber.shade200,
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Symbols.info,
                   size: 14,
-                  color: Colors.amber.shade700,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : Colors.amber.shade700,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Máximo 4 imágenes • 10MB cada una • Solo JPEG, PNG, WebP',
+                    'Máximo 4 imágenes',
                     style: GoogleFonts.inter(
                       fontSize: 11,
-                      color: Colors.amber.shade800,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkTextSecondary
+                          : Colors.amber.shade800,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -1016,17 +1057,17 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(
+                    Icon(
                       Symbols.add_a_photo,
                       size: 32,
-                      color: AppTheme.textTertiary,
+                      color: AppTheme.getTextTertiary(context),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Agregar fotos de trabajos',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AppTheme.textTertiary,
+                        color: AppTheme.getTextTertiary(context),
                       ),
                     ),
                   ],
@@ -1062,14 +1103,14 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                         children: [
                           Icon(
                             Symbols.add_a_photo,
-                            color: AppTheme.textTertiary,
+                               color: AppTheme.textTertiary,
                           ),
                           SizedBox(height: 4),
                           Text(
                             'Agregar',
                             style: TextStyle(
                               fontSize: 12,
-                              color: AppTheme.textTertiary,
+                                 color: AppTheme.textTertiary,
                             ),
                           ),
                         ],
@@ -1336,7 +1377,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
@@ -1351,22 +1392,29 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-            color: Colors.grey[50],
-            borderRadius: const BorderRadius.vertical(
-              top: Radius.circular(16),
+            decoration: BoxDecoration(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppTheme.darkSurface
+                  : Colors.grey[50],
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
             ),
-          ),
             child: Row(
               children: [
-                Icon(icon, color: AppTheme.primaryColor),
+                Icon(
+                  icon,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   title,
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
               ],

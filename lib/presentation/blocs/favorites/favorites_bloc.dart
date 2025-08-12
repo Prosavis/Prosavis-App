@@ -6,18 +6,21 @@ import '../../../domain/usecases/favorites/get_user_favorites_usecase.dart';
 import '../../../domain/usecases/favorites/remove_from_favorites_usecase.dart';
 import 'favorites_event.dart';
 import 'favorites_state.dart';
+import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 
 class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
   final GetUserFavoritesUseCase getUserFavoritesUseCase;
   final AddToFavoritesUseCase addToFavoritesUseCase;
   final RemoveFromFavoritesUseCase removeFromFavoritesUseCase;
   final CheckFavoriteStatusUseCase checkFavoriteStatusUseCase;
+  final GetServiceReviewStatsUseCase getServiceReviewStatsUseCase;
 
   FavoritesBloc({
     required this.getUserFavoritesUseCase,
     required this.addToFavoritesUseCase,
     required this.removeFromFavoritesUseCase,
     required this.checkFavoriteStatusUseCase,
+    required this.getServiceReviewStatsUseCase,
   }) : super(FavoritesInitial()) {
     on<LoadUserFavorites>(_onLoadUserFavorites);
     on<AddToFavorites>(_onAddToFavorites);
@@ -34,7 +37,19 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     emit(FavoritesLoading());
     
     try {
-      final favorites = await getUserFavoritesUseCase(event.userId);
+      var favorites = await getUserFavoritesUseCase(event.userId);
+
+      // Ajustar rating localmente cuando el doc aún no refleje agregados
+      favorites = await Future.wait(favorites.map((s) async {
+        final stats = await getServiceReviewStatsUseCase(s.id);
+        final total = (stats['totalReviews'] ?? 0) as int;
+        final avg = (stats['averageRating'] ?? 0.0).toDouble();
+        if (total == 0) return s;
+        if (s.reviewCount == 0 && total > 0) {
+          return s.copyWith(rating: avg, reviewCount: total);
+        }
+        return s;
+      }));
       
       // Crear mapa de estado de favoritos
       final favoriteStatus = <String, bool>{};
@@ -173,7 +188,18 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     Emitter<FavoritesState> emit,
   ) async {
     try {
-      final favorites = await getUserFavoritesUseCase(event.userId);
+      var favorites = await getUserFavoritesUseCase(event.userId);
+
+      favorites = await Future.wait(favorites.map((s) async {
+        final stats = await getServiceReviewStatsUseCase(s.id);
+        final total = (stats['totalReviews'] ?? 0) as int;
+        final avg = (stats['averageRating'] ?? 0.0).toDouble();
+        if (total == 0) return s;
+        if (s.reviewCount == 0 && total > 0) {
+          return s.copyWith(rating: avg, reviewCount: total);
+        }
+        return s;
+      }));
       
       // Mantener estado actual si existe, solo actualizar lista
       if (state is FavoritesLoaded) {

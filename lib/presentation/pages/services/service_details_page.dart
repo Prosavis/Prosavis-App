@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
@@ -43,6 +44,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   late Animation<double> _fadeAnimation;
 
   final PageController _pageController = PageController();
+  final ScrollController _scrollController = ScrollController();
   int _currentImageIndex = 0;
   String? _calculatedDistance;
 
@@ -59,6 +61,32 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   bool _isLoadingService = false;
   bool _isUpdatingRating = false;
   bool _isLoadingSimilarServices = false;
+
+  // Claves para hacer scroll a la sección de reseñas y al botón
+  final GlobalKey _reviewsSectionKey = GlobalKey();
+  final GlobalKey _addReviewButtonKey = GlobalKey();
+
+  void _scrollToReviews({bool focusOnAddButton = true}) {
+    final targetContext = (focusOnAddButton
+            ? _addReviewButtonKey.currentContext
+            : _reviewsSectionKey.currentContext) ??
+        _reviewsSectionKey.currentContext;
+
+    if (targetContext != null) {
+      Scrollable.ensureVisible(
+        targetContext,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+        alignment: 0.1,
+      );
+    } else if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -146,10 +174,64 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       if (mounted) {
         setState(() {
           _reviews = results[0] as List<ReviewEntity>;
-          // Actualizar servicio con rating y reviewCount actualizados
-          if (results[1] != null) {
-            _currentService = results[1] as ServiceEntity;
+
+          // Servicio retornado desde base de datos (puede no reflejar aún los agregados de CF)
+          final fetchedService = results[1] as ServiceEntity?;
+          if (fetchedService != null) {
+            _currentService = fetchedService;
           }
+
+          // Fallback inmediato: calcular promedio y conteo local para reflejarlo en UI
+          final localCount = _reviews.length;
+          final localAvg = localCount == 0
+              ? 0.0
+              : _reviews
+                  .map((r) => r.rating)
+                  .fold<double>(0.0, (a, b) => a + b) /
+                  localCount;
+
+          final needsFallback = _currentService != null && (
+            _currentService!.reviewCount != localCount ||
+            (_currentService!.rating - localAvg).abs() > 0.01
+          );
+
+          if (needsFallback) {
+            _currentService = _currentService!.copyWith(
+              rating: localAvg,
+              reviewCount: localCount,
+            );
+
+            // Programar relectura para cuando Cloud Function haya actualizado los agregados reales
+            Future.delayed(const Duration(seconds: 2), () async {
+              final refreshed = await _getServiceByIdUseCase(_currentService!.id);
+              if (!mounted) return;
+              if (refreshed != null) {
+                // Evitar degradar la UI a 0.0/0 si el documento aún no refleja agregados
+                final localCount2 = _reviews.length;
+                final localAvg2 = localCount2 == 0
+                    ? 0.0
+                    : _reviews
+                        .map((r) => r.rating)
+                        .fold<double>(0.0, (a, b) => a + b) /
+                        localCount2;
+
+                final seemsStale = refreshed.reviewCount < localCount2 ||
+                    (localCount2 > 0 && refreshed.reviewCount == 0) ||
+                    (localCount2 > 0 && refreshed.rating == 0.0) ||
+                    ((refreshed.rating - localAvg2).abs() > 0.01);
+
+                setState(() {
+                  _currentService = seemsStale
+                      ? _currentService!.copyWith(
+                          rating: localAvg2,
+                          reviewCount: localCount2,
+                        )
+                      : refreshed;
+                });
+              }
+            });
+          }
+
           _isUpdatingRating = false;
         });
       }
@@ -243,9 +325,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
     // Mostrar loading si se está cargando el servicio
     if (_isLoadingService) {
-      return const Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
-        body: Center(
+      return Scaffold(
+        backgroundColor: AppTheme.getBackgroundColor(context),
+        body: const Center(
           child: CircularProgressIndicator(),
         ),
       );
@@ -254,39 +336,39 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     // Mostrar error si no se pudo cargar el servicio
     if (_currentService == null) {
       return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         appBar: AppBar(
-          backgroundColor: AppTheme.backgroundColor,
+          backgroundColor: AppTheme.getBackgroundColor(context),
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+            icon: Icon(Symbols.arrow_back, color: AppTheme.getTextPrimary(context)),
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Icon(
                 Symbols.error_outline,
                 size: 64,
-                color: AppTheme.textTertiary,
+                color: AppTheme.getTextTertiary(context),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Servicio no encontrado',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
                 'El servicio que buscas no existe o ha sido eliminado',
                 style: TextStyle(
                   fontSize: 14,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -297,10 +379,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     }
 
     return Scaffold(
-        backgroundColor: AppTheme.backgroundColor,
+        backgroundColor: AppTheme.getBackgroundColor(context),
         body: FadeTransition(
           opacity: _fadeAnimation,
           child: CustomScrollView(
+            controller: _scrollController,
             slivers: [
               _buildAppBar(),
               _buildServiceInfo(),
@@ -321,16 +404,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.getSurfaceColor(context),
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
         icon: Container(
           padding: const EdgeInsets.all(8),
-                      decoration: const BoxDecoration(
-              color: Colors.white,
+                      decoration: BoxDecoration(
+              color: AppTheme.getSurfaceColor(context),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Symbols.arrow_back, color: AppTheme.textPrimary),
+            child: Icon(Symbols.arrow_back, color: AppTheme.getTextPrimary(context)),
         ),
       ),
       actions: [
@@ -362,7 +445,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     icon: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.9),
+                        color: AppTheme.getSurfaceColor(context).withValues(alpha: 0.9),
                         shape: BoxShape.circle,
                       ),
                       child: isLoading
@@ -376,7 +459,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                             )
                           : Icon(
                               isFavorite ? Symbols.favorite : Symbols.favorite_border,
-                              color: isFavorite ? Colors.red : AppTheme.textPrimary,
+                              color: isFavorite ? Colors.red : AppTheme.getTextPrimary(context),
                             ),
                     ),
                   );
@@ -390,12 +473,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 icon: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppTheme.getSurfaceColor(context).withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Symbols.favorite_border,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
               );
@@ -407,10 +490,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           icon: Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.9),
+              color: AppTheme.getSurfaceColor(context).withValues(alpha: 0.9),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Symbols.share, color: AppTheme.textPrimary),
+            child: Icon(Symbols.share, color: AppTheme.getTextPrimary(context)),
           ),
         ),
       ],
@@ -452,11 +535,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                                       color: AppTheme.primaryColor,
                                     ),
                                     const SizedBox(height: 8),
-                                    Text(
+                                     Text(
                                       'Error al cargar imagen',
                                       style: GoogleFonts.inter(
                                         fontSize: 14,
-                                        color: AppTheme.textSecondary,
+                                         color: AppTheme.getTextSecondary(context),
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -479,7 +562,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                                   'Imagen principal (simulación)',
                                   style: GoogleFonts.inter(
                                     fontSize: 14,
-                                    color: AppTheme.textSecondary,
+                                    color: AppTheme.getTextSecondary(context),
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
@@ -531,7 +614,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildServiceInfo() {
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,7 +662,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               style: GoogleFonts.inter(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             
@@ -587,17 +670,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             Row(
               children: [
-                const Icon(
+                Icon(
                   Symbols.person,
                   size: 20,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   _currentService!.providerName,
                   style: GoogleFonts.inter(
                     fontSize: 16,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                   ),
                 ),
               ],
@@ -608,10 +691,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             if (_currentService!.address != null || _calculatedDistance != null)
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Symbols.location_on,
                     size: 20,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -623,7 +706,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                             _currentService!.address!,
                             style: GoogleFonts.inter(
                               fontSize: 14,
-                              color: AppTheme.textSecondary,
+                              color: AppTheme.getTextSecondary(context),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -633,7 +716,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                             '$_calculatedDistance de distancia',
                             style: GoogleFonts.inter(
                               fontSize: 12,
-                              color: AppTheme.textTertiary,
+                              color: AppTheme.getTextTertiary(context),
                             ),
                           ),
                       ],
@@ -646,42 +729,46 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             Row(
               children: [
-                Row(
-                  children: [
-                    const Icon(
-                      Symbols.star,
-                      size: 20,
-                      color: Colors.orange,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      _currentService!.rating.toStringAsFixed(1),
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
+                GestureDetector(
+                  onTap: () => _scrollToReviews(),
+                  behavior: HitTestBehavior.opaque,
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Symbols.star,
+                        size: 20,
+                        color: Colors.orange,
                       ),
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '(${_currentService!.reviewCount} reseñas)',
-                      style: GoogleFonts.inter(
-                        fontSize: 14,
-                        color: AppTheme.textSecondary,
-                      ),
-                    ),
-                    if (_isUpdatingRating) ...[
-                      const SizedBox(width: 8),
-                      const SizedBox(
-                        width: 12,
-                        height: 12,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 1.5,
-                          color: Colors.orange,
+                      const SizedBox(width: 4),
+                      Text(
+                        _currentService!.rating.toStringAsFixed(1),
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.getTextPrimary(context),
                         ),
                       ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '(${_currentService!.reviewCount} reseñas)',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppTheme.getTextSecondary(context),
+                        ),
+                      ),
+                      if (_isUpdatingRating) ...[
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 1.5,
+                            color: Colors.orange,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
                 const Spacer(),
                 Text(
@@ -707,7 +794,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       return SliverToBoxAdapter(
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 8),
-          color: Colors.white,
+          color: AppTheme.getSurfaceColor(context),
           padding: const EdgeInsets.all(AppConstants.paddingMedium),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -717,7 +804,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
               const SizedBox(height: 16),
@@ -733,17 +820,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(
+                      Icon(
                         Symbols.photo_library,
                         size: 32,
-                        color: AppTheme.textTertiary,
+                        color: AppTheme.getTextTertiary(context),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'No hay fotos de trabajos disponibles',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: AppTheme.textTertiary,
+                          color: AppTheme.getTextTertiary(context),
                         ),
                       ),
                     ],
@@ -759,7 +846,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     return SliverToBoxAdapter(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -770,7 +857,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 style: GoogleFonts.inter(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimary,
+                  color: AppTheme.getTextPrimary(context),
                 ),
               ),
             ),
@@ -793,7 +880,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       margin: const EdgeInsets.symmetric(horizontal: 8),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: Colors.grey.shade200,
+                        color: AppTheme.getContainerColor(context),
                         boxShadow: [
                           BoxShadow(
                             color: Colors.black.withValues(alpha: 0.1),
@@ -824,17 +911,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                                   child: Column(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      const Icon(
+                                      Icon(
                                         Symbols.broken_image,
                                         size: 32,
-                                        color: AppTheme.textTertiary,
+                                        color: AppTheme.getTextTertiary(context),
                                       ),
                                       const SizedBox(height: 8),
                                       Text(
                                         'Error al cargar',
                                         style: GoogleFonts.inter(
                                           fontSize: 12,
-                                          color: AppTheme.textTertiary,
+                                          color: AppTheme.getTextTertiary(context),
                                         ),
                                       ),
                                     ],
@@ -846,17 +933,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const Icon(
+                                  Icon(
                                     Symbols.image,
                                     size: 48,
-                                    color: AppTheme.textTertiary,
+                                    color: AppTheme.getTextTertiary(context),
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Trabajo ${index + 1}',
                                     style: GoogleFonts.inter(
                                       fontSize: 12,
-                                      color: AppTheme.textTertiary,
+                                      color: AppTheme.getTextTertiary(context),
                                     ),
                                   ),
                                 ],
@@ -896,7 +983,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildDescription() {
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
@@ -907,7 +994,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 12),
@@ -915,7 +1002,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               _currentService!.description,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
                 height: 1.5,
               ),
             ),
@@ -939,7 +1026,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             style: GoogleFonts.inter(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: AppTheme.textPrimary,
+              color: AppTheme.getTextPrimary(context),
             ),
           ),
           const SizedBox(height: 8),
@@ -947,23 +1034,23 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: Colors.grey.shade50,
+              color: AppTheme.getContainerColor(context, alpha: 1.0),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.shade200),
+              border: Border.all(color: AppTheme.getBorderColor(context)),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Symbols.info,
                   size: 16,
-                  color: AppTheme.textTertiary,
+                  color: AppTheme.getTextTertiary(context),
                 ),
                 const SizedBox(width: 8),
                 Text(
                   'No se especificaron características adicionales',
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.textTertiary,
+                    color: AppTheme.getTextTertiary(context),
                     fontStyle: FontStyle.italic,
                   ),
                 ),
@@ -982,7 +1069,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: AppTheme.textPrimary,
+            color: AppTheme.getTextPrimary(context),
           ),
         ),
         const SizedBox(height: 8),
@@ -1005,7 +1092,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   feature,
                   style: GoogleFonts.inter(
                     fontSize: 14,
-                    color: AppTheme.textSecondary,
+                    color: AppTheme.getTextSecondary(context),
                     height: 1.3,
                   ),
                 ),
@@ -1052,7 +1139,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
@@ -1060,10 +1147,10 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           children: [
             Row(
               children: [
-                const Icon(
+                Icon(
                   Symbols.schedule,
                   size: 20,
-                  color: AppTheme.textSecondary,
+                  color: AppTheme.getTextSecondary(context),
                 ),
                 const SizedBox(width: 8),
                 Text(
@@ -1071,38 +1158,33 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                   style: GoogleFonts.inter(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: AppTheme.textPrimary,
+                    color: AppTheme.getTextPrimary(context),
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            // Mostrar días disponibles en lista
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Mostrar días disponibles como chips minimalistas
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: availableDayNames.map((dayName) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 6,
-                        height: 6,
-                        decoration: const BoxDecoration(
-                          color: AppTheme.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Text(
-                        dayName,
-                        style: GoogleFonts.inter(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
-                    ],
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: AppTheme.primaryColor.withValues(alpha: 0.12),
+                    ),
+                  ),
+                  child: Text(
+                    dayName,
+                    style: GoogleFonts.inter(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.primaryColor,
+                    ),
                   ),
                 );
               }).toList(),
@@ -1116,7 +1198,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildProviderInfo() {
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
@@ -1127,7 +1209,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -1160,7 +1242,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                         style: GoogleFonts.inter(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimary,
+                          color: AppTheme.getTextPrimary(context),
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -1168,27 +1250,31 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                         'Miembro desde ${_currentService!.createdAt.year}',
                         style: GoogleFonts.inter(
                           fontSize: 14,
-                          color: AppTheme.textSecondary,
+                          color: AppTheme.getTextSecondary(context),
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Symbols.star,
-                            size: 14,
-                            color: Colors.orange,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            _currentService!.rating.toStringAsFixed(1),
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: Colors.orange.shade700,
-                              fontWeight: FontWeight.w600,
+                      GestureDetector(
+                        onTap: () => _scrollToReviews(),
+                        behavior: HitTestBehavior.opaque,
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Symbols.star,
+                              size: 14,
+                              color: Colors.orange,
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 4),
+                            Text(
+                              _currentService!.rating.toStringAsFixed(1),
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: Colors.orange.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -1213,7 +1299,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildReviews() {
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        key: _reviewsSectionKey,
+        color: AppTheme.getSurfaceColor(context),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
@@ -1221,12 +1308,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           children: [
             Row(
               children: [
-                Text(
+            Text(
                   'Reseñas',
                   style: GoogleFonts.inter(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
                   ),
                 ),
                 const Spacer(),
@@ -1256,26 +1343,26 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
                 child: Column(
                   children: [
-                    const Icon(
+                  Icon(
                       Symbols.reviews,
                       size: 48,
-                      color: AppTheme.textTertiary,
+                    color: AppTheme.getTextTertiary(context),
                     ),
                     const SizedBox(height: 12),
-                    Text(
+                  Text(
                       '¡Sé el primero en dejar una reseña!',
                       style: GoogleFonts.inter(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textSecondary,
+                      color: AppTheme.getTextSecondary(context),
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                  Text(
                       'Tu opinión ayuda a otros usuarios',
                       style: GoogleFonts.inter(
                         fontSize: 14,
-                        color: AppTheme.textTertiary,
+                      color: AppTheme.getTextTertiary(context),
                       ),
                     ),
                   ],
@@ -1290,6 +1377,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
+                key: _addReviewButtonKey,
                 onPressed: _showAddReviewDialog,
                 icon: const Icon(Symbols.rate_review, size: 18),
                 label: Text(
@@ -1341,7 +1429,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       style: GoogleFonts.inter(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: AppTheme.textPrimary,
+                 color: AppTheme.getTextPrimary(context),
                       ),
                     ),
                     Row(
@@ -1357,7 +1445,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                           _formatDate(review.createdAt),
                           style: GoogleFonts.inter(
                             fontSize: 12,
-                            color: AppTheme.textTertiary,
+                            color: AppTheme.getTextTertiary(context),
                           ),
                         ),
                       ],
@@ -1374,7 +1462,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               review.comment,
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
                 height: 1.4,
               ),
             ),
@@ -1387,7 +1475,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Widget _buildSimilarServices() {
     return SliverToBoxAdapter(
       child: Container(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         margin: const EdgeInsets.symmetric(vertical: 8),
         padding: const EdgeInsets.all(AppConstants.paddingMedium),
         child: Column(
@@ -1398,7 +1486,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               style: GoogleFonts.inter(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.getTextPrimary(context),
               ),
             ),
             const SizedBox(height: 16),
@@ -1441,17 +1529,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
+              Icon(
                 Symbols.search_off,
                 size: 32,
-                color: AppTheme.textTertiary,
+                color: AppTheme.getTextTertiary(context),
               ),
               const SizedBox(height: 8),
               Text(
                 'No hay servicios similares disponibles',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AppTheme.textTertiary,
+                  color: AppTheme.getTextTertiary(context),
                 ),
               ),
               const SizedBox(height: 4),
@@ -1459,7 +1547,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 'Categoría: ${_currentService!.category}',
                 style: GoogleFonts.inter(
                   fontSize: 12,
-                  color: AppTheme.textTertiary,
+                  color: AppTheme.getTextTertiary(context),
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -1471,14 +1559,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     
     // Mostrar lista horizontal de servicios similares
     return SizedBox(
-      height: 180,
+      // Altura alineada con el tamaño real del ServiceCard vertical para evitar overflow
+      height: 220,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _similarServices.length,
         itemBuilder: (context, index) {
           final service = _similarServices[index];
           return Container(
-            width: 160,
+            // Ancho alineado con el ancho interno del ServiceCard
+            width: 180,
             margin: const EdgeInsets.only(right: 12),
             child: ServiceCard(
               service: service,
@@ -1504,9 +1594,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     return Container(
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppTheme.getSurfaceColor(context),
         border: Border(
-          top: BorderSide(color: Colors.grey.shade200),
+          top: BorderSide(color: AppTheme.getBorderColor(context)),
         ),
       ),
       child: SizedBox(
@@ -1612,17 +1702,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(
+                  Icon(
                           Symbols.reviews,
                           size: 48,
-                          color: AppTheme.textTertiary,
+                    color: AppTheme.getTextTertiary(context),
                         ),
                         const SizedBox(height: 16),
-                        Text(
+                  Text(
                           'Aún no hay reseñas',
                           style: GoogleFonts.inter(
                             fontSize: 16,
-                            color: AppTheme.textSecondary,
+                      color: AppTheme.getTextSecondary(context),
                           ),
                         ),
                       ],
@@ -1753,17 +1843,15 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Cancelar',
-                style: GoogleFonts.inter(color: AppTheme.textSecondary),
+                style: GoogleFonts.inter(color: AppTheme.getTextSecondary(context)),
               ),
             ),
             ElevatedButton(
               onPressed: () {
                 if (mounted) {
                   Navigator.of(context).pop();
-                  // Navegar a página de login
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Navegación a login próximamente')),
-                  );
+                  // Navegar inmediatamente a la pantalla de login
+                  context.push('/login');
                 }
               },
               style: ElevatedButton.styleFrom(
@@ -1787,7 +1875,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
+        backgroundColor: AppTheme.getSurfaceColor(context),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),

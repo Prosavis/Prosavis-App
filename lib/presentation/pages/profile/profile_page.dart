@@ -170,29 +170,7 @@ class _ProfilePageState extends State<ProfilePage>
                             ),
                           ),
                         ),
-                      // Indicador de edición
-                      if (profileState is! ProfileUpdating)
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white,
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Symbols.edit,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
+                      // Se elimina el indicador de edición (lápiz) solicitado
                     ],
                   );
                 },

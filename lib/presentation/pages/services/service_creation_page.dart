@@ -873,7 +873,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Máximo 4 imágenes • 10MB cada una • Solo JPEG, PNG, WebP',
+                    'Máximo 4 imágenes',
                     style: GoogleFonts.inter(
                       fontSize: 11,
                       color: Theme.of(context).brightness == Brightness.dark

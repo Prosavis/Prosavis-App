@@ -166,3 +166,25 @@ MIT. Ver `LICENSE`.
 ---
 
 Hecho con ❤️ en Flutter y Firebase.
+
+## Backend (Cloud Functions)
+
+Este proyecto incluye funciones de Cloud Functions para mantener agregados de reseñas del servicio.
+
+Pasos:
+
+1) Instalar dependencias
+
+```
+cd functions
+npm install
+```
+
+2) Compilar y desplegar
+
+```
+npm run build
+firebase deploy --only functions
+```
+
+Las funciones escuchan cambios en `services/{serviceId}/reviews/{reviewId}` y actualizan `reviewCount`, `sumRatings` y `rating` en el documento `services/{serviceId}`.

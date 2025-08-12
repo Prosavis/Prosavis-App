@@ -155,20 +155,43 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserEntity?> verifyPhoneCode(String verificationId, String smsCode) async {
+  Future<UserEntity?> verifyPhoneCode(String verificationId, String smsCode, {String? name}) async {
     try {
       developer.log('🚀 Verificando código SMS...');
       
       final userCredential = await _firebaseService.verifyPhoneCode(verificationId, smsCode);
       
       final firebaseUser = userCredential.user!;
+
+      // Si recibimos nombre desde el flujo, actualizar displayName en Auth
+      if (name != null && name.trim().isNotEmpty && (firebaseUser.displayName == null || firebaseUser.displayName!.isEmpty)) {
+        try {
+          await firebaseUser.updateDisplayName(name.trim());
+          await firebaseUser.reload();
+        } catch (e) {
+          developer.log('⚠️ No se pudo actualizar displayName tras verificación de teléfono: $e');
+        }
+      }
       
       // Verificar si el usuario ya existe en Firestore
       final existingUser = await _firestoreService.getUserById(firebaseUser.uid);
       
       if (existingUser != null) {
         developer.log('✅ Usuario autenticado por teléfono: ${existingUser.phoneNumber}');
-        return existingUser;
+        // Sincronizar nombre y foto si cambiaron en Auth
+        final updatedUser = UserEntity(
+          id: existingUser.id,
+          name: firebaseUser.displayName ?? existingUser.name,
+          email: firebaseUser.email ?? existingUser.email,
+          photoUrl: firebaseUser.photoURL ?? existingUser.photoUrl,
+          phoneNumber: firebaseUser.phoneNumber ?? existingUser.phoneNumber,
+          bio: existingUser.bio,
+          location: existingUser.location,
+          createdAt: existingUser.createdAt,
+          updatedAt: DateTime.now(),
+        );
+        await _firestoreService.createOrUpdateUser(updatedUser);
+        return updatedUser;
       } else {
         // Usuario nuevo, crear en Firestore
         final newUser = await _firestoreService.createUserFromFirebaseUser(firebaseUser);

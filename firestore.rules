@@ -41,16 +41,17 @@ service cloud.firestore {
                      request.resource.data.images.size() <= 4));
       
       // ✅ ACTUALIZAR SERVICIO: Solo el propietario
-      allow update: if request.auth != null && 
-                   request.auth.uid == resource.data.providerId && // 🔐 Solo el propietario
-                   // 🖼️ Validar URLs de imágenes en actualizaciones (si se modifican)
-                   (!request.resource.data.keys().hasAny(['mainImage']) || 
-                    request.resource.data.mainImage == null || 
-                    request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
-                   (!request.resource.data.keys().hasAny(['images']) || 
-                    request.resource.data.images == null ||
-                    (request.resource.data.images is list && 
-                     request.resource.data.images.size() <= 4));
+      //    Los agregados de reseñas los actualiza Cloud Functions
+      allow update: if request.auth != null &&
+                    request.auth.uid == resource.data.providerId &&
+                    // 🖼️ Validar URLs de imágenes en actualizaciones (si se modifican)
+                    (!request.resource.data.keys().hasAny(['mainImage']) || 
+                     request.resource.data.mainImage == null || 
+                     request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
+                    (!request.resource.data.keys().hasAny(['images']) || 
+                     request.resource.data.images == null ||
+                     (request.resource.data.images is list && 
+                      request.resource.data.images.size() <= 4));
 
       // ✅ ELIMINAR SERVICIO: Solo el propietario (sin validaciones de contenido)
       allow delete: if request.auth != null && 
@@ -63,15 +64,13 @@ service cloud.firestore {
         allow read: if true; // 📖 Lectura pública para ver reseñas
         allow create: if request.auth != null && 
                      request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                     // 📋 Validar campos obligatorios
-                     request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating', 'comment']) &&
+                     // 📋 Validar campos obligatorios (comentario ya no es obligatorio)
+                     request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating']) &&
                      request.resource.data.rating is number && 
                      request.resource.data.rating >= 1 && 
                      request.resource.data.rating <= 5 &&
-                     // 📋 Validar comentario obligatorio (mínimo 10 caracteres)
-                     request.resource.data.comment is string &&
-                     request.resource.data.comment.size() >= 10 &&
-                     request.resource.data.comment.size() <= 500 &&
+                     // 📋 Si viene comentario, validar que sea string (sin límites de longitud)
+                     (!request.resource.data.keys().hasAny(['comment']) || request.resource.data.comment is string) &&
                      // 📋 Validar que el serviceId coincida con el documento padre
                      request.resource.data.serviceId == serviceId &&
                      // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
@@ -109,15 +108,13 @@ service cloud.firestore {
       allow read: if true; // 📖 Lectura pública para ver reseñas
       allow create: if request.auth != null && 
                    request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                   // 📋 Validar campos obligatorios
-                   request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating', 'comment']) &&
+                   // 📋 Validar campos obligatorios (comentario opcional)
+                   request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating']) &&
                    request.resource.data.rating is number && 
                    request.resource.data.rating >= 1 && 
                    request.resource.data.rating <= 5 &&
-                   // 📋 Validar comentario obligatorio (mínimo 10 caracteres)
-                   request.resource.data.comment is string &&
-                   request.resource.data.comment.size() >= 10 &&
-                   request.resource.data.comment.size() <= 500 &&
+                   // 📋 Si viene comentario, validar que sea string (sin límites)
+                   (!request.resource.data.keys().hasAny(['comment']) || request.resource.data.comment is string) &&
                    // 📋 Validar que el servicio existe
                    exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId)) &&
                    // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)

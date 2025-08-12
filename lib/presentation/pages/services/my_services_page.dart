@@ -14,6 +14,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/profile_completion_dialog.dart';
+import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 
 
 class MyServicesPage extends StatefulWidget {
@@ -27,6 +28,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
   late final GetUserServicesUseCase _getUserServicesUseCase;
   late final DeleteServiceUseCase _deleteServiceUseCase;
   late final ServiceRefreshNotifier _serviceRefreshNotifier;
+  late final GetServiceReviewStatsUseCase _getServiceReviewStatsUseCase;
   List<ServiceEntity> _userServices = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -42,6 +44,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     _getUserServicesUseCase = sl<GetUserServicesUseCase>();
     _deleteServiceUseCase = sl<DeleteServiceUseCase>();
     _serviceRefreshNotifier = ServiceRefreshNotifier();
+    _getServiceReviewStatsUseCase = sl<GetServiceReviewStatsUseCase>();
     
     // Escuchar notificaciones de cambios en servicios
     _serviceRefreshNotifier.addListener(_onServicesChanged);
@@ -97,7 +100,19 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     try {
       final authState = context.read<AuthBloc>().state;
       if (authState is AuthAuthenticated) {
-        final services = await _getUserServicesUseCase(authState.user.id);
+        var services = await _getUserServicesUseCase(authState.user.id);
+
+        // Ajustar rating localmente si el doc aún no refleja agregados
+        services = await Future.wait(services.map((s) async {
+          final stats = await _getServiceReviewStatsUseCase(s.id);
+          final total = (stats['totalReviews'] ?? 0) as int;
+          final avg = (stats['averageRating'] ?? 0.0).toDouble();
+          if (total == 0) return s;
+          if (s.reviewCount == 0 && total > 0) {
+            return s.copyWith(rating: avg, reviewCount: total);
+          }
+          return s;
+        }));
         if (mounted) {
           setState(() {
             _userServices = services;

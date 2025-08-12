@@ -1,4 +1,5 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
 import '../../../data/services/image_storage_service.dart';
 import '../../../data/services/firestore_service.dart';
@@ -100,6 +101,17 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       );
 
       await _firestoreService.createOrUpdateUser(updatedUser);
+
+      // Intentar sincronizar también la foto con FirebaseAuth (para display en otros lugares)
+      try {
+        final authUser = _authBloc.state is AuthAuthenticated
+            ? (_authBloc.state as AuthAuthenticated).user
+            : null;
+        // Si tenemos un usuario autenticado en FirebaseAuth, actualizar photoURL
+        if (authUser != null) {
+          await FirebaseAuth.instance.currentUser?.updatePhotoURL(newPhotoUrl);
+        }
+      } catch (_) {}
 
       // Actualizar el AuthBloc con el usuario actualizado
       _authBloc.add(AuthUserUpdated(updatedUser));

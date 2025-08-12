@@ -12,11 +12,13 @@ import '../../blocs/auth/auth_state.dart';
 class VerifyPhonePage extends StatefulWidget {
   final String verificationId;
   final String phoneNumber;
+  final String? name;
 
   const VerifyPhonePage({
     super.key,
     required this.verificationId,
     required this.phoneNumber,
+    this.name,
   });
 
   @override
@@ -101,14 +103,12 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
             return SafeArea(
               child: FadeTransition(
                 opacity: _fadeAnimation,
-                child: Padding(
+                child: SingleChildScrollView(
                   padding: const EdgeInsets.all(AppConstants.paddingMedium),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 20),
-                      
-                      // Ícono y título
                       Center(
                         child: Column(
                           children: [
@@ -125,9 +125,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
                                 color: AppTheme.primaryColor,
                               ),
                             ),
-                            
                             const SizedBox(height: 24),
-                            
                             Text(
                               'Código de verificación',
                               style: GoogleFonts.inter(
@@ -136,9 +134,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
                                 color: AppTheme.textPrimary,
                               ),
                             ),
-                            
                             const SizedBox(height: 12),
-                            
                             Text(
                               'Ingresa el código de 6 dígitos que enviamos a',
                               style: GoogleFonts.inter(
@@ -147,9 +143,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            
                             const SizedBox(height: 4),
-                            
                             Text(
                               widget.phoneNumber,
                               style: GoogleFonts.inter(
@@ -161,17 +155,10 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
                           ],
                         ),
                       ),
-                      
-                      const SizedBox(height: 48),
-                      
-                      // Campo de código de verificación
+                      const SizedBox(height: 32),
                       _buildVerificationForm(state),
-                      
-                      const Spacer(),
-                      
-                      // Botón para reenviar código
+                      const SizedBox(height: 24),
                       _buildResendSection(),
-                      
                       const SizedBox(height: 24),
                     ],
                   ),
@@ -367,6 +354,7 @@ class _VerifyPhonePageState extends State<VerifyPhonePage>
     context.read<AuthBloc>().add(AuthVerifyPhoneCodeRequested(
       verificationId: widget.verificationId,
       smsCode: _codeController.text.trim(),
+      name: widget.name,
     ));
   }
 

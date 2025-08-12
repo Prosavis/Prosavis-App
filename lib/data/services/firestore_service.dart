@@ -109,7 +109,7 @@ class FirestoreService {
     try {
       final userEntity = UserEntity(
         id: firebaseUser.uid,
-        name: firebaseUser.displayName ?? 'Usuario',
+        name: firebaseUser.displayName ?? '',
         email: firebaseUser.email ?? '',
         photoUrl: firebaseUser.photoURL,
         phoneNumber: firebaseUser.phoneNumber,

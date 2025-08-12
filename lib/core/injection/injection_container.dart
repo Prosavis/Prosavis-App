@@ -27,6 +27,7 @@ import 'package:prosavis/domain/usecases/services/update_service_usecase.dart';
 import 'package:prosavis/domain/usecases/services/delete_service_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/create_review_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/get_service_reviews_usecase.dart';
+import 'package:prosavis/domain/usecases/reviews/get_service_review_stats_usecase.dart';
 import 'package:prosavis/domain/usecases/reviews/check_user_review_usecase.dart';
 import 'package:prosavis/domain/repositories/favorite_repository.dart';
 import 'package:prosavis/data/repositories/favorite_repository_impl.dart';
@@ -184,6 +185,11 @@ Future<void> init() async {
     );
     developer.log('✅ GetServiceReviewsUseCase registrado');
 
+    sl.registerLazySingleton<GetServiceReviewStatsUseCase>(
+      () => GetServiceReviewStatsUseCase(sl<ReviewRepository>()),
+    );
+    developer.log('✅ GetServiceReviewStatsUseCase registrado');
+
     sl.registerLazySingleton<CheckUserReviewUseCase>(
       () => CheckUserReviewUseCase(sl<ReviewRepository>()),
     );
@@ -232,6 +238,7 @@ Future<void> init() async {
       () => HomeBloc(
         getFeaturedServicesUseCase: sl<GetFeaturedServicesUseCase>(),
         getNearbyServicesUseCase: sl<GetNearbyServicesUseCase>(),
+        getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
       ),
     );
     developer.log('✅ HomeBloc registrado');
@@ -242,6 +249,7 @@ Future<void> init() async {
         addToFavoritesUseCase: sl<AddToFavoritesUseCase>(),
         removeFromFavoritesUseCase: sl<RemoveFromFavoritesUseCase>(),
         checkFavoriteStatusUseCase: sl<CheckFavoriteStatusUseCase>(),
+        getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
       ),
     );
     developer.log('✅ FavoritesBloc registrado');

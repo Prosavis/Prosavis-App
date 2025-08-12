@@ -2,18 +2,22 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'dart:developer' as developer;
 import '../../../domain/usecases/services/get_featured_services_usecase.dart';
 import '../../../domain/usecases/services/get_nearby_services_usecase.dart';
+import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 import 'home_event.dart';
 import 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetFeaturedServicesUseCase _getFeaturedServicesUseCase;
   final GetNearbyServicesUseCase _getNearbyServicesUseCase;
+  final GetServiceReviewStatsUseCase _getServiceReviewStatsUseCase;
 
   HomeBloc({
     required GetFeaturedServicesUseCase getFeaturedServicesUseCase,
     required GetNearbyServicesUseCase getNearbyServicesUseCase,
+    required GetServiceReviewStatsUseCase getServiceReviewStatsUseCase,
   }) : _getFeaturedServicesUseCase = getFeaturedServicesUseCase,
        _getNearbyServicesUseCase = getNearbyServicesUseCase,
+       _getServiceReviewStatsUseCase = getServiceReviewStatsUseCase,
        super(HomeInitial()) {
     on<LoadHomeServices>(_onLoadHomeServices);
     on<RefreshHomeServices>(_onRefreshHomeServices);
@@ -44,8 +48,33 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         _getNearbyServicesUseCase(const GetNearbyServicesParams(limit: 3)),
       ]);
 
-      final featuredServices = results[0];
-      final nearbyServices = results[1];
+      var featuredServices = results[0];
+      var nearbyServices = results[1];
+
+      // Ajustar rating/contador con estadísticas reales si el doc aún no reflejó agregados
+      // Se hace en paralelo por rendimiento y simplicidad
+      featuredServices = await Future.wait(featuredServices.map((s) async {
+        final stats = await _getServiceReviewStatsUseCase(s.id);
+        final total = (stats['totalReviews'] ?? 0) as int;
+        final avg = (stats['averageRating'] ?? 0.0).toDouble();
+        if (total == 0) return s; // mantener 0.0/0
+        // Si el doc tiene 0 pero hay stats, aplicar stats para UI
+        if (s.reviewCount == 0 && total > 0) {
+          return s.copyWith(rating: avg, reviewCount: total);
+        }
+        return s;
+      }));
+
+      nearbyServices = await Future.wait(nearbyServices.map((s) async {
+        final stats = await _getServiceReviewStatsUseCase(s.id);
+        final total = (stats['totalReviews'] ?? 0) as int;
+        final avg = (stats['averageRating'] ?? 0.0).toDouble();
+        if (total == 0) return s;
+        if (s.reviewCount == 0 && total > 0) {
+          return s.copyWith(rating: avg, reviewCount: total);
+        }
+        return s;
+      }));
 
       developer.log('✅ Servicios cargados para navegación pública: ${featuredServices.length} destacados, ${nearbyServices.length} cercanos');
 

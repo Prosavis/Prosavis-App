@@ -335,46 +335,6 @@ class _EditProfilePageState extends State<EditProfilePage>
 
               const SizedBox(height: 24),
 
-              // Información adicional
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppTheme.darkSurface
-                      : AppTheme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? AppTheme.darkBorder
-                        : AppTheme.primaryColor.withValues(alpha: 0.2),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Symbols.info,
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : AppTheme.primaryColor,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Tu información personal está protegida y solo será visible para los proveedores cuando solicites un servicio, o para los clientes cuando ofrezcas uno.',
-                        style: GoogleFonts.inter(
-                          fontSize: 13,
-                          color: AppTheme.getTextSecondary(context),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 32),
-
               // Botón de Guardar
               SizedBox(
                 width: double.infinity,
@@ -418,6 +378,46 @@ class _EditProfilePageState extends State<EditProfilePage>
                             fontWeight: FontWeight.w600,
                           ),
                         ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Información adicional (debajo del botón Guardar)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppTheme.darkSurface
+                      : AppTheme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkBorder
+                        : AppTheme.primaryColor.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Symbols.info,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppTheme.primaryColor,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Tu información personal está protegida y solo será visible para los proveedores cuando solicites un servicio, o para los clientes cuando ofrezcas uno.',
+                        style: GoogleFonts.inter(
+                          fontSize: 13,
+                          color: AppTheme.getTextSecondary(context),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
 
@@ -852,6 +852,8 @@ class _EditProfilePageState extends State<EditProfilePage>
       ),
     );
   }
+
+  
 
   Widget _buildLocationField() {
     return Row(

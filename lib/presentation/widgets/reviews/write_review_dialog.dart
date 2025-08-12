@@ -177,8 +177,8 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-                    Text(
-              'Comentario (obligatorio)',
+        Text(
+          'Comentario (opcional)',
           style: GoogleFonts.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -189,7 +189,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         TextField(
           controller: _commentController,
           decoration: InputDecoration(
-            hintText: 'Comparte tu experiencia con este servicio... (mínimo 10 caracteres)',
+            hintText: 'Comparte tu experiencia con este servicio... (opcional)',
             hintStyle: GoogleFonts.inter(
               color: AppTheme.textSecondary,
             ),
@@ -204,7 +204,6 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             contentPadding: const EdgeInsets.all(16),
           ),
           maxLines: 4,
-          maxLength: 500,
         ),
       ],
     );
@@ -281,33 +280,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
   }
 
   Future<void> _submitReview() async {
-    // Validar comentario obligatorio
     final comment = _commentController.text.trim();
-    if (comment.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ El comentario es obligatorio',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
-
-    if (comment.length < 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '❌ El comentario debe tener al menos 10 caracteres',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
 
     setState(() => _isSubmitting = true);
 

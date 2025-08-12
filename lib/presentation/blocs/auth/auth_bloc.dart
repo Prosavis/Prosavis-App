@@ -186,6 +186,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         VerifyPhoneCodeParams(
           verificationId: event.verificationId,
           smsCode: event.smsCode,
+          name: event.name,
         ),
       );
       

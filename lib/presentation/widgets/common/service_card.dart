@@ -60,11 +60,13 @@ class ServiceCard extends StatelessWidget {
       child: Container(
         width: 180,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -73,8 +75,8 @@ class ServiceCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildImageSection(),
-            _buildContentSection(),
+            _buildImageSection(context),
+            _buildContentSection(context),
           ],
         ),
       ),
@@ -87,11 +89,13 @@ class ServiceCard extends StatelessWidget {
       child: Container(
         height: 120,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppTheme.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.black.withValues(alpha: 0.3)
+                  : Colors.black.withValues(alpha: 0.08),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -99,15 +103,15 @@ class ServiceCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            _buildImageSection(isHorizontal: true),
-            Expanded(child: _buildContentSection(isHorizontal: true)),
+            _buildImageSection(context, isHorizontal: true),
+            Expanded(child: _buildContentSection(context, isHorizontal: true)),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildImageSection({bool isHorizontal = false}) {
+  Widget _buildImageSection(BuildContext context, {bool isHorizontal = false}) {
     return Container(
       width: isHorizontal ? 120 : double.infinity,
       height: isHorizontal ? double.infinity : 120,
@@ -134,7 +138,7 @@ class ServiceCard extends StatelessWidget {
                 : Container(
                     width: double.infinity,
                     height: double.infinity,
-                    color: Colors.grey[200],
+                    color: AppTheme.getContainerColor(context),
                     child: const _DefaultImagePlaceholder(),
                   ),
           ),
@@ -148,7 +152,7 @@ class ServiceCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.9),
+                    color: AppTheme.getSurfaceColor(context).withValues(alpha: 0.9),
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
@@ -179,7 +183,7 @@ class ServiceCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.blue.withValues(alpha: 0.9),
+                          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -197,7 +201,7 @@ class ServiceCard extends StatelessWidget {
                       child: Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.red.withValues(alpha: 0.9),
+                          color: Theme.of(context).colorScheme.error.withValues(alpha: 0.9),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
@@ -215,7 +219,7 @@ class ServiceCard extends StatelessWidget {
     );
   }
 
-  Widget _buildContentSection({bool isHorizontal = false}) {
+  Widget _buildContentSection(BuildContext context, {bool isHorizontal = false}) {
     return Padding(
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -230,7 +234,7 @@ class ServiceCard extends StatelessWidget {
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+              color: AppTheme.getTextPrimary(context),
             ),
             maxLines: isHorizontal ? 2 : 2,
             overflow: TextOverflow.ellipsis,
@@ -242,7 +246,7 @@ class ServiceCard extends StatelessWidget {
             service.providerName,
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppTheme.textSecondary,
+              color: AppTheme.getTextSecondary(context),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -269,7 +273,7 @@ class ServiceCard extends StatelessWidget {
                     style: GoogleFonts.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
-                      color: AppTheme.textSecondary,
+                      color: AppTheme.getTextSecondary(context),
                     ),
                   ),
                 ],
@@ -281,7 +285,9 @@ class ServiceCard extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                 ),
               ),
             ],

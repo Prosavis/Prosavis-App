@@ -10,19 +10,25 @@ class VerifyPhoneCodeUseCase implements UseCase<UserEntity?, VerifyPhoneCodePara
 
   @override
   Future<UserEntity?> call(VerifyPhoneCodeParams params) async {
-    return await repository.verifyPhoneCode(params.verificationId, params.smsCode);
+    return await repository.verifyPhoneCode(
+      params.verificationId,
+      params.smsCode,
+      name: params.name,
+    );
   }
 }
 
 class VerifyPhoneCodeParams extends Equatable {
   final String verificationId;
   final String smsCode;
+  final String? name;
 
   const VerifyPhoneCodeParams({
     required this.verificationId,
     required this.smsCode,
+    this.name,
   });
 
   @override
-  List<Object> get props => [verificationId, smsCode];
+  List<Object> get props => [verificationId, smsCode, name ?? ''];
 }

@@ -105,6 +105,7 @@ final _router = GoRouter(
         return VerifyPhonePage(
           verificationId: extra['verificationId'],
           phoneNumber: extra['phoneNumber'],
+          name: extra['name'] as String?,
         );
       },
     ),

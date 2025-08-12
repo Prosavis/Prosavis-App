@@ -104,6 +104,8 @@ class _LoginPageState extends State<LoginPage>
             context.push('/auth/verify-phone', extra: {
               'verificationId': state.verificationId,
               'phoneNumber': state.phoneNumber,
+              // Solo enviar nombre cuando estamos creando cuenta
+              'name': _isSignUp ? _nameController.text.trim() : null,
             });
           } else if (state is AuthPasswordResetSent) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -227,7 +229,6 @@ class _LoginPageState extends State<LoginPage>
         children: [
           // Título del formulario
           Text(
-            _isPhoneLogin ? 'Iniciar sesión con teléfono' : 
             _isSignUp ? 'Crear cuenta' : 'Iniciar sesión',
             style: GoogleFonts.inter(
               fontSize: 20,
@@ -238,31 +239,29 @@ class _LoginPageState extends State<LoginPage>
           
           const SizedBox(height: 20),
           
-          // Selector de método de autenticación
-          if (!_isPhoneLogin) ...[
-            Row(
-              children: [
-                Expanded(
-                  child: _buildMethodButton(
-                    'Email',
-                    Symbols.email,
-                    !_isPhoneLogin,
-                    () => setState(() => _isPhoneLogin = false),
-                  ),
+          // Selector de método de autenticación (siempre visible)
+          Row(
+            children: [
+              Expanded(
+                child: _buildMethodButton(
+                  'Email',
+                  Symbols.email,
+                  !_isPhoneLogin,
+                  () => setState(() => _isPhoneLogin = false),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildMethodButton(
-                    'Teléfono',
-                    Symbols.phone,
-                    _isPhoneLogin,
-                    () => setState(() => _isPhoneLogin = true),
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildMethodButton(
+                  'Teléfono',
+                  Symbols.phone,
+                  _isPhoneLogin,
+                  () => setState(() => _isPhoneLogin = true),
                 ),
-              ],
-            ),
-            const SizedBox(height: 20),
-          ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
           
           // Campos de formulario
           if (_isPhoneLogin) ...[
@@ -502,6 +501,17 @@ class _LoginPageState extends State<LoginPage>
       key: _phoneFormKey,
       child: Column(
         children: [
+        // Nombre completo SOLO cuando se está creando cuenta por teléfono
+        if (_isSignUp) ...[
+          _buildTextField(
+            controller: _nameController,
+            label: 'Nombre completo',
+            icon: Symbols.person,
+            keyboardType: TextInputType.name,
+            validator: Validators.validateName,
+          ),
+          const SizedBox(height: 16),
+        ],
         _buildTextField(
           controller: _phoneController,
           label: 'Número de celular (Colombia)',
@@ -556,29 +566,32 @@ class _LoginPageState extends State<LoginPage>
           ),
         ),
         
+        // Conmutador inferior (mantener consistencia con email)
         const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              '¿Prefieres usar email?',
+              _isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?',
               style: GoogleFonts.inter(
                 fontSize: 14,
-                color: AppTheme.textSecondary,
+                color: AppTheme.getTextSecondary(context),
               ),
             ),
             TextButton(
-              onPressed: () => setState(() => _isPhoneLogin = false),
+              onPressed: () => setState(() => _isSignUp = !_isSignUp),
               style: TextButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
               child: Text(
-                'Cambiar a email',
+                _isSignUp ? 'Iniciar sesión' : 'Crear cuenta',
                 style: GoogleFonts.inter(
                   fontSize: 14,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),

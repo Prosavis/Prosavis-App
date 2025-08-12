@@ -52,14 +52,16 @@ class AuthSignInWithPhoneRequested extends AuthEvent {
 class AuthVerifyPhoneCodeRequested extends AuthEvent {
   final String verificationId;
   final String smsCode;
+  final String? name; // opcional: para completar perfil en registro por teléfono
 
   const AuthVerifyPhoneCodeRequested({
     required this.verificationId,
     required this.smsCode,
+    this.name,
   });
 
   @override
-  List<Object> get props => [verificationId, smsCode];
+  List<Object> get props => [verificationId, smsCode, name ?? ''];
 }
 
 class AuthPasswordResetRequested extends AuthEvent {
