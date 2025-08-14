@@ -63,6 +63,9 @@ dependencies:
   # Geolocation
   geolocator: ^13.0.1
   geocoding: ^3.0.0
+  # Maps (a integrar)
+  google_maps_flutter: ^2.7.0
+  uuid: ^4.4.2
 
 
 dev_dependencies:

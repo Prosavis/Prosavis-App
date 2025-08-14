@@ -17,6 +17,9 @@ import '../../widgets/common/service_card.dart';
 import '../../widgets/common/auth_required_dialog.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
+import '../../blocs/address/address_bloc.dart';
+import '../../blocs/address/address_state.dart';
+import '../../blocs/address/address_event.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onProfileTapped;
@@ -51,6 +54,13 @@ class _HomePageState extends State<HomePage>
     // Cargar servicios al inicializar
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeBloc>().add(LoadHomeServices());
+      // Intentar precargar direcciones si el usuario está autenticado
+      try {
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthAuthenticated) {
+          context.read<AddressBloc>().add(LoadAddresses(authState.user.id));
+        }
+      } catch (_) {}
     });
   }
 
@@ -111,6 +121,11 @@ class _HomePageState extends State<HomePage>
         child: RefreshIndicator(
           onRefresh: () async {
             context.read<HomeBloc>().add(RefreshHomeServices());
+            // También refrescar direcciones si el AddressBloc está presente
+            try {
+              context.read<AddressBloc>();
+              // ignorar si no existe provider
+            } catch (_) {}
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -179,20 +194,46 @@ class _HomePageState extends State<HomePage>
             
             const SizedBox(width: 12),
             
-            // Welcome Message
+            // Welcome + ubicación activa
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '¡Hola, ${state.user.name.split(' ').first}!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    '¿Qué servicio necesitas hoy?',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+              child: GestureDetector(
+                onTap: () => context.push('/addresses', extra: {'userId': state.user.id}),
+                child: BlocBuilder<AddressBloc, AddressState>(
+                  builder: (context, addrState) {
+                    String subtitle = 'Agregar dirección';
+                    if (addrState is AddressLoaded && addrState.active != null) {
+                      subtitle = addrState.active!.label.isNotEmpty
+                          ? '${addrState.active!.label} · ${addrState.active!.addressLine}'
+                          : addrState.active!.addressLine;
+                    } else if (state.user.location?.isNotEmpty == true) {
+                      subtitle = state.user.location!;
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '¡Hola, ${state.user.name.split(' ').first}!',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                        ),
+                        const SizedBox(height: 2),
+                        Row(
+                          children: [
+                            const Icon(Symbols.location_on, size: 16, color: AppTheme.accentColor),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                subtitle,
+                                style: Theme.of(context).textTheme.bodyMedium,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
             
@@ -236,20 +277,36 @@ class _HomePageState extends State<HomePage>
             
             const SizedBox(width: 12),
             
-            // Welcome Message for anonymous user
+            // Welcome Message for anonymous user + CTA dirección
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '¡Hola!',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  Text(
-                    '¿Qué servicio necesitas hoy?',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ],
+              child: GestureDetector(
+                onTap: () {
+                  _showAuthRequiredDialog('gestionar direcciones');
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '¡Hola!',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Symbols.location_on, size: 16, color: AppTheme.accentColor),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Agregar dirección',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
             
@@ -278,24 +335,31 @@ class _HomePageState extends State<HomePage>
             // Navegar a la página de búsqueda independiente
             context.push('/search');
           },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppTheme.getSurfaceColor(context),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.getBorderColor(context)),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryColor.withValues(alpha: 0.08),
+                  AppTheme.secondaryColor.withValues(alpha: 0.08),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppTheme.getBorderColor(context)),
+            ),
             child: Row(
               children: [
-                Icon(Symbols.search, color: AppTheme.getTextTertiary(context)),
+                Icon(Symbols.search, color: AppTheme.getTextSecondary(context)),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Buscar servicios...',
-                    style: Theme.of(context)
-                        .textTheme
-                        .bodyLarge
-                        ?.copyWith(color: AppTheme.getTextTertiary(context)),
+                    'Buscar servicios...'
+                    ,
+                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: AppTheme.getTextSecondary(context),
+                        ),
                   ),
                 ),
               ],
@@ -316,9 +380,17 @@ class _HomePageState extends State<HomePage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Categorías',
-                style: Theme.of(context).textTheme.headlineMedium,
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.welcomeGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  'Categorías',
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                ),
               ),
               const SizedBox(height: 16),
             ],
@@ -450,7 +522,7 @@ class _HomePageState extends State<HomePage>
                 ),
               ),
               SizedBox(
-                height: 220,
+                height: ServiceCard.preferredVerticalListHeight(context),
                 child: _buildFeaturedServicesList(state),
               ),
             ],

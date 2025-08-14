@@ -385,7 +385,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       return false;
     }
     
-    if (_currentFilters.maxPrice < 1000 && service.price > _currentFilters.maxPrice) {
+    if (_currentFilters.maxPrice < 2000000 && service.price > _currentFilters.maxPrice) {
       return false;
     }
     
@@ -393,9 +393,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       return false;
     }
     
-    if (_currentFilters.availableNow && !service.isActive) {
-      return false;
-    }
+    // disponibilidad eliminada
     
     return true;
   }
@@ -417,9 +415,6 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
         break;
       case SortOption.newest:
         _filteredServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-      case SortOption.relevance:
-        // Mantener orden original para relevancia
         break;
     }
   }

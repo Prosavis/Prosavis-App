@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
+import '../../../core/utils/location_utils.dart';
 import '../../widgets/common/service_card.dart';
 import '../../blocs/search/search_bloc.dart';
 import '../../blocs/search/search_event.dart';
@@ -488,22 +489,56 @@ class _SearchPageState extends State<SearchPage>
     context.read<SearchBloc>().add(SearchServices(category: category));
   }
 
-  void _performSearchWithFilters(Map<String, dynamic> filters) {
-    context.read<SearchBloc>().add(SearchServices(
+  Future<void> _performSearchWithFilters(Map<String, dynamic> filters) async {
+    final searchBloc = context.read<SearchBloc>();
+    Map<String, double>? userLocation;
+    // Si se requiere ordenar por distancia o hay radio personalizado, obtener ubicación
+    if (filters['sortBy'] == 'distance' || (filters['radiusKm'] != null && filters['radiusKm'] != 10.0)) {
+      userLocation = await LocationUtils.getCurrentUserLocation();
+    }
+
+    if (!mounted) return;
+
+    searchBloc.add(SearchServices(
       query: _searchController.text.trim().isNotEmpty ? _searchController.text.trim() : null,
       category: filters['category'],
+      categories: (filters['categories'] as List<String>?)?.toList(),
       minPrice: filters['minPrice'],
       maxPrice: filters['maxPrice'],
       priceType: filters['priceType'],
+      minRating: filters['minRating'],
+      sortBy: filters['sortBy'],
+      radiusKm: filters['radiusKm'],
+      userLatitude: userLocation?['latitude'],
+      userLongitude: userLocation?['longitude'],
     ));
   }
 
   Map<String, dynamic> _convertFiltersToMap(FilterSettings filters) {
     return {
       'category': filters.selectedCategories.isNotEmpty ? filters.selectedCategories.first : null,
+      'categories': filters.selectedCategories.isNotEmpty ? filters.selectedCategories : null,
       'minPrice': filters.minPrice != 0.0 ? filters.minPrice : null,
-      'maxPrice': filters.maxPrice != 500.0 ? filters.maxPrice : null,
-      'priceType': null, // FilterSettings no tiene priceType, se puede añadir si es necesario
+      'maxPrice': filters.maxPrice != 2000000.0 ? filters.maxPrice : null,
+      'priceType': null,
+      'minRating': filters.minRating != 0.0 ? filters.minRating : null,
+      'sortBy': _mapSortOptionToKey(filters.sortBy),
+      'radiusKm': filters.radiusKm != 10.0 ? filters.radiusKm : null,
     };
+  }
+
+  String _mapSortOptionToKey(SortOption option) {
+    switch (option) {
+      case SortOption.priceLowToHigh:
+        return 'priceLowToHigh';
+      case SortOption.priceHighToLow:
+        return 'priceHighToLow';
+      case SortOption.rating:
+        return 'rating';
+      case SortOption.distance:
+        return 'distance';
+      case SortOption.newest:
+        return 'newest';
+    }
   }
 }

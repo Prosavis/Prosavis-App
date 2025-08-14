@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:developer' as developer;
+import '../../core/utils/location_utils.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../models/service_model.dart';
 import '../models/review_model.dart';
@@ -276,10 +277,15 @@ class FirestoreService {
   Future<List<ServiceEntity>> searchServices({
     String? query,
     String? category,
-    String? location,
+    List<String>? categories,
     double? minPrice,
     double? maxPrice,
     String? priceType,
+    double? minRating,
+    String? sortBy,
+    double? radiusKm,
+    double? userLatitude,
+    double? userLongitude,
     int limit = 20,
   }) async {
     try {
@@ -289,9 +295,8 @@ class FirestoreService {
         firestoreQuery = firestoreQuery.where('category', isEqualTo: category);
       }
 
-      if (location != null && location.isNotEmpty) {
-        firestoreQuery = firestoreQuery.where('location', isEqualTo: location);
-      }
+      // Si llegan múltiples categorías, obtener por categoría simple (siempre y cuando exista índice)
+      // y luego filtrar en memoria por el conjunto completo
 
       if (minPrice != null) {
         firestoreQuery = firestoreQuery.where('price', isGreaterThanOrEqualTo: minPrice);
@@ -310,14 +315,74 @@ class FirestoreService {
           .limit(limit)
           .get();
 
-      final services = querySnapshot.docs.map((doc) {
+      var services = querySnapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id;
         return ServiceModel.fromJson(data) as ServiceEntity;
       }).toList();
+
+      // Filtro en memoria para múltiples categorías (cualquiera de ellas)
+      if (categories != null && categories.isNotEmpty) {
+        final categorySet = categories.toSet();
+        services = services.where((s) => categorySet.contains(s.category)).toList();
+      }
       
-      // Ordenar en memoria por fecha de creación (más recientes primero)
-      services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Filtrar por rating mínimo en memoria
+      if (minRating != null && minRating > 0) {
+        services = services.where((s) => s.rating >= minRating).toList();
+      }
+
+      // Si hay radio y posición del usuario, filtrar por distancia
+      if (radiusKm != null && radiusKm > 0 && userLatitude != null && userLongitude != null) {
+        services = services.where((s) {
+          final loc = s.location;
+          if (loc == null) return false;
+          final lat = (loc['latitude'] ?? loc['lat'])?.toDouble();
+          final lon = (loc['longitude'] ?? loc['lng'] ?? loc['lon'])?.toDouble();
+          if (lat == null || lon == null) return false;
+          final distance = LocationUtils.calculateDistance(userLatitude, userLongitude, lat, lon);
+          return distance <= radiusKm;
+        }).toList();
+      }
+
+      // Ordenamientos soportados: newest (default), price asc/desc, rating, distance
+      switch (sortBy) {
+        case 'priceLowToHigh':
+          services.sort((a, b) => a.price.compareTo(b.price));
+          break;
+        case 'priceHighToLow':
+          services.sort((a, b) => b.price.compareTo(a.price));
+          break;
+        case 'rating':
+          services.sort((a, b) => b.rating.compareTo(a.rating));
+          break;
+        case 'distance':
+          if (userLatitude != null && userLongitude != null) {
+            services.sort((a, b) {
+              double dA = 1e9;
+              double dB = 1e9;
+              if (a.location != null) {
+                final la = (a.location!['latitude'] ?? a.location!['lat'])?.toDouble();
+                final lo = (a.location!['longitude'] ?? a.location!['lng'] ?? a.location!['lon'])?.toDouble();
+                if (la != null && lo != null) {
+                  dA = LocationUtils.calculateDistance(userLatitude, userLongitude, la, lo);
+                }
+              }
+              if (b.location != null) {
+                final lb = (b.location!['latitude'] ?? b.location!['lat'])?.toDouble();
+                final lob = (b.location!['longitude'] ?? b.location!['lng'] ?? b.location!['lon'])?.toDouble();
+                if (lb != null && lob != null) {
+                  dB = LocationUtils.calculateDistance(userLatitude, userLongitude, lb, lob);
+                }
+              }
+              return dA.compareTo(dB);
+            });
+          }
+          break;
+        case 'newest':
+        default:
+          services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
       
       developer.log('✅ ${services.length} servicios encontrados con filtros');
       return services;

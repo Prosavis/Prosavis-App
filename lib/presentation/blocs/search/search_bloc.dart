@@ -128,6 +128,11 @@ class SearchBloc extends Bloc<SearchEvent, SearchState> {
           minPrice: event.minPrice,
           maxPrice: event.maxPrice,
           priceType: event.priceType,
+          minRating: event.minRating,
+          sortBy: event.sortBy,
+          radiusKm: event.radiusKm,
+          userLatitude: event.userLatitude,
+          userLongitude: event.userLongitude,
         ),
       );
 

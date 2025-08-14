@@ -26,6 +26,9 @@ import 'presentation/pages/auth/verify_phone_page.dart';
 import 'presentation/pages/auth/forgot_password_page.dart';
 import 'presentation/pages/settings/notifications_settings_page.dart';
 import 'presentation/pages/settings/language_settings_page.dart';
+import 'presentation/pages/address/addresses_page.dart';
+import 'presentation/pages/address/edit_address_page.dart';
+import 'presentation/pages/address/map_picker_page.dart';
 import 'presentation/pages/settings/edit_profile_page.dart';
 
 import 'presentation/pages/settings/terms_conditions_page.dart';
@@ -41,6 +44,7 @@ import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
 import 'package:google_fonts/google_fonts.dart';
+import 'presentation/blocs/address/address_bloc.dart';
 
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
@@ -157,6 +161,31 @@ final _router = GoRouter(
       builder: (context, state) => const ProfilePage(),
     ),
     GoRoute(
+      path: '/addresses',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return AddressesPage(userId: extra['userId'] as String);
+      },
+    ),
+    GoRoute(
+      path: '/addresses/add',
+      builder: (context, state) {
+        final extra = state.extra as Map<String, dynamic>;
+        return EditAddressPage(userId: extra['userId'] as String);
+      },
+    ),
+    GoRoute(
+      path: '/addresses/edit',
+      builder: (context, state) {
+        final initial = state.extra as dynamic;
+        return EditAddressPage(userId: initial.userId as String, initial: initial);
+      },
+    ),
+    GoRoute(
+      path: '/addresses/map',
+      builder: (context, state) => const MapPickerPage(),
+    ),
+    GoRoute(
       path: '/services/my-services',
       builder: (context, state) => const MyServicesPage(),
     ),
@@ -245,6 +274,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<FavoritesBloc>(
           create: (_) => di.sl<FavoritesBloc>(),
+        ),
+        BlocProvider<AddressBloc>(
+          create: (_) => di.sl<AddressBloc>(),
         ),
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(

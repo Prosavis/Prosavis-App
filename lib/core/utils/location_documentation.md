@@ -8,6 +8,7 @@ Este sistema utiliza **geolocalización real** para obtener la ubicación actual
 
 - **`geolocator`**: Para obtener coordenadas GPS precisas
 - **`geocoding`**: Para convertir coordenadas a direcciones legibles
+- **`google_maps_flutter`**: Para selector visual en mapa (pendiente de habilitar API key)
 - **Permisos nativos**: Manejo completo de permisos de ubicación
 
 ### 📋 Funcionalidades Implementadas
@@ -54,6 +55,7 @@ ElevatedButton.icon(
 ```xml
 <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<meta-data android:name="com.google.android.geo.API_KEY" android:value="@string/google_maps_api_key" />
 ```
 
 ### 🚀 Casos de Uso

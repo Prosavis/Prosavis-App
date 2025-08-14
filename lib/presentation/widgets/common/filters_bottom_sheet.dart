@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
@@ -72,6 +73,9 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Ordenar por debe ser lo primero
+                    _buildSortByFilter(),
+                    const SizedBox(height: 24),
                     _buildCategoryFilter(),
                     const SizedBox(height: 24),
                     _buildLocationFilter(),
@@ -79,10 +83,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
                     _buildPriceRangeFilter(),
                     const SizedBox(height: 24),
                     _buildRatingFilter(),
-                    const SizedBox(height: 24),
-                    _buildAvailabilityFilter(),
-                    const SizedBox(height: 24),
-                    _buildSortByFilter(),
                   ],
                 ),
               ),
@@ -211,7 +211,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
         Row(
           children: [
             Text(
-              '\$${_currentFilters.minPrice.toInt()}',
+              _formatCOP(_currentFilters.minPrice),
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.getTextSecondary(context),
@@ -219,7 +219,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
             ),
             const Spacer(),
             Text(
-              '\$${_currentFilters.maxPrice.toInt()}',
+              _formatCOP(_currentFilters.maxPrice),
               style: GoogleFonts.inter(
                 fontSize: 14,
                 color: AppTheme.getTextSecondary(context),
@@ -231,8 +231,10 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
         RangeSlider(
           values: RangeValues(_currentFilters.minPrice, _currentFilters.maxPrice),
           min: 0,
-          max: 1000,
-          divisions: 50,
+          // Máximo en COP (2'000,000)
+          max: 2000000,
+          // Pasos de 50k
+          divisions: 40,
           activeColor: AppTheme.primaryColor,
           onChanged: (values) {
             setState(() {
@@ -275,45 +277,7 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
     );
   }
 
-  Widget _buildAvailabilityFilter() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionTitle('Disponibilidad'),
-        const SizedBox(height: 12),
-        CheckboxListTile(
-          title: Text(
-            'Solo servicios disponibles ahora',
-            style: GoogleFonts.inter(fontSize: 14),
-          ),
-          value: _currentFilters.availableNow,
-          onChanged: (value) {
-            setState(() {
-              _currentFilters.availableNow = value ?? false;
-            });
-          },
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-          activeColor: AppTheme.primaryColor,
-        ),
-        CheckboxListTile(
-          title: Text(
-            'Incluir servicios con cita previa',
-            style: GoogleFonts.inter(fontSize: 14),
-          ),
-          value: _currentFilters.includeScheduled,
-          onChanged: (value) {
-            setState(() {
-              _currentFilters.includeScheduled = value ?? false;
-            });
-          },
-          controlAffinity: ListTileControlAffinity.leading,
-          contentPadding: EdgeInsets.zero,
-          activeColor: AppTheme.primaryColor,
-        ),
-      ],
-    );
-  }
+  // Se elimina la sección de disponibilidad según requerimiento
 
   Widget _buildSortByFilter() {
     return Column(
@@ -427,8 +391,6 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
 
   String _getSortOptionName(SortOption option) {
     switch (option) {
-      case SortOption.relevance:
-        return 'Relevancia';
       case SortOption.priceLowToHigh:
         return 'Precio: menor a mayor';
       case SortOption.priceHighToLow:
@@ -449,30 +411,24 @@ class FilterSettings {
   double minPrice;
   double maxPrice;
   double minRating;
-  bool availableNow;
-  bool includeScheduled;
   SortOption sortBy;
 
   FilterSettings({
-    this.selectedCategories = const [],
+    List<String>? selectedCategories,
     this.radiusKm = 10.0,
     this.minPrice = 0.0,
-    this.maxPrice = 500.0,
+    this.maxPrice = 2000000.0,
     this.minRating = 0.0,
-    this.availableNow = false,
-    this.includeScheduled = true,
-    this.sortBy = SortOption.relevance,
-  });
+    this.sortBy = SortOption.newest,
+  }) : selectedCategories = List<String>.from(selectedCategories ?? const []);
 
   bool get hasActiveFilters {
     return selectedCategories.isNotEmpty ||
            radiusKm != 10.0 ||
            minPrice != 0.0 ||
-           maxPrice != 500.0 ||
+           maxPrice != 2000000.0 ||
            minRating != 0.0 ||
-           availableNow ||
-           !includeScheduled ||
-           sortBy != SortOption.relevance;
+           sortBy != SortOption.newest;
   }
 }
 
@@ -482,5 +438,9 @@ enum SortOption {
   rating,
   distance,
   newest,
-  relevance,
 } 
+
+String _formatCOP(num value) {
+  final formatter = NumberFormat.currency(locale: 'es_CO', symbol: '\$');
+  return formatter.format(value.round());
+}

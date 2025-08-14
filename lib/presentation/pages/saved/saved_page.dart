@@ -12,6 +12,9 @@ import '../../blocs/favorites/favorites_event.dart';
 import '../../blocs/favorites/favorites_state.dart';
 
 import '../../widgets/common/service_card.dart';
+import '../../../domain/entities/service_entity.dart';
+import '../../widgets/common/filters_bottom_sheet.dart';
+import '../../../core/utils/location_utils.dart';
 
 class SavedPage extends StatefulWidget {
   final VoidCallback? onExploreServicesTapped;
@@ -26,6 +29,8 @@ class _SavedPageState extends State<SavedPage>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
+  FilterSettings? _favoriteFilters;
+  Map<String, double>? _userLocationForFilters;
 
   @override
   void initState() {
@@ -121,13 +126,15 @@ class _SavedPageState extends State<SavedPage>
         children: [
            _buildFavoritesHeader(state),
           const SizedBox(height: 16),
-          _buildServicesColumn(state, userId),
+          _buildServicesColumn(_getFilteredFavorites(state.favorites), userId),
         ],
       ),
     );
   }
 
   Widget _buildFavoritesHeader(FavoritesLoaded state) {
+    final total = state.favorites.length;
+    final visible = _getFilteredFavorites(state.favorites).length;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -165,7 +172,9 @@ class _SavedPageState extends State<SavedPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '${state.favorites.length} servicio${state.favorites.length != 1 ? 's' : ''} guardado${state.favorites.length != 1 ? 's' : ''}',
+                  _hasActiveFavoriteFilters
+                      ? 'Mostrando $visible de $total'
+                      : '$total servicio${total != 1 ? 's' : ''} guardado${total != 1 ? 's' : ''}',
                   style: GoogleFonts.inter(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -173,7 +182,9 @@ class _SavedPageState extends State<SavedPage>
                   ),
                 ),
                 Text(
-                  'Tus servicios favoritos guardados',
+                  _hasActiveFavoriteFilters
+                      ? 'Filtros activos aplicados'
+                      : 'Tus servicios favoritos guardados',
                   style: GoogleFonts.inter(
                     fontSize: 14,
                     color: AppTheme.getTextSecondary(context),
@@ -182,14 +193,34 @@ class _SavedPageState extends State<SavedPage>
               ],
             ),
           ),
+          const SizedBox(width: 8),
+          if (_hasActiveFavoriteFilters)
+            TextButton(
+              onPressed: _clearFavoriteFilters,
+              child: Text(
+                'Limpiar',
+                style: GoogleFonts.inter(
+                  color: AppTheme.primaryColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          IconButton(
+            onPressed: _openFavoriteFilters,
+            tooltip: 'Filtros',
+            icon: Icon(
+              Symbols.tune,
+              color: AppTheme.getTextPrimary(context),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildServicesColumn(FavoritesLoaded state, String userId) {
+  Widget _buildServicesColumn(List<ServiceEntity> services, String userId) {
     return Column(
-      children: state.favorites.map((service) => Padding(
+      children: services.map((service) => Padding(
         padding: const EdgeInsets.only(bottom: 12),
         child: ServiceCard(
           service: service,
@@ -197,11 +228,58 @@ class _SavedPageState extends State<SavedPage>
           showFavoriteButton: true,
           isFavorite: true,
           onFavoriteToggle: () {
-            context.read<FavoritesBloc>().add(ToggleFavorite(userId: userId, serviceId: service.id));
+            _confirmRemoveFavorite(userId, service);
           },
         ),
       )).toList(),
     );
+  }
+
+  Future<void> _confirmRemoveFavorite(String userId, ServiceEntity service) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          'Quitar de favoritos',
+          style: GoogleFonts.inter(
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          '¿Quieres quitar "${service.title}" de tus favoritos?',
+          style: GoogleFonts.inter(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.inter(
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && mounted) {
+      context.read<FavoritesBloc>().add(
+        ToggleFavorite(userId: userId, serviceId: service.id),
+      );
+    }
   }
 
   Widget _buildEmptyState() {
@@ -326,6 +404,114 @@ class _SavedPageState extends State<SavedPage>
           color: AppTheme.getTextPrimary(context),
         ),
       ),
+    );
+  }
+
+  bool get _hasActiveFavoriteFilters => _favoriteFilters?.hasActiveFilters == true;
+
+  Future<void> _openFavoriteFilters() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => FiltersBottomSheet(
+        initialFilters: _favoriteFilters,
+        onFiltersApplied: (filters) async {
+          // Guardar filtros seleccionados
+          setState(() {
+            _favoriteFilters = filters;
+          });
+          // Si se requiere ubicación, obtenerla
+          if (filters.sortBy == SortOption.distance || filters.radiusKm != 10.0) {
+            final userLoc = await LocationUtils.getCurrentUserLocation();
+            if (!mounted) return;
+            setState(() {
+              _userLocationForFilters = userLoc;
+            });
+          }
+        },
+      ),
+    );
+  }
+
+  void _clearFavoriteFilters() {
+    setState(() {
+      _favoriteFilters = FilterSettings();
+      _userLocationForFilters = null;
+    });
+  }
+
+  List<ServiceEntity> _getFilteredFavorites(List<ServiceEntity> favorites) {
+    final filters = _favoriteFilters;
+    if (filters == null || !filters.hasActiveFilters) {
+      return List<ServiceEntity>.from(favorites);
+    }
+
+    final result = favorites.where((s) {
+      // Categorías
+      if (filters.selectedCategories.isNotEmpty &&
+          !filters.selectedCategories.contains(s.category)) {
+        return false;
+      }
+      // Precio
+      if (s.price < filters.minPrice || s.price > filters.maxPrice) {
+        return false;
+      }
+      // Rating
+      if (s.rating < filters.minRating) {
+        return false;
+      }
+      // Radio de distancia
+      if (filters.radiusKm != 10.0) {
+        final dist = _computeDistanceKm(s);
+        if (dist == null || dist > filters.radiusKm) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
+    // Ordenar
+    switch (filters.sortBy) {
+      case SortOption.priceLowToHigh:
+        result.sort((a, b) => a.price.compareTo(b.price));
+        break;
+      case SortOption.priceHighToLow:
+        result.sort((a, b) => b.price.compareTo(a.price));
+        break;
+      case SortOption.rating:
+        result.sort((a, b) => b.rating.compareTo(a.rating));
+        break;
+      case SortOption.distance:
+        result.sort((a, b) {
+          final da = _computeDistanceKm(a);
+          final db = _computeDistanceKm(b);
+          if (da == null && db == null) return 0;
+          if (da == null) return 1;
+          if (db == null) return -1;
+          return da.compareTo(db);
+        });
+        break;
+      case SortOption.newest:
+        result.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        break;
+    }
+
+    return result;
+  }
+
+  double? _computeDistanceKm(ServiceEntity service) {
+    final loc = service.location;
+    final userLoc = _userLocationForFilters;
+    if (loc == null || userLoc == null) return null;
+    final lat = (loc['latitude'] as num?)?.toDouble();
+    final lon = (loc['longitude'] as num?)?.toDouble();
+    if (lat == null || lon == null) return null;
+    return LocationUtils.calculateDistance(
+      userLoc['latitude']!,
+      userLoc['longitude']!,
+      lat,
+      lon,
     );
   }
 }

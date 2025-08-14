@@ -762,46 +762,57 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             
             Row(
               children: [
-                GestureDetector(
-                  onTap: () => _scrollToReviews(openWriteDialog: true),
-                  behavior: HitTestBehavior.opaque,
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Symbols.star,
-                        size: 20,
-                        color: Colors.orange,
+                Row(
+                  children: [
+                    // Estrellas + promedio: sigue abriendo el diálogo para agregar reseña
+                    GestureDetector(
+                      onTap: () => _scrollToReviews(openWriteDialog: true),
+                      behavior: HitTestBehavior.opaque,
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Symbols.star,
+                            size: 20,
+                            color: Colors.orange,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            _currentService!.rating.toStringAsFixed(1),
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.getTextPrimary(context),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        _currentService!.rating.toStringAsFixed(1),
-                        style: GoogleFonts.inter(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
+                    ),
+                    // Separación más amplia del conteo de reseñas
+                    const SizedBox(width: 12),
+                    // Conteo de reseñas: abre el listado de todas las reseñas
+                    GestureDetector(
+                      onTap: _onReviewsCountTap,
+                      behavior: HitTestBehavior.opaque,
+                      child: Text(
                         '(${_currentService!.reviewCount} reseñas)',
                         style: GoogleFonts.inter(
                           fontSize: 14,
                           color: AppTheme.getTextSecondary(context),
                         ),
                       ),
-                      if (_isUpdatingRating) ...[
-                        const SizedBox(width: 8),
-                        const SizedBox(
-                          width: 12,
-                          height: 12,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 1.5,
-                            color: Colors.orange,
-                          ),
+                    ),
+                    if (_isUpdatingRating) ...[
+                      const SizedBox(width: 8),
+                      const SizedBox(
+                        width: 12,
+                        height: 12,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: Colors.orange,
                         ),
-                      ],
+                      ),
                     ],
-                  ),
+                  ],
                 ),
                 const Spacer(),
                 Text(
@@ -1590,8 +1601,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     
     // Mostrar lista horizontal de servicios similares
     return SizedBox(
-      // Altura alineada con el tamaño real del ServiceCard vertical para evitar overflow
-      height: 220,
+      // Altura alineada con el tamaño real del ServiceCard vertical y adaptada
+      // al factor de escala de texto para evitar overflows en algunos dispositivos
+      height: ServiceCard.preferredVerticalListHeight(context),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         itemCount: _similarServices.length,
@@ -1849,6 +1861,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         );
       },
     );
+  }
+
+  Future<void> _onReviewsCountTap() async {
+    // Desplaza a la sección de reseñas y abre el listado completo
+    await _scrollToReviews(focusOnAddButton: false, openWriteDialog: false);
+    if (!mounted) return;
+    // Pequeño retraso para que el scroll termine visualmente
+    await Future.delayed(const Duration(milliseconds: 120));
+    if (!mounted) return;
+    _viewAllReviews();
   }
 
   Future<void> _showAddReviewDialog() async {

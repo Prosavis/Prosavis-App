@@ -50,6 +50,25 @@ class ServiceCard extends StatelessWidget {
     this.fullWidth = false,
   });
 
+  /// Altura recomendada para listas horizontales de tarjetas verticales.
+  ///
+  /// Ajusta dinámicamente la altura base (220) considerando el `textScaleFactor`
+  /// del dispositivo para evitar overflows en pantallas con fuentes grandes.
+  static double preferredVerticalListHeight(BuildContext context) {
+    const double baseHeight = 220.0;
+    // Calcular factor real a partir del nuevo TextScaler
+    final double textScale = MediaQuery.of(context).textScaler.scale(16.0) / 16.0;
+    // Aumento suave en función del escalado de texto, limitado para no ocupar
+    // espacio excesivo. Cubre casos de accesibilidad comunes (1.2–1.5).
+    final double extra = (textScale - 1.0) * 56.0;
+    final double safeExtra = extra <= 0
+        ? 0.0
+        : (extra > 80.0)
+            ? 80.0
+            : extra;
+    return baseHeight + safeExtra;
+  }
+
   @override
   Widget build(BuildContext context) {
     if (isHorizontal) {

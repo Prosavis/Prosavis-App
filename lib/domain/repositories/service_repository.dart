@@ -11,9 +11,15 @@ abstract class ServiceRepository {
   Future<List<ServiceEntity>> searchServices({
     String? query,
     String? category,
+    List<String>? categories,
     double? minPrice,
     double? maxPrice,
     String? priceType,
+    double? minRating,
+    String? sortBy,
+    double? radiusKm,
+    double? userLatitude,
+    double? userLongitude,
     int limit = 20,
   });
   

@@ -268,6 +268,20 @@ class _ProfilePageState extends State<ProfilePage>
                 onTap: () => context.push('/settings/edit-profile'),
                 showArrow: true,
               ),
+
+              const SizedBox(height: 12),
+              _buildOptionTile(
+                icon: Symbols.location_on,
+                title: 'Mis direcciones',
+                subtitle: 'Casa, Trabajo y más',
+                onTap: () {
+                  final auth = context.read<AuthBloc>().state;
+                  if (auth is AuthAuthenticated) {
+                    context.push('/addresses', extra: {'userId': auth.user.id});
+                  }
+                },
+                showArrow: true,
+              ),
               
               const SizedBox(height: 12),
               

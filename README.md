@@ -18,6 +18,7 @@ Plataforma móvil para conectar prestadores de servicios con clientes. Enfocada 
 - **BLoC** (`flutter_bloc`), **DI** (`get_it`), **Routing** (`go_router`)
 - **Firebase**: `firebase_core`, `firebase_auth`, `cloud_firestore`, `firebase_storage`, `google_sign_in`
 - **Geolocalización**: `geolocator`, `geocoding`
+- **Mapas**: `google_maps_flutter`
 - **UI/UX**: `google_fonts`, `material_symbols_icons`, `animations`, `shimmer`, `flutter_svg`, `lottie`
 
 Consulta versiones exactas en `pubspec.yaml`.
@@ -132,6 +133,7 @@ Ver pantallas en `presentation/pages/auth/*` y la documentación MFA.
 - Home, Búsqueda, Categorías, Notificaciones, Perfil
 - Crear/Editar/Detalle de Servicio, Mis Servicios
 - Favoritos y reseñas (crear, listar, estadísticas)
+- Direcciones: `AddressesPage`, `EditAddressPage`, `MapPickerPage`
 
 Router: `go_router` definido en `lib/main.dart`.
 

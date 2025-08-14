@@ -78,4 +78,10 @@ class AppConstants {
   static const double paddingSmall = 8.0;
   static const double paddingMedium = 16.0;
   static const double paddingLarge = 24.0;
+
+  // Degradados suaves para secciones (inspiración estilo dinámico)
+  static const List<Color> homeGradientColors = [
+    Color(0xFFFFEFE5), // tono cálido claro
+    Color(0xFFFDF7F2),
+  ];
 } 

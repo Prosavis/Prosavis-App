@@ -21,17 +21,29 @@ class ServiceRepositoryImpl implements ServiceRepository {
   Future<List<ServiceEntity>> searchServices({
     String? query,
     String? category,
+    List<String>? categories,
     double? minPrice,
     double? maxPrice,
     String? priceType,
+    double? minRating,
+    String? sortBy,
+    double? radiusKm,
+    double? userLatitude,
+    double? userLongitude,
     int limit = 20,
   }) async {
     return await _firestoreService.searchServices(
       query: query,
       category: category,
+      categories: categories,
       minPrice: minPrice,
       maxPrice: maxPrice,
       priceType: priceType,
+      minRating: minRating,
+      sortBy: sortBy,
+      radiusKm: radiusKm,
+      userLatitude: userLatitude,
+      userLongitude: userLongitude,
       limit: limit,
     );
   }
