@@ -13,6 +13,12 @@ service cloud.firestore {
                   (!request.resource.data.keys().hasAny(['profileImageUrl']) || 
                    request.resource.data.profileImageUrl == null || 
                    request.resource.data.profileImageUrl.matches('https://firebasestorage.googleapis.com/.*'));
+      
+      // === SUBCOLECCIÓN: DIRECCIONES GUARDADAS ===
+      // Cada usuario puede gestionar sus propias direcciones
+      match /addresses/{addressId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
     // === SERVICIOS ===

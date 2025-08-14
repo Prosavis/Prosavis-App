@@ -10,6 +10,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:uuid/uuid.dart';
+import 'package:go_router/go_router.dart';
 import 'place_suggestion.dart';
 
 class EditAddressPage extends StatefulWidget {
@@ -265,7 +266,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
   }
 
   Future<void> _pickOnMap() async {
-    final result = await Navigator.pushNamed(context, '/addresses/map');
+    final result = await context.push('/addresses/map');
     if (!mounted || result == null) return;
     final map = result as Map<String, dynamic>;
     setState(() {

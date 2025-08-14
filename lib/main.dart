@@ -46,6 +46,7 @@ import 'core/injection/injection_container.dart' as di;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/blocs/address/address_bloc.dart';
+import 'presentation/blocs/auth/auth_state.dart';
 
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
@@ -177,8 +178,17 @@ final _router = GoRouter(
     GoRoute(
       path: '/addresses/add',
       builder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        return EditAddressPage(userId: extra['userId'] as String);
+        final extra = state.extra as Map<String, dynamic>?;
+        String userId = '';
+        if (extra != null && extra['userId'] != null) {
+          userId = extra['userId'] as String;
+        } else {
+          final authState = context.read<AuthBloc>().state;
+          if (authState is AuthAuthenticated) {
+            userId = authState.user.id;
+          }
+        }
+        return EditAddressPage(userId: userId);
       },
     ),
     GoRoute(

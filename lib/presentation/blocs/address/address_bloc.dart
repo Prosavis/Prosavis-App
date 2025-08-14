@@ -13,6 +13,7 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<UpdateAddress>(_onUpdate);
     on<DeleteAddress>(_onDelete);
     on<SetDefaultAddress>(_onSetDefault);
+    on<SetActiveAddressLocal>(_onSetActiveLocal);
   }
 
   Future<void> _onLoad(LoadAddresses event, Emitter<AddressState> emit) async {
@@ -83,6 +84,13 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
       }
     } catch (_) {
       emit(AddressError('No se pudo establecer como predeterminada'));
+    }
+  }
+
+  void _onSetActiveLocal(SetActiveAddressLocal event, Emitter<AddressState> emit) {
+    if (state is AddressLoaded) {
+      final s = state as AddressLoaded;
+      emit(s.copyWith(active: event.address));
     }
   }
 

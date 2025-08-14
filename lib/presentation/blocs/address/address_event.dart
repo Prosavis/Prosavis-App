@@ -43,4 +43,12 @@ class SetDefaultAddress extends AddressEvent {
   List<Object?> get props => [userId, addressId];
 }
 
+/// Establece una dirección activa solo en memoria (no persiste)
+class SetActiveAddressLocal extends AddressEvent {
+  final SavedAddressEntity address;
+  SetActiveAddressLocal(this.address);
+  @override
+  List<Object?> get props => [address];
+}
+
 
