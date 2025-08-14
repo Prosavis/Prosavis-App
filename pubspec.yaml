@@ -66,6 +66,7 @@ dependencies:
   # Maps (a integrar)
   google_maps_flutter: ^2.7.0
   uuid: ^4.4.2
+  flutter_google_places_sdk: ^0.3.8
 
 
 dev_dependencies:

@@ -44,11 +44,18 @@ import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/blocs/address/address_bloc.dart';
 
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
   WidgetsFlutterBinding.ensureInitialized();
+  // Cargar variables de entorno (API Keys, flags, etc.)
+  try {
+    await dotenv.load(fileName: '.env');
+  } catch (_) {
+    // continuar sin .env
+  }
   
   bool dependenciesInitialized = false;
   

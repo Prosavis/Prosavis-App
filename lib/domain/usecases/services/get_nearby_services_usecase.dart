@@ -9,17 +9,26 @@ class GetNearbyServicesUseCase implements UseCase<List<ServiceEntity>, GetNearby
 
   @override
   Future<List<ServiceEntity>> call(GetNearbyServicesParams params) async {
-    // Por ahora obtenemos servicios limitados, en el futuro se puede filtrar por ubicación
     return await repository.searchServices(
       limit: params.limit,
+      radiusKm: params.radiusKm,
+      userLatitude: params.userLatitude,
+      userLongitude: params.userLongitude,
+      sortBy: 'distance',
     );
   }
 }
 
 class GetNearbyServicesParams {
   final int limit;
+  final double? radiusKm;
+  final double? userLatitude;
+  final double? userLongitude;
 
   const GetNearbyServicesParams({
     this.limit = 3,
+    this.radiusKm,
+    this.userLatitude,
+    this.userLongitude,
   });
 }

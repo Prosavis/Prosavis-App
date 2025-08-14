@@ -59,6 +59,8 @@ class _HomePageState extends State<HomePage>
         final authState = context.read<AuthBloc>().state;
         if (authState is AuthAuthenticated) {
           context.read<AddressBloc>().add(LoadAddresses(authState.user.id));
+          // conectar HomeBloc con AddressBloc para usar coordenadas activas
+          context.read<HomeBloc>().addressBloc = context.read<AddressBloc>();
         }
       } catch (_) {}
     });
@@ -503,20 +505,30 @@ class _HomePageState extends State<HomePage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                margin: const EdgeInsets.only(
+                  left: AppConstants.paddingMedium,
+                  right: AppConstants.paddingMedium,
+                  top: AppConstants.paddingMedium,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppTheme.secondaryGradient,
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
                       'Servicios Destacados',
-                      style: Theme.of(context).textTheme.headlineMedium,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
                     ),
                     if (state is HomeLoading)
                       const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       ),
                   ],
                 ),
@@ -613,9 +625,17 @@ class _HomePageState extends State<HomePage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Cerca de ti',
-                  style: Theme.of(context).textTheme.headlineMedium,
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.primaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    'Cerca de ti',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 _buildNearbyServicesList(state),

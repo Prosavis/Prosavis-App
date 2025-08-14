@@ -6,6 +6,11 @@ import '../../../core/utils/location_utils.dart';
 import '../../blocs/address/address_bloc.dart';
 import '../../blocs/address/address_event.dart';
 import '../../../domain/entities/saved_address_entity.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:uuid/uuid.dart';
+import 'place_suggestion.dart';
 
 class EditAddressPage extends StatefulWidget {
   final String userId;
@@ -36,7 +41,112 @@ class _EditAddressPageState extends State<EditAddressPage> {
     _lat = widget.initial?.latitude;
     _lng = widget.initial?.longitude;
     _isDefault = widget.initial?.isDefault ?? false;
+    // Inicializa Places SDK si hay API key en strings.xml (Android) o Info.plist (iOS)
+    _initPlaces();
   }
+  String? _sessionToken;
+  List<PlaceSuggestion> _suggestions = [];
+  OverlayEntry? _overlay;
+
+  Future<void> _initPlaces() async {
+    // Nada que inicializar con REST; generar token de sesión para autocomplete
+    _sessionToken = const Uuid().v4();
+  }
+
+  Future<void> _onAddressChanged(String value) async {
+    if (value.trim().isEmpty) {
+      _clearOverlay();
+      return;
+    }
+    final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) {
+      _clearOverlay();
+      return;
+    }
+    final uri = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${Uri.encodeComponent(value)}&types=address&components=country:co&language=es&sessiontoken=${_sessionToken ?? ''}&key=$apiKey',
+    );
+    final res = await http.get(uri);
+    if (res.statusCode != 200) {
+      _clearOverlay();
+      return;
+    }
+    final data = json.decode(res.body) as Map<String, dynamic>;
+    final preds = (data['predictions'] as List<dynamic>).cast<Map<String, dynamic>>();
+    _suggestions = preds
+        .map((p) => PlaceSuggestion(
+              description: p['description'] as String? ?? '',
+              placeId: p['place_id'] as String? ?? '',
+            ))
+        .toList();
+    _showOverlay();
+  }
+
+  void _showOverlay() {
+    _clearOverlay();
+    final overlay = Overlay.of(context);
+    // Para simplicidad, posicionamos bajo el app bar
+    _overlay = OverlayEntry(
+      builder: (_) => Positioned(
+        left: 16,
+        right: 16,
+        top: 180,
+        child: Material(
+          elevation: 6,
+          borderRadius: BorderRadius.circular(12),
+          child: ListView.builder(
+            padding: EdgeInsets.zero,
+            shrinkWrap: true,
+            itemCount: _suggestions.length,
+            itemBuilder: (ctx, i) {
+              final s = _suggestions[i];
+              return ListTile(
+                title: Text(s.description),
+                onTap: () async {
+                  _addressLine.text = s.description;
+                  _clearOverlay();
+                  await _fetchPlaceDetails(s.placeId);
+                },
+              );
+            },
+          ),
+        ),
+      ),
+    );
+    overlay.insert(_overlay!);
+  }
+
+  void _clearOverlay() {
+    _overlay?.remove();
+    _overlay = null;
+  }
+
+  Future<void> _fetchPlaceDetails(String placeId) async {
+    final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'];
+    if (apiKey == null || apiKey.isEmpty) return;
+    final uri = Uri.parse(
+      'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=geometry/location,formatted_address&language=es&sessiontoken=${_sessionToken ?? ''}&key=$apiKey',
+    );
+    final res = await http.get(uri);
+    if (res.statusCode != 200) return;
+    final data = json.decode(res.body) as Map<String, dynamic>;
+    final result = data['result'] as Map<String, dynamic>?;
+    final geometry = result?['geometry'] as Map<String, dynamic>?;
+    final location = geometry?['location'] as Map<String, dynamic>?;
+    final lat = (location?['lat'] as num?)?.toDouble();
+    final lng = (location?['lng'] as num?)?.toDouble();
+    final formatted = result?['formatted_address'] as String?;
+    if (lat != null && lng != null) {
+      setState(() {
+        _lat = lat;
+        _lng = lng;
+        if (formatted != null) {
+          _addressLine.text = formatted;
+        }
+      });
+    }
+  }
+
 
   @override
   void dispose() {
@@ -68,6 +178,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
               controller: _addressLine,
               decoration: const InputDecoration(hintText: 'KR 8B # 1 - 32, Pereira', labelText: 'Dirección completa'),
               validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              onChanged: _onAddressChanged,
             ),
             const SizedBox(height: 12),
             Row(
@@ -168,6 +279,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
   }
 
   void _save() {
+    _clearOverlay();
     if (!_formKey.currentState!.validate()) return;
     if (_lat == null || _lng == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Selecciona una ubicación válida')));

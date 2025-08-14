@@ -96,7 +96,7 @@ class _EmptyState extends StatelessWidget {
             const SizedBox(height: 12),
             Text('Aún no tienes direcciones', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            Text('Agrega tu Casa, Trabajo u otros lugares frecuentes.', textAlign: TextAlign.center),
+            const Text('Agrega tu Casa, Trabajo u otros lugares frecuentes.', textAlign: TextAlign.center),
             const SizedBox(height: 16),
             ElevatedButton(onPressed: onAdd, child: const Text('Agregar dirección')),
           ],

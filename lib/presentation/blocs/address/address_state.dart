@@ -13,7 +13,7 @@ class AddressLoading extends AddressState {}
 class AddressLoaded extends AddressState {
   final List<SavedAddressEntity> addresses;
   final SavedAddressEntity? active;
-  const AddressLoaded({required this.addresses, this.active});
+  AddressLoaded({required this.addresses, this.active});
 
   AddressLoaded copyWith({
     List<SavedAddressEntity>? addresses,

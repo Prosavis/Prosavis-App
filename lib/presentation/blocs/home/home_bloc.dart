@@ -5,11 +5,14 @@ import '../../../domain/usecases/services/get_nearby_services_usecase.dart';
 import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 import 'home_event.dart';
 import 'home_state.dart';
+import '../address/address_bloc.dart';
+import '../address/address_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetFeaturedServicesUseCase _getFeaturedServicesUseCase;
   final GetNearbyServicesUseCase _getNearbyServicesUseCase;
   final GetServiceReviewStatsUseCase _getServiceReviewStatsUseCase;
+  AddressBloc? addressBloc; // opcional: inyectar desde UI
 
   HomeBloc({
     required GetFeaturedServicesUseCase getFeaturedServicesUseCase,
@@ -41,11 +44,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<void> _loadServices(Emitter<HomeState> emit) async {
     try {
       developer.log('🏠 Cargando servicios para navegación pública...');
-      
-      // Cargar servicios destacados y cercanos en paralelo (sin autenticación)
+      double? lat;
+      double? lng;
+      if (addressBloc?.state is AddressLoaded) {
+        final a = (addressBloc!.state as AddressLoaded).active;
+        if (a != null) {
+          lat = a.latitude;
+          lng = a.longitude;
+        }
+      }
+
       final results = await Future.wait([
         _getFeaturedServicesUseCase(const GetFeaturedServicesParams(limit: 5)),
-        _getNearbyServicesUseCase(const GetNearbyServicesParams(limit: 3)),
+        _getNearbyServicesUseCase(GetNearbyServicesParams(limit: 6, radiusKm: 15, userLatitude: lat, userLongitude: lng)),
       ]);
 
       var featuredServices = results[0];
