@@ -1,4 +1,4 @@
 <resources>
-    <!-- Placeholder. Reemplaza este valor con tu API key real mediante flavors o secrets -->
-    <string name="google_maps_api_key">YOUR_GOOGLE_MAPS_API_KEY</string>
+    <!-- Clave para Maps SDK en Android -->
+    <string name="google_maps_api_key">AlzaSyCk630Z7mZS7Z6qqWxHflfK2Mmo0VCiSnE</string>
 </resources>
