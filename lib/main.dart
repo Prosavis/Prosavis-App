@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import 'dart:developer' as developer;
+import 'core/config/app_config.dart';
 
 import 'core/themes/app_theme.dart';
 import 'core/constants/app_constants.dart';
@@ -61,7 +62,7 @@ void main() async {
   bool dependenciesInitialized = false;
   
   try {
-    developer.log('🚀 Iniciando aplicación Prosavis...');
+    if (AppConfig.enableDetailedLogs) developer.log('🚀 Iniciando aplicación Prosavis...');
     
     // Configurar optimizaciones de rendimiento
     PerformanceConfig.configurePerformance();
@@ -77,9 +78,10 @@ void main() async {
     dependenciesInitialized = true;
     
     // Diagnosticar configuración de Firebase para debugging
-    FirebaseService.diagnoseFirebaseConfiguration();
-    
-    developer.log('✅ Aplicación iniciada con Firebase configurado');
+    if (AppConfig.enableDetailedLogs) {
+      FirebaseService.diagnoseFirebaseConfiguration();
+      developer.log('✅ Aplicación iniciada con Firebase configurado');
+    }
     
   } catch (e, stackTrace) {
     developer.log('❌ Error crítico en inicialización: $e');

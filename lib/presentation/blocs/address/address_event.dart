@@ -51,4 +51,13 @@ class SetActiveAddressLocal extends AddressEvent {
   List<Object?> get props => [address];
 }
 
+/// Sincroniza la dirección activa con el perfil del usuario en la base de datos
+class SyncActiveAddressToProfile extends AddressEvent {
+  final String userId;
+  final SavedAddressEntity address;
+  SyncActiveAddressToProfile(this.userId, this.address);
+  @override
+  List<Object?> get props => [userId, address];
+}
+
 

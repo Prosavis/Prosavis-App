@@ -6,10 +6,8 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 
-import 'package:permission_handler/permission_handler.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/location_utils.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/auth/auth_event.dart';
@@ -40,7 +38,7 @@ class _EditProfilePageState extends State<EditProfilePage>
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
 
-  final _locationController = TextEditingController();
+
 
   bool _isLoading = false;
   String? _profileImageUrl;
@@ -103,7 +101,7 @@ class _EditProfilePageState extends State<EditProfilePage>
     _emailController.dispose();
     _phoneController.dispose();
 
-    _locationController.dispose();
+
     super.dispose();
   }
 
@@ -123,7 +121,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                   ? storedPhone.substring(3)
                   : storedPhone;
 
-              _locationController.text = state.user.location ?? '';
+
               _profileImageUrl = state.user.photoUrl;
             });
           } else if (state is ProfileError) {
@@ -333,10 +331,6 @@ class _EditProfilePageState extends State<EditProfilePage>
                   return null;
                 },
               ),
-
-              const SizedBox(height: 16),
-
-              _buildLocationField(),
 
               const SizedBox(height: 24),
 
@@ -598,16 +592,6 @@ class _EditProfilePageState extends State<EditProfilePage>
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     
     try {
-      // Solicitar permiso de cámara
-      final cameraStatus = await Permission.camera.status;
-      if (cameraStatus.isDenied) {
-        final result = await Permission.camera.request();
-        if (result.isDenied) {
-          _showPermissionDeniedDialog('cámara');
-          return;
-        }
-      }
-
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
         imageQuality: 70,
@@ -705,16 +689,6 @@ class _EditProfilePageState extends State<EditProfilePage>
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     
     try {
-      // Solicitar permiso de galería
-      final photosStatus = await Permission.photos.status;
-      if (photosStatus.isDenied) {
-        final result = await Permission.photos.request();
-        if (result.isDenied) {
-          _showPermissionDeniedDialog('galería');
-          return;
-        }
-      }
-
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
@@ -825,223 +799,11 @@ class _EditProfilePageState extends State<EditProfilePage>
     }
   }
 
-  void _showPermissionDeniedDialog(String permission) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'Permiso Requerido',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
-        ),
-        content: Text(
-          'La aplicación necesita acceso a $permission para esta funcionalidad. Por favor, concede el permiso en la configuración.',
-          style: GoogleFonts.inter(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancelar',
-              style: GoogleFonts.inter(color: AppTheme.textSecondary),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              openAppSettings();
-            },
-            child: Text(
-              'Ir a Configuración',
-              style: GoogleFonts.inter(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  
 
-  Widget _buildLocationField() {
-    return Row(
-      children: [
-        Expanded(
-          child: TextFormField(
-            controller: _locationController,
-            decoration: InputDecoration(
-              labelText: 'Ubicación',
-              hintText: 'Ej: Calle 123 #45-67, Bogotá',
-              prefixIcon: Icon(
-                Symbols.location_on,
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppTheme.darkBorder
-                      : Colors.grey.shade300,
-                ),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppTheme.darkBorder
-                      : Colors.grey.shade300,
-                ),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
-              ),
-              labelStyle: GoogleFonts.inter(color: AppTheme.getTextSecondary(context)),
-            ),
-            style: GoogleFonts.inter(color: AppTheme.getTextPrimary(context)),
-            maxLength: 200,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Column(
-          children: [
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: _getCurrentLocation,
-                icon: const Icon(
-                  Symbols.my_location,
-                  size: 18,
-                ),
-                label: Text(
-                  'GPS',
-                  style: GoogleFonts.inter(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primaryColor,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
 
-  Future<void> _getCurrentLocation() async {
-    if (!mounted) return;
 
-    // Mostrar indicador de carga
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '🔍 Obteniendo ubicación GPS...',
-              style: GoogleFonts.inter(),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 30), // Dar tiempo suficiente
-      ),
-    );
 
-    try {
-      final address = await LocationUtils.getCurrentAddress();
-      
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
-      
-      if (address != null && mounted) {
-        setState(() {
-          _locationController.text = address;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '📍 Ubicación obtenida: $address',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Configuración',
-              textColor: Colors.white,
-              onPressed: () async {
-                await LocationUtils.openLocationSettings();
-              },
-            ),
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    } catch (e) {
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
-      
-      if (mounted) {
-        String errorMessage = '❌ Error al obtener ubicación.';
-        SnackBarAction? action;
-        
-        if (e.toString().contains('Permisos de ubicación denegados')) {
-          errorMessage = '❌ Permisos de ubicación denegados.';
-          action = SnackBarAction(
-            label: 'Configurar',
-            textColor: Colors.white,
-            onPressed: () async {
-              await LocationUtils.openAppSettings();
-            },
-          );
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              errorMessage,
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: action,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    }
-  }
 
   void _saveProfile() async {
     if (!_formKey.currentState!.validate()) {
@@ -1073,9 +835,7 @@ class _EditProfilePageState extends State<EditProfilePage>
                 : _phoneController.text.trim()) 
             : null,
         bio: null, // Campo eliminado
-        location: _locationController.text.trim().isNotEmpty 
-            ? _locationController.text.trim() 
-            : null,
+        location: null,
         photoUrl: _profileImageUrl,
         createdAt: currentUser.createdAt,
         updatedAt: DateTime.now(),

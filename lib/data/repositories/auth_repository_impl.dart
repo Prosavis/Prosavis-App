@@ -19,7 +19,7 @@ class AuthRepositoryImpl implements AuthRepository {
       final firebaseUser = _firebaseService.getCurrentUser();
       
       if (firebaseUser == null) {
-        developer.log('📱 No hay usuario autenticado');
+        // Log reducido para no saturar arranque
         return null;
       }
 

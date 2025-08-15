@@ -12,8 +12,8 @@ class FirebaseService {
   // Firebase Auth instance
   final FirebaseAuth _auth;
   
-  // Google Sign-In instance con configuración mejorada
-  late final GoogleSignIn _googleSignIn;
+  // Google Sign-In instance con configuración diferida para no bloquear arranque
+  GoogleSignIn? _googleSignIn;
 
   // Inicialización de Firebase
   static Future<void> initializeFirebase() async {
@@ -66,17 +66,14 @@ class FirebaseService {
 
   // Constructor
   FirebaseService() : _auth = FirebaseAuth.instance {
-    // Usar la instancia singleton de Google Sign-In (versión 7.x)
-    _googleSignIn = GoogleSignIn.instance;
-    
-    // Inicializar Google Sign-In
-    _initializeGoogleSignIn();
+    // Defer: no inicializar Google Sign-In hasta que se necesite
   }
 
   // Inicializar Google Sign-In con configuración básica
   Future<void> _initializeGoogleSignIn() async {
     try {
-      await _googleSignIn.initialize();
+      _googleSignIn ??= GoogleSignIn.instance;
+      await _googleSignIn!.initialize();
       developer.log('✅ Google Sign-In inicializado correctamente');
     } catch (e) {
       developer.log('⚠️ Error al inicializar Google Sign-In: $e');
@@ -87,7 +84,8 @@ class FirebaseService {
   Future<void> signOut() async {
     try {
       // Cerrar sesión en Google Sign-In primero
-      await _googleSignIn.signOut();
+      await _initializeGoogleSignIn();
+      await _googleSignIn!.signOut();
       
       // Cerrar sesión en Firebase
       await _auth.signOut();
@@ -106,8 +104,9 @@ class FirebaseService {
       
       // 1. Cerrar sesión de Google completamente
       try {
-        await _googleSignIn.disconnect();
-        await _googleSignIn.signOut();
+        await _initializeGoogleSignIn();
+        await _googleSignIn!.disconnect();
+        await _googleSignIn!.signOut();
         developer.log('✅ Google Sign-In limpiado');
       } catch (e) {
         developer.log('⚠️ Error limpiando Google Sign-In: $e');
@@ -198,17 +197,18 @@ class FirebaseService {
       developer.log('🚀 Iniciando flujo de Google Sign-In...');
       
       // 🔍 DIAGNÓSTICO: Verificar estado actual
-      developer.log('📱 Verificando estado de Google Sign-In...');
+      if (AppConfig.enableDetailedLogs) developer.log('📱 Verificando estado de Google Sign-In...');
       
       // Limpiar cualquier sesión previa que pueda interferir
-      developer.log('🧹 Limpiando sesión previa de Google...');
-      await _googleSignIn.signOut();
+      if (AppConfig.enableDetailedLogs) developer.log('🧹 Limpiando sesión previa de Google...');
+      await _initializeGoogleSignIn();
+      await _googleSignIn!.signOut();
       
       // Usar el flujo estándar de Google Sign-In
-      developer.log('🔑 Solicitando autenticación de Google...');
-      final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+      if (AppConfig.enableDetailedLogs) developer.log('🔑 Solicitando autenticación de Google...');
+      final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
       
-      developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
+      if (AppConfig.enableDetailedLogs) developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
 
       // Obtener authentication details
       final GoogleSignInAuthentication googleAuth = googleUser.authentication;
@@ -222,19 +222,19 @@ class FirebaseService {
         );
       }
 
-      developer.log('✅ Token de Google obtenido correctamente');
+      if (AppConfig.enableDetailedLogs) developer.log('✅ Token de Google obtenido correctamente');
 
       // Crear credencial de Firebase con el idToken de Google
       final OAuthCredential credential = GoogleAuthProvider.credential(
         idToken: googleAuth.idToken,
       );
 
-      developer.log('🔐 Iniciando sesión en Firebase con credencial de Google...');
+      if (AppConfig.enableDetailedLogs) developer.log('🔐 Iniciando sesión en Firebase con credencial de Google...');
 
       // Iniciar sesión en Firebase con la credencial de Google
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
       
-      developer.log('✅ Google Sign-In exitoso: ${userCredential.user?.email}');
+      if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In exitoso: ${userCredential.user?.email}');
       return userCredential;
       
     } on Exception catch (e) {
@@ -883,8 +883,9 @@ class FirebaseService {
   Future<void> clearGoogleSignInCache() async {
     try {
       developer.log('🧹 Limpiando caché de Google Sign-In...');
-      await _googleSignIn.signOut();
-      await _googleSignIn.disconnect();
+      await _initializeGoogleSignIn();
+      await _googleSignIn!.signOut();
+      await _googleSignIn!.disconnect();
       developer.log('✅ Caché de Google Sign-In limpiado');
     } catch (e) {
       developer.log('⚠️ Error al limpiar caché: $e');

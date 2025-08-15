@@ -44,6 +44,7 @@ import 'package:prosavis/presentation/blocs/favorites/favorites_bloc.dart';
 import 'package:prosavis/presentation/blocs/address/address_bloc.dart';
 
 import 'dart:developer' as developer;
+import 'package:prosavis/core/config/app_config.dart';
 
 final sl = GetIt.instance;
 
@@ -52,183 +53,187 @@ Future<void> setupDependencyInjection() async => await init();
 
 Future<void> init() async {
   try {
-    developer.log('🔧 Iniciando configuración de dependencias...');
+    if (AppConfig.enableDetailedLogs) {
+      developer.log('🔧 Iniciando configuración de dependencias...');
+    }
     
     // 1) Initialize Firebase before registering services that use it
     await FirebaseService.initializeFirebase();
-    developer.log('✅ Firebase inicializado: ${FirebaseService.isInitialized}');
+    if (AppConfig.enableDetailedLogs) {
+      developer.log('✅ Firebase inicializado: ${FirebaseService.isInitialized}');
+    }
     
 
 
     // 2) Register your service and repositories
     sl.registerLazySingleton<FirebaseService>(() => FirebaseService());
-    developer.log('✅ FirebaseService registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ FirebaseService registrado');
     
     sl.registerLazySingleton<FirestoreService>(() => FirestoreService());
-    developer.log('✅ FirestoreService registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ FirestoreService registrado');
     
 
     
     sl.registerLazySingleton<ImageStorageService>(() => ImageStorageService());
-    developer.log('✅ ImageStorageService registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ ImageStorageService registrado');
     
     sl.registerLazySingleton<AuthRepository>(
       () => AuthRepositoryImpl(),
     );
-    developer.log('✅ AuthRepository registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ AuthRepository registrado');
     
     sl.registerLazySingleton<ServiceRepository>(
       () => ServiceRepositoryImpl(sl<FirestoreService>()),
     );
-    developer.log('✅ ServiceRepository registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ ServiceRepository registrado');
 
     sl.registerLazySingleton<ReviewRepository>(
       () => ReviewRepositoryImpl(sl<FirestoreService>()),
     );
-    developer.log('✅ ReviewRepository registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ ReviewRepository registrado');
 
     sl.registerLazySingleton<FavoriteRepository>(
       () => FavoriteRepositoryImpl(),
     );
-    developer.log('✅ FavoriteRepository registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ FavoriteRepository registrado');
 
     // Address repository
     sl.registerLazySingleton<AddressRepository>(
       () => AddressRepositoryImpl(sl<FirestoreService>()),
     );
-    developer.log('✅ AddressRepository registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ AddressRepository registrado');
 
     // Use cases
     sl.registerLazySingleton<SignInWithGoogleUseCase>(
       () => SignInWithGoogleUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ SignInWithGoogleUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SignInWithGoogleUseCase registrado');
 
     sl.registerLazySingleton<SignInWithEmailUseCase>(
       () => SignInWithEmailUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ SignInWithEmailUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SignInWithEmailUseCase registrado');
 
     sl.registerLazySingleton<SignUpWithEmailUseCase>(
       () => SignUpWithEmailUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ SignUpWithEmailUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SignUpWithEmailUseCase registrado');
 
     sl.registerLazySingleton<SignInWithPhoneUseCase>(
       () => SignInWithPhoneUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ SignInWithPhoneUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SignInWithPhoneUseCase registrado');
 
     sl.registerLazySingleton<VerifyPhoneCodeUseCase>(
       () => VerifyPhoneCodeUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ VerifyPhoneCodeUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ VerifyPhoneCodeUseCase registrado');
 
     sl.registerLazySingleton<PasswordResetUseCase>(
       () => PasswordResetUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ PasswordResetUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ PasswordResetUseCase registrado');
 
     sl.registerLazySingleton<EnrollMFAUseCase>(
       () => EnrollMFAUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ EnrollMFAUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ EnrollMFAUseCase registrado');
 
     sl.registerLazySingleton<SignInWithMFAUseCase>(
       () => SignInWithMFAUseCase(sl<AuthRepository>()),
     );
-    developer.log('✅ SignInWithMFAUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SignInWithMFAUseCase registrado');
 
     sl.registerLazySingleton<CreateServiceUseCase>(
       () {
-        developer.log('🔧 Creando instancia de CreateServiceUseCase...');
+        if (AppConfig.enableDetailedLogs) developer.log('🔧 Creando instancia de CreateServiceUseCase...');
         final serviceRepo = sl<ServiceRepository>();
-        developer.log('✅ ServiceRepository obtenido: ${serviceRepo.runtimeType}');
+        if (AppConfig.enableDetailedLogs) developer.log('✅ ServiceRepository obtenido: ${serviceRepo.runtimeType}');
         return CreateServiceUseCase(serviceRepo);
       },
     );
-    developer.log('✅ CreateServiceUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ CreateServiceUseCase registrado');
 
     sl.registerLazySingleton<SearchServicesUseCase>(
       () => SearchServicesUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ SearchServicesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SearchServicesUseCase registrado');
 
     sl.registerLazySingleton<GetFeaturedServicesUseCase>(
       () => GetFeaturedServicesUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ GetFeaturedServicesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetFeaturedServicesUseCase registrado');
 
     sl.registerLazySingleton<GetNearbyServicesUseCase>(
       () => GetNearbyServicesUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ GetNearbyServicesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetNearbyServicesUseCase registrado');
 
     sl.registerLazySingleton<GetUserServicesUseCase>(
       () => GetUserServicesUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ GetUserServicesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetUserServicesUseCase registrado');
 
     sl.registerLazySingleton<GetServiceByIdUseCase>(
       () => GetServiceByIdUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ GetServiceByIdUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetServiceByIdUseCase registrado');
 
     sl.registerLazySingleton<UpdateServiceUseCase>(
       () => UpdateServiceUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ UpdateServiceUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ UpdateServiceUseCase registrado');
 
     sl.registerLazySingleton<DeleteServiceUseCase>(
       () => DeleteServiceUseCase(sl<ServiceRepository>()),
     );
-    developer.log('✅ DeleteServiceUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ DeleteServiceUseCase registrado');
 
     sl.registerLazySingleton<CreateReviewUseCase>(
       () => CreateReviewUseCase(sl<ReviewRepository>(), sl<ServiceRepository>()),
     );
-    developer.log('✅ CreateReviewUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ CreateReviewUseCase registrado');
 
     sl.registerLazySingleton<GetServiceReviewsUseCase>(
       () => GetServiceReviewsUseCase(sl<ReviewRepository>()),
     );
-    developer.log('✅ GetServiceReviewsUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetServiceReviewsUseCase registrado');
 
     sl.registerLazySingleton<GetServiceReviewStatsUseCase>(
       () => GetServiceReviewStatsUseCase(sl<ReviewRepository>()),
     );
-    developer.log('✅ GetServiceReviewStatsUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetServiceReviewStatsUseCase registrado');
 
     sl.registerLazySingleton<CheckUserReviewUseCase>(
       () => CheckUserReviewUseCase(sl<ReviewRepository>()),
     );
-    developer.log('✅ CheckUserReviewUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ CheckUserReviewUseCase registrado');
 
     sl.registerLazySingleton<AddToFavoritesUseCase>(
       () => AddToFavoritesUseCase(sl<FavoriteRepository>()),
     );
-    developer.log('✅ AddToFavoritesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ AddToFavoritesUseCase registrado');
 
     sl.registerLazySingleton<RemoveFromFavoritesUseCase>(
       () => RemoveFromFavoritesUseCase(sl<FavoriteRepository>()),
     );
-    developer.log('✅ RemoveFromFavoritesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ RemoveFromFavoritesUseCase registrado');
 
     sl.registerLazySingleton<GetUserFavoritesUseCase>(
       () => GetUserFavoritesUseCase(sl<FavoriteRepository>()),
     );
-    developer.log('✅ GetUserFavoritesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ GetUserFavoritesUseCase registrado');
 
     sl.registerLazySingleton<CheckFavoriteStatusUseCase>(
       () => CheckFavoriteStatusUseCase(sl<FavoriteRepository>()),
     );
-    developer.log('✅ CheckFavoriteStatusUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ CheckFavoriteStatusUseCase registrado');
 
     // Stream de favoritos en tiempo real
     sl.registerLazySingleton<WatchUserFavoritesUseCase>(
       () => WatchUserFavoritesUseCase(sl<FavoriteRepository>()),
     );
-    developer.log('✅ WatchUserFavoritesUseCase registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ WatchUserFavoritesUseCase registrado');
 
     // BLoCs
     sl.registerFactory(
@@ -242,12 +247,12 @@ Future<void> init() async {
         passwordResetUseCase: sl<PasswordResetUseCase>(),
       ),
     );
-    developer.log('✅ AuthBloc registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ AuthBloc registrado');
 
     sl.registerFactory(
       () => SearchBloc(sl<SearchServicesUseCase>()),
     );
-    developer.log('✅ SearchBloc registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ SearchBloc registrado');
 
     sl.registerFactory(
       () => HomeBloc(
@@ -256,7 +261,7 @@ Future<void> init() async {
         getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
       ),
     );
-    developer.log('✅ HomeBloc registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ HomeBloc registrado');
 
     sl.registerFactory(
       () => FavoritesBloc(
@@ -268,18 +273,18 @@ Future<void> init() async {
         getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
       ),
     );
-    developer.log('✅ FavoritesBloc registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ FavoritesBloc registrado');
 
     // AddressBloc
     sl.registerFactory(
       () => AddressBloc(repository: sl<AddressRepository>()),
     );
-    developer.log('✅ AddressBloc registrado');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ AddressBloc registrado');
 
     // ProfileBloc se registra directamente en main.dart para acceso al AuthBloc
-    developer.log('✅ ProfileBloc configurado en main.dart');
+    if (AppConfig.enableDetailedLogs) developer.log('✅ ProfileBloc configurado en main.dart');
     
-    developer.log('🎉 Todas las dependencias configuradas correctamente');
+    if (AppConfig.enableDetailedLogs) developer.log('🎉 Todas las dependencias configuradas correctamente');
   } catch (e, stackTrace) {
     developer.log('❌ Error crítico al configurar dependencias: $e');
     developer.log('Stack trace: $stackTrace');

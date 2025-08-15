@@ -99,12 +99,20 @@ service cloud.firestore {
     // === FAVORITOS ===
     // ✅ GESTIÓN PERSONAL: Cada usuario gestiona sus propios favoritos
     match /favorites/{favoriteId} {
-      allow read, write: if request.auth != null && 
-                        request.auth.uid == resource.data.userId; // 🔐 Solo el propietario de los favoritos
+      // Para lectura usamos query-based rules para permitir .where('userId', '==', uid)
+      allow read: if request.auth != null && 
+                 (resource == null || request.auth.uid == resource.data.userId);
+      
+      allow write: if request.auth != null && 
+                  request.auth.uid == resource.data.userId; // 🔐 Solo el propietario de los favoritos
+      
       allow create: if request.auth != null && 
                    request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
                    // 📋 Validar que el servicio existe
                    exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId));
+      
+      allow delete: if request.auth != null && 
+                   request.auth.uid == resource.data.userId;
     }
     
     // === RESEÑAS GLOBALES ===

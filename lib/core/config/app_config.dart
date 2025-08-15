@@ -1,4 +1,5 @@
 import 'dart:developer' as developer;
+import 'package:flutter/foundation.dart' show kDebugMode, kReleaseMode;
 
 /// Configuración central de la aplicación
 /// Maneja el entorno (desarrollo/producción) y configuraciones específicas
@@ -8,10 +9,10 @@ class AppConfig {
   static const bool _isProduction = bool.fromEnvironment('PRODUCTION', defaultValue: false);
   
   /// Indica si la app está en modo desarrollo
-  static bool get isDevelopment => _isDevelopment && !_isProduction;
+  static bool get isDevelopment => _isDevelopment || (!_isProduction && kDebugMode);
   
   /// Indica si la app está en modo producción
-  static bool get isProduction => _isProduction;
+  static bool get isProduction => _isProduction || kReleaseMode;
   
   /// Configuración de Firebase
   static bool get useFirebaseEmulator => isDevelopment;
@@ -43,8 +44,9 @@ class AppConfig {
   }
   
   /// Configuración de debugging
-  static bool get enableDetailedLogs => isDevelopment;
-  static bool get enablePerformanceLogging => isDevelopment;
+  static bool get enableDetailedLogs => const bool.fromEnvironment('VERBOSE_LOGS', defaultValue: false);
+  static bool get enablePerformanceLogging => const bool.fromEnvironment('PERF_LOGS', defaultValue: false);
+  static bool get enableSplashSound => const bool.fromEnvironment('SPLASH_SOUND', defaultValue: false);
   
   /// Configuración de características
   static bool get enableBetaFeatures => isDevelopment;

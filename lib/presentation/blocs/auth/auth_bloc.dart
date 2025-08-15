@@ -11,6 +11,7 @@ import '../../../domain/usecases/auth/password_reset_usecase.dart';
 import '../../../core/usecases/usecase.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import '../../../core/config/app_config.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _authRepository;
@@ -58,8 +59,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     
     // 🔍 DIAGNÓSTICO: Verificar estado de autenticación al inicio
-    developer.log('🚀 === INICIANDO AUTHBLOC ===');
-    _authRepository.diagnoseAuthState();
+    // Reducir verbosidad: diagnóstico solo si está habilitado
+    try {
+      // ignore: deprecated_member_use_from_same_package
+      if (AppConfig.enableDetailedLogs) {
+        developer.log('🚀 === INICIANDO AUTHBLOC ===');
+        _authRepository.diagnoseAuthState();
+      }
+    } catch (_) {}
     
     // Escuchar cambios en el estado de autenticación
     _authStateSubscription?.cancel();
@@ -71,15 +78,17 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final currentUser = await _authRepository.getCurrentUser();
       if (currentUser != null) {
-        developer.log('👤 Usuario persistente encontrado:');
-        developer.log('   - ID: ${currentUser.id}');
-        developer.log('   - Email: ${currentUser.email}');
-        developer.log('   - Nombre: ${currentUser.name}');
+        if (AppConfig.enableDetailedLogs) {
+          developer.log('👤 Usuario persistente encontrado:');
+          developer.log('   - ID: ${currentUser.id}');
+          developer.log('   - Email: ${currentUser.email}');
+          developer.log('   - Nombre: ${currentUser.name}');
+        }
         
         // 🔍 VERIFICACIÓN ESPECIAL: Limpiar solo usuarios anónimos de pruebas anteriores
         await _checkAndCleanAnonymousUser(currentUser, emit);
       } else {
-        developer.log('📱 No hay usuario autenticado - Iniciando navegación pública');
+        if (AppConfig.enableDetailedLogs) developer.log('📱 No hay usuario autenticado - Iniciando navegación pública');
         emit(AuthUnauthenticated());
       }
     } catch (e) {
@@ -87,7 +96,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthError('Error al verificar autenticación: $e'));
     }
     
-    developer.log('🎯 === AUTHBLOC INICIADO ===');
+    if (AppConfig.enableDetailedLogs) developer.log('🎯 === AUTHBLOC INICIADO ===');
   }
 
   Future<void> _onAuthSignInWithGoogleRequested(

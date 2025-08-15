@@ -4,9 +4,13 @@ import '../../blocs/address/address_event.dart';
 import '../../blocs/address/address_state.dart';
 import '../../../domain/entities/saved_address_entity.dart';
 import '../../../domain/repositories/address_repository.dart';
+import '../../../data/services/firestore_service.dart';
+import '../../../domain/entities/user_entity.dart';
 
 class AddressBloc extends Bloc<AddressEvent, AddressState> {
   final AddressRepository repository;
+  final FirestoreService _firestoreService = FirestoreService();
+  
   AddressBloc({required this.repository}) : super(AddressInitial()) {
     on<LoadAddresses>(_onLoad);
     on<AddAddress>(_onAdd);
@@ -14,16 +18,40 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     on<DeleteAddress>(_onDelete);
     on<SetDefaultAddress>(_onSetDefault);
     on<SetActiveAddressLocal>(_onSetActiveLocal);
+    on<SyncActiveAddressToProfile>(_onSyncToProfile);
   }
 
   Future<void> _onLoad(LoadAddresses event, Emitter<AddressState> emit) async {
+    // Preservar la ubicación activa actual si existe y es temporal (GPS)
+    SavedAddressEntity? currentActive;
+    if (state is AddressLoaded) {
+      final currentState = state as AddressLoaded;
+      currentActive = currentState.active;
+    }
+    
     emit(AddressLoading());
     try {
       final list = await repository.getUserAddresses(event.userId);
-      final active = list.firstWhere((e) => e.isDefault, orElse: () => list.isNotEmpty ? list.first : _empty());
-      emit(AddressLoaded(addresses: list, active: list.isNotEmpty ? active : null));
+      
+      // Determinar dirección activa: priorizar GPS temporal si existe, sino usar guardada por defecto
+      SavedAddressEntity? active;
+      if (currentActive != null && currentActive.id == 'gps_current') {
+        // Preservar ubicación GPS temporal
+        active = currentActive;
+      } else {
+        // Usar dirección guardada por defecto
+        active = list.firstWhere((e) => e.isDefault, orElse: () => list.isNotEmpty ? list.first : _empty());
+        active = list.isNotEmpty ? active : null;
+      }
+      
+      emit(AddressLoaded(addresses: list, active: active));
     } catch (e) {
-      emit(AddressError('No se pudieron cargar las direcciones'));
+      // Si hay error pero teníamos ubicación GPS, preservarla
+      if (currentActive != null && currentActive.id == 'gps_current') {
+        emit(AddressLoaded(addresses: const [], active: currentActive));
+      } else {
+        emit(AddressError('No se pudieron cargar las direcciones'));
+      }
     }
   }
 
@@ -91,6 +119,40 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
     if (state is AddressLoaded) {
       final s = state as AddressLoaded;
       emit(s.copyWith(active: event.address));
+    } else {
+      // Si no hay estado AddressLoaded, crear uno con lista vacía pero con ubicación activa
+      emit(AddressLoaded(
+        addresses: const [], 
+        active: event.address,
+      ));
+    }
+  }
+
+  Future<void> _onSyncToProfile(SyncActiveAddressToProfile event, Emitter<AddressState> emit) async {
+    try {
+      // Obtener el usuario actual
+      final currentUser = await _firestoreService.getUserById(event.userId);
+      if (currentUser == null) return;
+
+      // Actualizar la ubicación del usuario con la dirección activa
+      final updatedUser = UserEntity(
+        id: currentUser.id,
+        name: currentUser.name,
+        email: currentUser.email,
+        photoUrl: currentUser.photoUrl,
+        phoneNumber: currentUser.phoneNumber,
+        bio: currentUser.bio,
+        location: event.address.addressLine, // Sincronizar la dirección
+        createdAt: currentUser.createdAt,
+        updatedAt: DateTime.now(),
+      );
+
+      await _firestoreService.createOrUpdateUser(updatedUser);
+      
+      // El estado no cambia aquí, solo sincronizamos con el perfil
+    } catch (e) {
+      // Manejar error silenciosamente para no interrumpir la experiencia del usuario
+      // En una implementación más robusta, podrías emitir un estado de error específico
     }
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:developer' as developer;
+import '../../../core/config/app_config.dart';
 import '../../../core/themes/app_theme.dart';
 
 class SplashPage extends StatefulWidget {
@@ -55,7 +56,9 @@ class _SplashPageState extends State<SplashPage>
       vsync: this,
       duration: const Duration(milliseconds: 3000),
     );
-    _audioPlayer = AudioPlayer();
+    if (AppConfig.enableSplashSound) {
+      _audioPlayer = AudioPlayer();
+    }
 
     // Configurar animaciones
     _scaleAnimation = TweenSequence<double>([
@@ -118,8 +121,8 @@ class _SplashPageState extends State<SplashPage>
           _playTextSound();
         }
         
-        // Espera total extendida para una intro más notoria (+500ms)
-        await Future.delayed(const Duration(milliseconds: 1900));
+         // Reducir espera total para acelerar navegación al home
+         await Future.delayed(const Duration(milliseconds: 1100));
         
         if (mounted) {
           context.go('/home');
@@ -129,21 +132,18 @@ class _SplashPageState extends State<SplashPage>
   }
 
   void _playWelcomeSound() {
+    if (!AppConfig.enableSplashSound) return;
     try {
-      // Intentar reproducir sonido desde assets; fallback a SystemSound
       _audioPlayer
           ?.play(AssetSource('sounds/transition-fleeting.mp3'))
           .onError((error, stackTrace) {
-        SystemSound.play(SystemSoundType.alert);
+        // Silencioso: no generar más logs ni alertas del sistema
       });
-      
-      // Vibración sutil solo para dispositivos móviles (no web)
       if (!kIsWeb) {
         HapticFeedback.lightImpact();
       }
-    } catch (e) {
-      // Si hay error, continuar sin sonido
-      developer.log('Error reproduciendo sonido: $e');
+    } catch (_) {
+      // Silenciar errores de sonido en splash
     }
   }
 

@@ -73,7 +73,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
       await _favoritesSubscription?.cancel();
       if (watchUserFavoritesUseCase != null) {
         _favoritesSubscription = watchUserFavoritesUseCase!(event.userId).listen((services) {
-          add(FavoritesStreamUpdated(services));
+          // Verificar si el bloc no está cerrado antes de agregar eventos
+          if (!isClosed) {
+            add(FavoritesStreamUpdated(services));
+          }
         });
       }
     } catch (e) {
@@ -140,9 +143,11 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
       if (state is FavoritesLoaded) {
         final currentState = state as FavoritesLoaded;
         // No guardamos snapshot completo para simplificar; forzamos refresh
-        add(RefreshFavorites((currentState.favorites.isNotEmpty)
-            ? currentState.favorites.first.providerId // placeholder, se reemplaza abajo
-            : ''));
+        if (!isClosed) {
+          add(RefreshFavorites((currentState.favorites.isNotEmpty)
+              ? currentState.favorites.first.providerId // placeholder, se reemplaza abajo
+              : ''));
+        }
       }
     }
   }
@@ -164,16 +169,18 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
             serviceId: event.serviceId,
           ));
       
-      if (isFavorite) {
-        add(RemoveFromFavorites(
-          userId: event.userId,
-          serviceId: event.serviceId,
-        ));
-      } else {
-        add(AddToFavorites(
-          userId: event.userId,
-          serviceId: event.serviceId,
-        ));
+      if (!isClosed) {
+        if (isFavorite) {
+          add(RemoveFromFavorites(
+            userId: event.userId,
+            serviceId: event.serviceId,
+          ));
+        } else {
+          add(AddToFavorites(
+            userId: event.userId,
+            serviceId: event.serviceId,
+          ));
+        }
       }
     } catch (e) {
       emit(FavoritesError('Error al cambiar favorito: $e'));

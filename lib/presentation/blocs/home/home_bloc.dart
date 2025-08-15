@@ -43,7 +43,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _loadServices(Emitter<HomeState> emit) async {
     try {
-      developer.log('🏠 Cargando servicios para navegación pública...');
+      // Log reducido
       double? lat;
       double? lng;
       if (addressBloc?.state is AddressLoaded) {

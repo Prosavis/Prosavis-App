@@ -1,4 +1,10 @@
 <resources>
     <!-- Clave para Maps SDK en Android -->
-    <string name="google_maps_api_key">AlzaSyCk630Z7mZS7Z6qqWxHflfK2Mmo0VCiSnE</string>
+    <!-- TEMPORAL: API key para desarrollo - DEBES REEMPLAZARLA -->
+    <!-- IMPORTANTE: Esta es una clave temporal para pruebas. Para producción: -->
+    <!-- 1. Ve a https://console.cloud.google.com/apis/credentials -->
+    <!-- 2. Crea tu propia API key -->
+    <!-- 3. Habilita: Maps SDK for Android, Geocoding API, Places API -->
+    <!-- 4. Configura restricciones de seguridad -->
+    <string name="google_maps_api_key">AIzaSyBkJ8J2k2RFQVgKr_PXvGUpG7H-1mGJ8Vs</string>
 </resources>

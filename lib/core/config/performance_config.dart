@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/rendering.dart';
+import '../config/app_config.dart';
 
 /// Configuración de rendimiento para la aplicación
 class PerformanceConfig {
@@ -17,10 +18,15 @@ class PerformanceConfig {
       debugPaintSizeEnabled = false;
     }
 
-    // Configurar timings para mejor rendimiento
-    if (_callbackRef == null) {
-      _callbackRef = _frameCallback;
-      SchedulerBinding.instance.addPersistentFrameCallback(_callbackRef!);
+    // Solo activar el monitor si está habilitado
+    if (AppConfig.enablePerformanceLogging) {
+      if (_callbackRef == null) {
+        _callbackRef = _frameCallback;
+        SchedulerBinding.instance.addPersistentFrameCallback(_callbackRef!);
+      }
+      _monitoring = true;
+    } else {
+      _monitoring = false;
     }
   }
 

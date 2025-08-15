@@ -10,7 +10,7 @@ import '../../blocs/address/address_state.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../../domain/entities/saved_address_entity.dart';
-import '../../../core/utils/location_utils.dart';
+
 
 class AddressesPage extends StatefulWidget {
   final String userId;
@@ -55,56 +55,84 @@ class _AddressesPageState extends State<AddressesPage> {
         builder: (context, state) {
           if (state is AddressInitial) {
             context.read<AddressBloc>().add(LoadAddresses(widget.userId));
-          }
-          if (state is AddressLoading || state is AddressInitial) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state is AddressError) {
-            return _ErrorState(
-              message: state.message,
-              onAdd: () => _openAdd(context),
-            );
+          if (state is AddressLoading) {
+            return const Center(child: CircularProgressIndicator());
           }
-          if (state is AddressLoaded) {
-            final addresses = state.addresses;
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 120),
-              children: [
-                // Dirección actual por GPS como opción rápida
-                _CurrentLocationTile(
-                  onUse: (addr) {
-                    context.read<AddressBloc>().add(SetActiveAddressLocal(addr));
-                  },
-                ),
-                const SizedBox(height: 16),
-                if (addresses.isEmpty)
-                  _EmptyState(onAdd: () => _openAdd(context))
-                else ...[
-                  Text('Guardadas', style: Theme.of(context).textTheme.titleMedium),
-                  const SizedBox(height: 8),
-                  ...List.generate(addresses.length, (i) {
-                    final a = addresses[i];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _AddressTile(
-                        address: a,
-                        isActive: state.active?.id == a.id,
-                        onEdit: () => _openEdit(context, a),
-                        onDelete: () => context
-                            .read<AddressBloc>()
-                            .add(DeleteAddress(widget.userId, a.id)),
-                        onSetDefault: () => context
-                            .read<AddressBloc>()
-                            .add(SetDefaultAddress(widget.userId, a.id)),
-                        onMore: () => _showOptionsSheet(context, a),
+          // Siempre mostrar la UI, incluso si hay errores
+          final addresses = (state is AddressLoaded) ? state.addresses : <SavedAddressEntity>[];
+          
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+            children: [
+              // Sección de ubicación GPS actual - siempre visible
+              Text('Ubicación Actual', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              _CurrentLocationTile(userId: widget.userId),
+              const SizedBox(height: 24),
+              
+              // Sección de direcciones guardadas
+              Text('Direcciones Guardadas', style: Theme.of(context).textTheme.titleMedium),
+              const SizedBox(height: 8),
+              
+              if (addresses.isEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? AppTheme.darkSurface
+                        : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? AppTheme.darkBorder
+                          : Colors.grey.shade200,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      const Icon(Symbols.add_location, size: 48, color: AppTheme.primaryColor),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Sin direcciones guardadas',
+                        style: Theme.of(context).textTheme.titleMedium,
                       ),
-                    );
-                  })
-                ]
-              ],
-            );
-          }
-          return const SizedBox.shrink();
+                      const SizedBox(height: 8),
+                      Text(
+                        'Agrega tu casa, trabajo u otros lugares que visites frecuentemente para acceso rápido.',
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppTheme.getTextSecondary(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ] else ...[
+                ...List.generate(addresses.length, (i) {
+                  final a = addresses[i];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _AddressTile(
+                      address: a,
+                      isActive: (state is AddressLoaded) ? state.active?.id == a.id : false,
+                      onEdit: () => _openEdit(context, a),
+                      onDelete: () => context
+                          .read<AddressBloc>()
+                          .add(DeleteAddress(widget.userId, a.id)),
+                      onSetDefault: () {
+                        context.read<AddressBloc>().add(SetDefaultAddress(widget.userId, a.id));
+                        // Sincronizar la dirección predeterminada con el perfil
+                        context.read<AddressBloc>().add(SyncActiveAddressToProfile(widget.userId, a));
+                      },
+                      onMore: () => _showOptionsSheet(context, a),
+                    ),
+                  );
+                })
+              ]
+            ],
+          );
         },
       ),
     );
@@ -115,6 +143,9 @@ class _AddressesPageState extends State<AddressesPage> {
     if (authState is! AuthAuthenticated) return;
     final homeLocation = authState.user.location;
     if (homeLocation == null || homeLocation.trim().isEmpty) return;
+
+    // Capturar referencia al AddressBloc antes de operaciones asíncronas
+    final addressBloc = context.read<AddressBloc>();
 
     try {
       final results = await locationFromAddress(homeLocation);
@@ -132,7 +163,11 @@ class _AddressesPageState extends State<AddressesPage> {
         createdAt: now,
         updatedAt: now,
       );
-      context.read<AddressBloc>().add(AddAddress(entity));
+      
+      // Verificar si el widget está montado antes de usar el bloc
+      if (mounted) {
+        addressBloc.add(AddAddress(entity));
+      }
     } catch (_) {
       // no-op si falla el geocoding
     }
@@ -147,54 +182,9 @@ class _AddressesPageState extends State<AddressesPage> {
   }
 }
 
-class _EmptyState extends StatelessWidget {
-  final VoidCallback onAdd;
-  const _EmptyState({required this.onAdd});
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Symbols.location_on, size: 56, color: AppTheme.primaryColor),
-            const SizedBox(height: 12),
-            Text('Aún no tienes direcciones', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            const Text('Agrega tu Casa, Trabajo u otros lugares frecuentes.', textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onAdd, child: const Text('Agregar dirección')),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
-class _ErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onAdd;
-  const _ErrorState({required this.message, required this.onAdd});
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Symbols.error, size: 56, color: AppTheme.errorColor),
-            const SizedBox(height: 12),
-            Text(message, textAlign: TextAlign.center),
-            const SizedBox(height: 16),
-            ElevatedButton(onPressed: onAdd, child: const Text('Agregar dirección')),
-          ],
-        ),
-      ),
-    );
-  }
-}
+
+
 
 void _showOptionsSheet(BuildContext context, SavedAddressEntity address) {
   showModalBottomSheet(
@@ -258,6 +248,8 @@ void _showOptionsSheet(BuildContext context, SavedAddressEntity address) {
                 onTap: () {
                   Navigator.pop(ctx);
                   context.read<AddressBloc>().add(SetDefaultAddress(address.userId, address.id));
+                  // Sincronizar la dirección predeterminada con el perfil
+                  context.read<AddressBloc>().add(SyncActiveAddressToProfile(address.userId, address));
                 },
               ),
               ListTile(
@@ -277,107 +269,142 @@ void _showOptionsSheet(BuildContext context, SavedAddressEntity address) {
   );
 }
 
-class _CurrentLocationTile extends StatefulWidget {
-  final void Function(SavedAddressEntity) onUse;
-  const _CurrentLocationTile({required this.onUse});
-
-  @override
-  State<_CurrentLocationTile> createState() => _CurrentLocationTileState();
-}
-
-class _CurrentLocationTileState extends State<_CurrentLocationTile> {
-  String? _address;
-  double? _lat;
-  double? _lng;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    try {
-      final details = await LocationUtils.getCurrentLocationDetails();
-      if (!mounted) return;
-      setState(() {
-        _address = details?['address'] as String?;
-        _lat = (details?['latitude'] as num?)?.toDouble();
-        _lng = (details?['longitude'] as num?)?.toDouble();
-        _loading = false;
-      });
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => _loading = false);
-    }
-  }
+class _CurrentLocationTile extends StatelessWidget {
+  final String userId;
+  const _CurrentLocationTile({required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.getSurfaceColor(context),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-      ),
-      child: ListTile(
-        leading: const Icon(Symbols.my_location, color: AppTheme.accentColor),
-        title: Text('Usar mi ubicación actual', style: Theme.of(context).textTheme.titleMedium),
-        subtitle: Text(
-          _loading ? 'Obteniendo ubicación…' : (_address ?? 'No disponible'),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        trailing: Wrap(
-          spacing: 8,
-          children: [
-            OutlinedButton(
-              onPressed: (_lat != null && _lng != null && !_loading)
-                  ? () async {
-                      final now = DateTime.now();
-                      widget.onUse(
-                        SavedAddressEntity(
-                          id: '',
-                          userId: '',
-                          label: 'Actual',
-                          addressLine: _address ?? 'Ubicación actual',
-                          latitude: _lat!,
-                          longitude: _lng!,
-                          isDefault: false,
-                          createdAt: now,
-                          updatedAt: now,
+    return BlocBuilder<AddressBloc, AddressState>(
+      builder: (context, state) {
+        // Cargar direcciones si no están cargadas
+        if (state is AddressInitial) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) {
+              context.read<AddressBloc>().add(LoadAddresses(userId));
+            }
+          });
+        }
+        // Obtener la ubicación activa del estado
+        SavedAddressEntity? activeLocation;
+        String displayAddress = 'Ubicación no disponible';
+        bool hasLocation = false;
+        bool isLoading = false;
+
+        if (state is AddressLoading) {
+          displayAddress = 'Obteniendo ubicación...';
+          isLoading = true;
+        } else if (state is AddressLoaded && state.active != null) {
+          activeLocation = state.active;
+          displayAddress = activeLocation!.addressLine;
+          hasLocation = true;
+        } else if (state is AddressInitial) {
+          displayAddress = 'Configurando ubicación...';
+          isLoading = true;
+        }
+
+        return Container(
+          decoration: BoxDecoration(
+            color: AppTheme.getSurfaceColor(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppTheme.getBorderColor(context)),
+          ),
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              // Icono naranja (mantener como está)
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Symbols.my_location, 
+                  color: AppTheme.accentColor,
+                  size: 24,
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Información de ubicación
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Usar mi ubicación actual',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (isLoading) ...[
+                          SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.getTextSecondary(context),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        Expanded(
+                          child: Text(
+                            displayAddress,
+                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppTheme.getTextSecondary(context),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      );
-                    }
-                  : null,
-              child: const Text('Usar'),
-            ),
-            ElevatedButton(
-              onPressed: (_lat != null && _lng != null && !_loading)
-                  ? () async {
-                      // Abrir el editor precargado para permitir guardar
-                      final now = DateTime.now();
-                      final entity = SavedAddressEntity(
-                        id: '',
-                        userId: '',
-                        label: 'Casa',
-                        addressLine: _address ?? 'Ubicación actual',
-                        latitude: _lat!,
-                        longitude: _lng!,
-                        isDefault: true,
-                        createdAt: now,
-                        updatedAt: now,
-                      );
-                      if (!mounted) return;
-                      context.push('/addresses/edit', extra: entity);
-                    }
-                  : null,
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Solo botón Guardar
+              ElevatedButton(
+                onPressed: hasLocation && activeLocation != null && !isLoading
+                    ? () {
+                        // Crear entidad para guardar con label por defecto
+                        final entity = SavedAddressEntity(
+                          id: '',
+                          userId: userId,
+                          label: 'Casa',
+                          addressLine: activeLocation!.addressLine,
+                          latitude: activeLocation.latitude,
+                          longitude: activeLocation.longitude,
+                          isDefault: true,
+                          createdAt: DateTime.now(),
+                          updatedAt: DateTime.now(),
+                        );
+                        context.push('/addresses/edit', extra: entity);
+                      }
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primaryColor,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: const Text('Guardar'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

@@ -21,7 +21,7 @@ class FirestoreService {
     if (_firestore == null) {
       try {
         _firestore = FirebaseFirestore.instance;
-        developer.log('✅ Firestore inicializado correctamente');
+        // Evitar log ruidoso de inicialización en cada instancia
       } catch (e) {
         developer.log('⚠️ Error al inicializar Firestore: $e');
         rethrow;
