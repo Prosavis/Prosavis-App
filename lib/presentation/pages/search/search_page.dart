@@ -12,6 +12,7 @@ import '../../blocs/search/search_bloc.dart';
 import '../../blocs/search/search_event.dart';
 import '../../blocs/search/search_state.dart';
 import '../services/service_details_page.dart';
+import '../../../core/services/haptics_service.dart';
 
 class SearchPage extends StatefulWidget {
   const SearchPage({super.key});
@@ -58,25 +59,52 @@ class _SearchPageState extends State<SearchPage>
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: BlocBuilder<SearchBloc, SearchState>(
-            builder: (context, state) {
-              return StretchingOverscrollIndicator(
-                axisDirection: AxisDirection.down,
-                child: CustomScrollView(
-                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
-                  slivers: [
-                  _buildAppBar(),
-                  _buildSearchSection(),
-                  if (state.hasSearched) ...[
-                    _buildSearchResults(state),
-                  ] else ...[
-                    _buildRecentSearches(state),
-                    _buildSuggestedCategories(),
-                  ]
-                ],
+          child: Stack(
+            children: [
+              // Degradado naranja sutil como en Home, extendido hasta un poco debajo del buscador
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 240,
+                child: IgnorePointer(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          AppTheme.accentColor.withValues(alpha: 0.14),
+                          AppTheme.accentColor.withValues(alpha: 0.06),
+                          AppTheme.accentColor.withValues(alpha: 0.0),
+                        ],
+                        stops: const [0.0, 0.6, 1.0],
+                      ),
+                    ),
+                  ),
                 ),
-              );
-            },
+              ),
+              BlocBuilder<SearchBloc, SearchState>(
+                builder: (context, state) {
+                  return StretchingOverscrollIndicator(
+                    axisDirection: AxisDirection.down,
+                    child: CustomScrollView(
+                      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                      slivers: [
+                        _buildAppBar(),
+                        _buildSearchSection(),
+                        if (state.hasSearched) ...[
+                          _buildSearchResults(state),
+                        ] else ...[
+                          _buildRecentSearches(state),
+                          _buildSuggestedCategories(),
+                        ]
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
         ),
       ),
@@ -288,11 +316,17 @@ class _SearchPageState extends State<SearchPage>
             Wrap(
               spacing: 8,
               runSpacing: 8,
-              children: AppConstants.serviceCategories.map((category) {
+              children: AppConstants.serviceCategories
+                  .asMap()
+                  .entries
+                  .map((entry) {
+                final index = entry.key;
+                final category = entry.value;
                 final categoryName = AppConstants.getCategoryName(category);
                 return _buildCategoryChip(
                   categoryName,
                   () => _performSearchWithCategory(categoryName),
+                  index: index,
                 );
               }).toList(),
             ),
@@ -303,26 +337,37 @@ class _SearchPageState extends State<SearchPage>
     );
   }
 
-  Widget _buildCategoryChip(String category, VoidCallback onTap) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+  Widget _buildCategoryChip(String category, VoidCallback onTap, {required int index}) {
+    return _AppearScale(
+      delayMs: index * 80,
+      child: _PressScale(
+        onPressed: () {
+          HapticsService.onPrimaryAction();
+          onTap();
+        },
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           decoration: BoxDecoration(
-            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            color: AppTheme.primaryColor.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: AppTheme.primaryColor.withValues(alpha: 0.3),
+              color: AppTheme.primaryColor.withValues(alpha: 0.28),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentColor.withValues(alpha: 0.08),
+                blurRadius: 12,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
           child: Text(
             category,
             style: GoogleFonts.inter(
               fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontWeight: FontWeight.w600,
               color: AppTheme.primaryColor,
             ),
           ),
@@ -473,6 +518,7 @@ class _SearchPageState extends State<SearchPage>
               closedBuilder: (context, openContainer) => ServiceCard(
                 service: service,
                 onTap: openContainer,
+                enableHero: false,
               ),
             ),
           );
@@ -545,5 +591,85 @@ class _SearchPageState extends State<SearchPage>
       case SortOption.newest:
         return 'newest';
     }
+  }
+}
+
+class _AppearScale extends StatefulWidget {
+  final Widget child;
+  final int delayMs;
+  const _AppearScale({required this.child, this.delayMs = 0});
+
+  @override
+  State<_AppearScale> createState() => _AppearScaleState();
+}
+
+class _PressScale extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onPressed;
+  final BorderRadius borderRadius;
+  final Color color;
+
+  const _PressScale({
+    required this.child,
+    required this.onPressed,
+    this.borderRadius = const BorderRadius.all(Radius.circular(24)),
+    this.color = Colors.transparent,
+  });
+
+  @override
+  State<_PressScale> createState() => _PressScaleState();
+}
+
+class _PressScaleState extends State<_PressScale> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _pressed ? 0.96 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: Material(
+        color: widget.color,
+        borderRadius: widget.borderRadius,
+        child: InkWell(
+          borderRadius: widget.borderRadius,
+          onTap: widget.onPressed,
+          onHighlightChanged: (value) {
+            setState(() => _pressed = value);
+          },
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+class _AppearScaleState extends State<_AppearScale> {
+  bool _visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: widget.delayMs), () {
+      if (mounted) {
+        setState(() => _visible = true);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _visible ? 1.0 : 0.94,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeOutCubic,
+      child: AnimatedOpacity(
+        opacity: _visible ? 1.0 : 0.0,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
   }
 }

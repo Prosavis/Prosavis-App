@@ -258,14 +258,14 @@ class _MapPickerPageState extends State<MapPickerPage> {
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: const [
-                                                    BoxShadow(
-                          color: Color.fromRGBO(0, 0, 0, 0.1), 
-                          blurRadius: 20,
-                          offset: Offset(0, 4),
-                        ),
+                            BoxShadow(
+                              color: Color.fromRGBO(0, 0, 0, 0.1), 
+                              blurRadius: 20,
+                              offset: Offset(0, 4),
+                            ),
                           ],
                           border: Border.all(
-                            color: Colors.grey.withOpacity(0.2),
+                            color: Colors.grey.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),

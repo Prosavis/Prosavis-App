@@ -18,6 +18,7 @@ import '../../blocs/home/home_state.dart';
 
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/auth_required_dialog.dart';
+import '../../widgets/common/press_scale.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
 import 'package:animations/animations.dart';
@@ -690,12 +691,13 @@ class _HomePageState extends State<HomePage>
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  gradient: AppTheme.welcomeGradient,
+                  gradient: AppTheme.primaryGradient,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   'Categorías',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                  textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: 16),
@@ -714,12 +716,12 @@ class _HomePageState extends State<HomePage>
             crossAxisCount: 4,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.68, // Más alto para acomodar iconos de 56px
+            childAspectRatio: 0.68, // Mantener proporción; iconos aumentados
           ),
           delegate: SliverChildBuilderDelegate(
             (context, index) {
               final category = AppConstants.serviceCategories[index];
-              return _buildCategoryGridItem(category);
+              return _buildCategoryGridItem(category, index: index);
             },
             childCount: AppConstants.serviceCategories.length,
           ),
@@ -728,9 +730,9 @@ class _HomePageState extends State<HomePage>
     ];
   }
 
-  Widget _buildCategoryGridItem(Map<String, dynamic> category) {
+  Widget _buildCategoryGridItem(Map<String, dynamic> category, {required int index}) {
     return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.98, end: 1.0),
+      tween: Tween(begin: 0.96, end: 1.0),
       duration: AppConstants.mediumAnimation,
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
@@ -739,36 +741,70 @@ class _HomePageState extends State<HomePage>
           child: child,
         );
       },
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => CategoryServicesPage(category: category),
+      child: OpenContainer(
+        transitionDuration: AppConstants.mediumAnimation,
+        transitionType: ContainerTransitionType.fadeThrough,
+        closedElevation: 0,
+        closedColor: Colors.transparent,
+        openBuilder: (context, _) => CategoryServicesPage(category: category),
+        closedBuilder: (context, openContainer) {
+          return PressScale(
+            onPressed: openContainer,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.getSurfaceColor(context),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppTheme.getBorderColor(context)),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.accentColor.withValues(alpha: 0.05),
+                    blurRadius: 14,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _BreathingScale(
+                    delayMs: index * 120,
+                    minScale: 1.0,
+                    maxScale: 1.04,
+                    duration: const Duration(milliseconds: 2600),
+                    child: Container(
+                      height: 72,
+                      width: 72,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: [
+                            AppTheme.accentColor.withValues(alpha: 0.18),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 1.0],
+                        ),
+                      ),
+                      alignment: Alignment.center,
+                      child: Hero(
+                        tag: "category-${category['name']}-icon",
+                        child: _buildCategoryIconFromAsset(category, size: 64),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    category['name'],
+                    style: Theme.of(context).textTheme.labelMedium,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
             ),
           );
         },
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.getSurfaceColor(context),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppTheme.getBorderColor(context)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _buildCategoryIconFromAsset(category, size: 56),
-              const SizedBox(height: 8),
-              Text(
-                category['name'],
-                style: Theme.of(context).textTheme.labelMedium,
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -809,34 +845,39 @@ class _HomePageState extends State<HomePage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                margin: const EdgeInsets.only(
-                  left: AppConstants.paddingMedium,
-                  right: AppConstants.paddingMedium,
-                  top: AppConstants.paddingMedium,
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.paddingMedium,
                 ),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.secondaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Servicios Destacados',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
-                    ),
-                    if (state is HomeLoading)
-                      const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.secondaryGradient,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Servicios Destacados',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                        textAlign: TextAlign.center,
                       ),
-                  ],
+                      if (state is HomeLoading)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 8),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 12),
               SizedBox(
                 height: ServiceCard.preferredVerticalListHeight(context),
                 child: _buildFeaturedServicesList(state),
@@ -910,6 +951,7 @@ class _HomePageState extends State<HomePage>
               closedBuilder: (context, openContainer) => ServiceCard(
                 service: service,
                 onTap: openContainer,
+                enableHero: false,
               ),
             ),
           );
@@ -933,12 +975,13 @@ class _HomePageState extends State<HomePage>
                   width: double.infinity,
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: AppTheme.primaryGradient,
+                    gradient: AppTheme.welcomeGradient,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     'Cerca de ti',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white),
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
+                    textAlign: TextAlign.center,
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -1008,6 +1051,7 @@ class _HomePageState extends State<HomePage>
                 service: service,
                 isHorizontal: true,
                 onTap: openContainer,
+                enableHero: false,
               ),
             ),
           );
@@ -1020,3 +1064,61 @@ class _HomePageState extends State<HomePage>
 
 
 } 
+
+class _BreathingScale extends StatefulWidget {
+  final Widget child;
+  final int delayMs;
+  final double minScale;
+  final double maxScale;
+  final Duration duration;
+
+  const _BreathingScale({
+    required this.child,
+    this.delayMs = 0,
+    this.minScale = 1.0,
+    this.maxScale = 1.03,
+    this.duration = const Duration(milliseconds: 2500),
+  });
+
+  @override
+  State<_BreathingScale> createState() => _BreathingScaleState();
+}
+
+class _BreathingScaleState extends State<_BreathingScale> {
+  bool _grow = true;
+  bool _started = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(Duration(milliseconds: widget.delayMs), () {
+      if (mounted) {
+        setState(() {
+          _started = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(
+        begin: 1.0,
+        end: _started ? (_grow ? widget.maxScale : widget.minScale) : 1.0,
+      ),
+      duration: widget.duration,
+      curve: Curves.easeInOut,
+      onEnd: () {
+        if (!mounted || !_started) return;
+        setState(() {
+          _grow = !_grow;
+        });
+      },
+      builder: (context, scale, child) {
+        return Transform.scale(scale: scale, child: child);
+      },
+      child: widget.child,
+    );
+  }
+}

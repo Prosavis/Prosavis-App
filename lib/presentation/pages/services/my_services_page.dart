@@ -200,9 +200,12 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _loadUserServices,
-        child: _buildBody(),
+      body: StretchingOverscrollIndicator(
+        axisDirection: AxisDirection.down,
+        child: RefreshIndicator(
+          onRefresh: _loadUserServices,
+          child: _buildBody(),
+        ),
       ),
     );
   }
@@ -293,6 +296,7 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
 
     return ListView(
       padding: const EdgeInsets.all(16),
+      physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
       children: [
         _buildHeader(),
         const SizedBox(height: 16),

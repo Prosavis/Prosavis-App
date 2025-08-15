@@ -63,75 +63,79 @@ class _AddressesPageState extends State<AddressesPage> {
           // Siempre mostrar la UI, incluso si hay errores
           final addresses = (state is AddressLoaded) ? state.addresses : <SavedAddressEntity>[];
           
-          return ListView(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-            children: [
-              // Sección de ubicación GPS actual - siempre visible
-              Text('Ubicación Actual', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              _CurrentLocationTile(userId: widget.userId),
-              const SizedBox(height: 24),
-              
-              // Sección de direcciones guardadas
-              Text('Direcciones Guardadas', style: Theme.of(context).textTheme.titleMedium),
-              const SizedBox(height: 8),
-              
-              if (addresses.isEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? AppTheme.darkSurface
-                        : Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
+          return StretchingOverscrollIndicator(
+            axisDirection: AxisDirection.down,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              children: [
+                // Sección de ubicación GPS actual - siempre visible
+                Text('Ubicación Actual', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _CurrentLocationTile(userId: widget.userId),
+                const SizedBox(height: 24),
+                
+                // Sección de direcciones guardadas
+                Text('Direcciones Guardadas', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                
+                if (addresses.isEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark
-                          ? AppTheme.darkBorder
-                          : Colors.grey.shade200,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Symbols.add_location, size: 48, color: AppTheme.primaryColor),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Sin direcciones guardadas',
-                        style: Theme.of(context).textTheme.titleMedium,
+                          ? AppTheme.darkSurface
+                          : Colors.grey.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? AppTheme.darkBorder
+                            : Colors.grey.shade200,
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Agrega tu casa, trabajo u otros lugares que visites frecuentemente para acceso rápido.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: AppTheme.getTextSecondary(context),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Symbols.add_location, size: 48, color: AppTheme.primaryColor),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Sin direcciones guardadas',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-              ] else ...[
-                ...List.generate(addresses.length, (i) {
-                  final a = addresses[i];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _AddressTile(
-                      address: a,
-                      isActive: (state is AddressLoaded) ? state.active?.id == a.id : false,
-                      onEdit: () => _openEdit(context, a),
-                      onDelete: () => context
-                          .read<AddressBloc>()
-                          .add(DeleteAddress(widget.userId, a.id)),
-                      onSetDefault: () {
-                        context.read<AddressBloc>().add(SetDefaultAddress(widget.userId, a.id));
-                        // Sincronizar la dirección predeterminada con el perfil
-                        context.read<AddressBloc>().add(SyncActiveAddressToProfile(widget.userId, a));
-                      },
-                      onMore: () => _showOptionsSheet(context, a),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Agrega tu casa, trabajo u otros lugares que visites frecuentemente para acceso rápido.',
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: AppTheme.getTextSecondary(context),
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                })
-              ]
-            ],
+                  ),
+                ] else ...[
+                  ...List.generate(addresses.length, (i) {
+                    final a = addresses[i];
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _AddressTile(
+                        address: a,
+                        isActive: (state is AddressLoaded) ? state.active?.id == a.id : false,
+                        onEdit: () => _openEdit(context, a),
+                        onDelete: () => context
+                            .read<AddressBloc>()
+                            .add(DeleteAddress(widget.userId, a.id)),
+                        onSetDefault: () {
+                          context.read<AddressBloc>().add(SetDefaultAddress(widget.userId, a.id));
+                          // Sincronizar la dirección predeterminada con el perfil
+                          context.read<AddressBloc>().add(SyncActiveAddressToProfile(widget.userId, a));
+                        },
+                        onMore: () => _showOptionsSheet(context, a),
+                      ),
+                    );
+                  })
+                ]
+              ],
+            ),
           );
         },
       ),

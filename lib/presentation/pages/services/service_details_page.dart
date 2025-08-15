@@ -15,6 +15,7 @@ import '../../blocs/favorites/favorites_bloc.dart';
 import '../../blocs/favorites/favorites_event.dart';
 import '../../blocs/favorites/favorites_state.dart';
 import '../../widgets/common/service_card.dart';
+import '../../widgets/common/optimized_image.dart';
 import '../../widgets/reviews/write_review_dialog.dart';
 import '../../widgets/reviews/review_restriction_dialog.dart';
 // import '../../widgets/rating_stars.dart';
@@ -557,43 +558,40 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                     children: [
                     // Mostrar imagen real si es una URL, o ícono si es simulada
                     _currentService!.mainImage!.startsWith('https://')
-                        ? Image.network(
-                            _currentService!.mainImage!,
+                        ? OptimizedImage(
+                            imageUrl: _currentService!.mainImage!,
                             width: double.infinity,
                             height: double.infinity,
                             fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 3,
-                                  color: AppTheme.primaryColor,
-                                ),
-                              );
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(
-                                      Symbols.broken_image,
-                                      size: 48,
-                                      color: AppTheme.primaryColor,
+                            cacheWidth: 1080,
+                            cacheHeight: 720,
+                            placeholder: const Center(
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                            errorWidget: Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(
+                                    Symbols.broken_image,
+                                    size: 48,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  const SizedBox(height: 8),
+                                   Text(
+                                    'Error al cargar imagen',
+                                    style: GoogleFonts.inter(
+                                      fontSize: 14,
+                                       color: AppTheme.getTextSecondary(context),
+                                      fontWeight: FontWeight.w500,
                                     ),
-                                    const SizedBox(height: 8),
-                                     Text(
-                                      'Error al cargar imagen',
-                                      style: GoogleFonts.inter(
-                                        fontSize: 14,
-                                         color: AppTheme.getTextSecondary(context),
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
+                                  ),
+                                ],
+                              ),
+                            ),
                           )
                         : Center(
                             child: Column(
@@ -961,42 +959,39 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                             child: Hero(
                               tag: 'gallery-image-${_currentService!.id}-$index',
                               child: imageUrl.startsWith('https://')
-                                  ? Image.network(
-                                      imageUrl,
+                                  ? OptimizedImage(
+                                      imageUrl: imageUrl,
                                       width: double.infinity,
                                       height: double.infinity,
                                       fit: BoxFit.cover,
-                                      loadingBuilder: (context, child, loadingProgress) {
-                                        if (loadingProgress == null) return child;
-                                        return const Center(
-                                          child: CircularProgressIndicator(
-                                            strokeWidth: 3,
-                                            color: AppTheme.primaryColor,
-                                          ),
-                                        );
-                                      },
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Center(
-                                          child: Column(
-                                            mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Icon(
-                                                Symbols.broken_image,
-                                                size: 32,
+                                      cacheWidth: 800,
+                                      cacheHeight: 600,
+                                      placeholder: const Center(
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 3,
+                                          color: AppTheme.primaryColor,
+                                        ),
+                                      ),
+                                      errorWidget: Center(
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Symbols.broken_image,
+                                              size: 32,
+                                              color: AppTheme.getTextTertiary(context),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Error al cargar',
+                                              style: GoogleFonts.inter(
+                                                fontSize: 12,
                                                 color: AppTheme.getTextTertiary(context),
                                               ),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'Error al cargar',
-                                                style: GoogleFonts.inter(
-                                                  fontSize: 12,
-                                                  color: AppTheme.getTextTertiary(context),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        );
-                                      },
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     )
                                   : Center(
                                       child: Column(
@@ -1654,6 +1649,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               closedBuilder: (context, openContainer) => ServiceCard(
                 service: service,
                 onTap: openContainer,
+                enableHero: false,
               ),
             ),
           );
@@ -2083,31 +2079,31 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               child: InteractiveViewer(
                 minScale: 0.5,
                 maxScale: 3.0,
-                child: Image.network(
-                  mainImageUrl,
+                child: OptimizedImage(
+                  imageUrl: mainImageUrl,
                   fit: BoxFit.contain,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Symbols.broken_image,
-                            size: 64,
+                  cacheWidth: 1200,
+                  cacheHeight: 900,
+                  errorWidget: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Symbols.broken_image,
+                          size: 64,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Error al cargar la imagen',
+                          style: GoogleFonts.inter(
                             color: Colors.white,
+                            fontSize: 16,
                           ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Error al cargar la imagen',
-                            style: GoogleFonts.inter(
-                              color: Colors.white,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -2189,19 +2185,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 minScale: 0.5,
                 child: Hero(
                   tag: 'gallery-image-${_currentService!.id}-$initialIndex',
-                  child: Image.network(
-                    imageUrl,
+                  child: OptimizedImage(
+                    imageUrl: imageUrl,
                     fit: BoxFit.contain,
-                  loadingBuilder: (context, child, loadingProgress) {
-                    if (loadingProgress == null) return child;
-                    return const Center(
+                    cacheWidth: 1200,
+                    cacheHeight: 900,
+                    placeholder: const Center(
                       child: CircularProgressIndicator(
                         color: Colors.white,
                       ),
-                    );
-                  },
-                  errorBuilder: (context, error, stackTrace) {
-                    return Center(
+                    ),
+                    errorWidget: Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -2220,8 +2214,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                           ),
                         ],
                       ),
-                    );
-                  },
+                    ),
                   ),
                 ),
               ),

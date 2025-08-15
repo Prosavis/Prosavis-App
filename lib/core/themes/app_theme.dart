@@ -98,6 +98,87 @@ class AppTheme {
     stops: [0.0, 0.35, 0.7, 1.0],
   );
 
+  // Variante suave del gradiente de bienvenida (misma dirección, menor opacidad)
+  static LinearGradient welcomeGradientSoft({double alpha = 0.14}) {
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: const [
+        Color(0xFF0A1A2B),
+        Color(0xFF002446),
+        Color(0xFF00355F),
+        Color(0xFFFF6A00),
+      ].map((c) => c.withValues(alpha: alpha)).toList(growable: false),
+      stops: const [0.0, 0.35, 0.7, 1.0],
+    );
+  }
+
+  // Gradiente base específicamente pensado para títulos de Home (más progresivo)
+  static const LinearGradient homeHeadersGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF0A1A2B), // muy oscuro
+      primaryColor,      // azul marca
+      secondaryColor,    // azul intermedio
+      Color(0xFFFF6A00), // naranja
+    ],
+    stops: [0.0, 0.25, 0.55, 1.0],
+  );
+
+  // --- Utilidades para degradado continuo por segmentos ---
+  static LinearGradient continuousHeaderGradientSegment({
+    required int index,
+    int total = 3,
+  }) {
+    assert(total > 0 && index >= 0 && index < total);
+    // Fronteras no uniformes para asegurar color visible en los 3 bloques
+    final List<double> defaultBoundaries = switch (total) {
+      3 => <double>[0.0, 0.38, 0.72, 1.0],
+      _ => List<double>.generate(total + 1, (i) => i / total),
+    };
+    final double start = defaultBoundaries[index];
+    final double end = defaultBoundaries[index + 1];
+    return _sliceLinearGradient(homeHeadersGradient, start, end);
+  }
+
+  // Toma un gradiente base y devuelve un sub-rango [start, end] en 0..1
+  static LinearGradient _sliceLinearGradient(
+    LinearGradient base,
+    double start,
+    double end,
+  ) {
+    // Puntos de muestreo dentro del segmento para mantener suavidad
+    const List<double> localStops = [0.0, 0.33, 0.66, 1.0];
+    final List<Color> colors = localStops
+        .map((p) => _sampleGradient(base, start + (end - start) * p))
+        .toList(growable: false);
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: colors,
+      stops: localStops,
+    );
+  }
+
+  // Interpola el color del gradiente base en la posición t (0..1)
+  static Color _sampleGradient(LinearGradient gradient, double t) {
+    final List<double> stops = gradient.stops ??
+        List<double>.generate(gradient.colors.length, (i) => i / (gradient.colors.length - 1));
+    if (t <= stops.first) return gradient.colors.first;
+    if (t >= stops.last) return gradient.colors.last;
+    for (int i = 0; i < stops.length - 1; i++) {
+      final double a = stops[i];
+      final double b = stops[i + 1];
+      if (t >= a && t <= b) {
+        final double localT = (t - a) / (b - a);
+        return Color.lerp(gradient.colors[i], gradient.colors[i + 1], localT)!
+            .withAlpha(255);
+      }
+    }
+    return gradient.colors.last;
+  }
+
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,

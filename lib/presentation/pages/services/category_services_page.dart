@@ -72,13 +72,26 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
           onPressed: () => Navigator.pop(context),
           icon: Icon(Symbols.arrow_back, color: AppTheme.getTextPrimary(context)),
         ),
-        title: Text(
-          widget.category['name'] as String,
-          style: GoogleFonts.inter(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: AppTheme.getTextPrimary(context),
-          ),
+        title: Row(
+          children: [
+            Hero(
+              tag: 'category-${widget.category['name']}-icon',
+              child: Icon(
+                widget.category['icon'] as IconData,
+                size: 24,
+                color: AppTheme.primaryColor,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              widget.category['name'] as String,
+              style: GoogleFonts.inter(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.getTextPrimary(context),
+              ),
+            ),
+          ],
         ),
       ),
       body: FadeTransition(
@@ -230,6 +243,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
                 service: service,
                 isHorizontal: true,
                 onTap: openContainer,
+                enableHero: false,
               ),
             ),
           ),
