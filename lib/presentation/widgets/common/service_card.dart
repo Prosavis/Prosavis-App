@@ -24,6 +24,7 @@ class ServiceCard extends StatelessWidget {
   final ServiceEntity service;
   final bool isHorizontal;
   final VoidCallback? onTap;
+  final bool enableHero;
   final bool showEditButton;
   final VoidCallback? onEditPressed;
   final bool showDeleteButton;
@@ -40,6 +41,7 @@ class ServiceCard extends StatelessWidget {
     required this.service,
     this.isHorizontal = false,
     this.onTap,
+    this.enableHero = true,
     this.showEditButton = false,
     this.onEditPressed,
     this.showDeleteButton = false,
@@ -135,7 +137,7 @@ class ServiceCard extends StatelessWidget {
   }
 
   Widget _buildImageSection(BuildContext context, {bool isHorizontal = false}) {
-    return Container(
+    final Widget imageContent = Container(
       width: isHorizontal ? 120 : double.infinity,
       height: isHorizontal ? double.infinity : 120,
       decoration: BoxDecoration(
@@ -233,6 +235,15 @@ class ServiceCard extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+
+    if (!enableHero) return imageContent;
+    return Hero(
+      tag: 'service-image-${service.id}',
+      child: Material(
+        type: MaterialType.transparency,
+        child: imageContent,
       ),
     );
   }

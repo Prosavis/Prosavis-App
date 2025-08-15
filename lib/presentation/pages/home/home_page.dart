@@ -20,6 +20,7 @@ import '../../widgets/common/service_card.dart';
 import '../../widgets/common/auth_required_dialog.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
+import 'package:animations/animations.dart';
 import '../../blocs/address/address_bloc.dart';
 import '../../blocs/address/address_state.dart';
 import '../../blocs/address/address_event.dart';
@@ -487,13 +488,16 @@ class _HomePageState extends State<HomePage>
               onTap: () {
                 widget.onProfileTapped?.call();
               },
-              child: const CircleAvatar(
+              child: const Hero(
+                tag: 'header-avatar-anon',
+                child: CircleAvatar(
                 radius: 24,
                 backgroundColor: AppTheme.primaryColor,
                 child: Icon(
                   Symbols.person,
                   color: Colors.white,
                   size: 28,
+                ),
                 ),
               ),
             ),
@@ -897,16 +901,16 @@ class _HomePageState extends State<HomePage>
           final service = state.featuredServices[index];
           return Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: ServiceCard(
-              service: service,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: service),
-                  ),
-                );
-              },
+            child: OpenContainer(
+              transitionDuration: AppConstants.mediumAnimation,
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openBuilder: (context, _) => ServiceDetailsPage(service: service),
+              closedBuilder: (context, openContainer) => ServiceCard(
+                service: service,
+                onTap: openContainer,
+              ),
             ),
           );
         },
@@ -994,17 +998,17 @@ class _HomePageState extends State<HomePage>
         children: state.nearbyServices.map((service) {
           return Padding(
             padding: const EdgeInsets.only(bottom: 12),
-            child: ServiceCard(
-              service: service,
-              isHorizontal: true,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: service),
-                  ),
-                );
-              },
+            child: OpenContainer(
+              transitionDuration: AppConstants.mediumAnimation,
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openBuilder: (context, _) => ServiceDetailsPage(service: service),
+              closedBuilder: (context, openContainer) => ServiceCard(
+                service: service,
+                isHorizontal: true,
+                onTap: openContainer,
+              ),
             ),
           );
         }).toList(),

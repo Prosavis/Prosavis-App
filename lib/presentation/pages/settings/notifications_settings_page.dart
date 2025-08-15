@@ -45,11 +45,15 @@ class _NotificationsSettingsPageState extends State<NotificationsSettingsPage>
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: CustomScrollView(
-            slivers: [
-              _buildAppBar(),
-              _buildComingSoonContent(),
-            ],
+          child: StretchingOverscrollIndicator(
+            axisDirection: AxisDirection.down,
+            child: CustomScrollView(
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                _buildAppBar(),
+                _buildComingSoonContent(),
+              ],
+            ),
           ),
         ),
       ),

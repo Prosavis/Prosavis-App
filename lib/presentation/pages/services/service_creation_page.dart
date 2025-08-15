@@ -18,6 +18,7 @@ import '../../../data/services/image_storage_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../widgets/common/image_picker_bottom_sheet.dart';
+import '../../../core/services/haptics_service.dart';
 
 class ServiceCreationPage extends StatefulWidget {
   final CreateServiceUseCase createServiceUseCase;
@@ -1736,6 +1737,9 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         // Notificar que se creó un servicio para que otras páginas se refresquen
         ServiceRefreshNotifier().notifyServicesChanged();
         
+        // Háptico de éxito
+        HapticsService.onSuccess();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(

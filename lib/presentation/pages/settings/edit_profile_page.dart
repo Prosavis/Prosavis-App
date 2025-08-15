@@ -143,11 +143,15 @@ class _EditProfilePageState extends State<EditProfilePage>
         child: SafeArea(
           child: FadeTransition(
             opacity: _fadeAnimation,
-            child: CustomScrollView(
-              slivers: [
-                _buildAppBar(),
-                _buildContent(),
-              ],
+            child: StretchingOverscrollIndicator(
+              axisDirection: AxisDirection.down,
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                slivers: [
+                  _buildAppBar(),
+                  _buildContent(),
+                ],
+              ),
             ),
           ),
         ),

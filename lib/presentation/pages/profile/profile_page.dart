@@ -141,17 +141,20 @@ class _ProfilePageState extends State<ProfilePage>
                     children: [
                       GestureDetector(
                         onTap: () => _showImagePicker(context, authState.user.photoUrl),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundImage: _getImageProvider(authState.user.photoUrl),
-                          backgroundColor: AppTheme.primaryColor,
-                          child: authState.user.photoUrl == null
-                              ? const Icon(
-                                  Symbols.person,
-                                  color: Colors.white,
-                                  size: 50,
-                                )
-                              : null,
+                        child: Hero(
+                          tag: 'profile-avatar-${authState.user.id}',
+                          child: CircleAvatar(
+                            radius: 56,
+                            backgroundImage: _getImageProvider(authState.user.photoUrl),
+                            backgroundColor: AppTheme.primaryColor,
+                            child: authState.user.photoUrl == null
+                                ? const Icon(
+                                    Symbols.person,
+                                    color: Colors.white,
+                                    size: 56,
+                                  )
+                                : null,
+                          ),
                         ),
                       ),
                       // Indicador de carga
@@ -206,13 +209,16 @@ class _ProfilePageState extends State<ProfilePage>
                 ),
               ],
             ] else ...[
-              const CircleAvatar(
-                radius: 50,
-                backgroundColor: AppTheme.primaryColor,
-                child: Icon(
-                  Symbols.person,
-                  size: 50,
-                  color: Colors.white,
+              const Hero(
+                tag: 'profile-avatar-guest',
+                child: CircleAvatar(
+                  radius: 56,
+                  backgroundColor: AppTheme.primaryColor,
+                  child: Icon(
+                    Symbols.person,
+                    size: 56,
+                    color: Colors.white,
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

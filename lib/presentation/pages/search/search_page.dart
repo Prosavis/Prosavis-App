@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:animations/animations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
@@ -59,8 +60,11 @@ class _SearchPageState extends State<SearchPage>
           opacity: _fadeAnimation,
           child: BlocBuilder<SearchBloc, SearchState>(
             builder: (context, state) {
-              return CustomScrollView(
-                slivers: [
+              return StretchingOverscrollIndicator(
+                axisDirection: AxisDirection.down,
+                child: CustomScrollView(
+                  physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+                  slivers: [
                   _buildAppBar(),
                   _buildSearchSection(),
                   if (state.hasSearched) ...[
@@ -70,6 +74,7 @@ class _SearchPageState extends State<SearchPage>
                     _buildSuggestedCategories(),
                   ]
                 ],
+                ),
               );
             },
           ),
@@ -459,16 +464,16 @@ class _SearchPageState extends State<SearchPage>
               AppConstants.paddingMedium,
               AppConstants.paddingSmall,
             ),
-            child: ServiceCard(
-              service: service,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(service: service),
-                  ),
-                );
-              },
+            child: OpenContainer(
+              transitionDuration: AppConstants.mediumAnimation,
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openBuilder: (context, _) => ServiceDetailsPage(service: service),
+              closedBuilder: (context, openContainer) => ServiceCard(
+                service: service,
+                onTap: openContainer,
+              ),
             ),
           );
         },

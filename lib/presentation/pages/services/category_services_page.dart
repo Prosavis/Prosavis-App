@@ -9,6 +9,7 @@ import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/filters_bottom_sheet.dart';
 import 'service_details_page.dart';
+import 'package:animations/animations.dart';
 
 class CategoryServicesPage extends StatefulWidget {
   final Map<String, dynamic> category;
@@ -82,18 +83,23 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: Column(
-          children: [
-            _buildSearchAndFilters(),
-            _buildResultsHeader(),
-            Expanded(
-              child: _isLoading
-                  ? _buildLoadingState()
-                  : _errorMessage != null
-                      ? _buildErrorState()
-                      : _buildServicesList(),
-            ),
-          ],
+        child: StretchingOverscrollIndicator(
+          axisDirection: AxisDirection.down,
+          child: CustomScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(child: _buildSearchAndFilters()),
+              SliverToBoxAdapter(child: _buildResultsHeader()),
+              SliverFillRemaining(
+                hasScrollBody: true,
+                child: _isLoading
+                    ? _buildLoadingState()
+                    : _errorMessage != null
+                        ? _buildErrorState()
+                        : _buildServicesList(),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -214,10 +220,17 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
         return RepaintBoundary(
           child: Padding(
             padding: const EdgeInsets.only(bottom: 16),
-            child: ServiceCard(
-              service: service,
-              isHorizontal: true,
-              onTap: () => _navigateToServiceDetails(service),
+            child: OpenContainer(
+              transitionDuration: AppConstants.mediumAnimation,
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openBuilder: (context, _) => ServiceDetailsPage(service: service),
+              closedBuilder: (context, openContainer) => ServiceCard(
+                service: service,
+                isHorizontal: true,
+                onTap: openContainer,
+              ),
             ),
           ),
         );
@@ -444,14 +457,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     _filterServices('');
   }
 
-  void _navigateToServiceDetails(ServiceEntity service) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ServiceDetailsPage(service: service),
-      ),
-    );
-  }
+  
 }
 
 class ServiceItem {

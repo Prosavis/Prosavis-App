@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:animations/animations.dart';
 
 import 'dart:developer' as developer;
 import 'core/config/app_config.dart';
@@ -48,6 +49,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'presentation/blocs/address/address_bloc.dart';
 import 'presentation/blocs/auth/auth_state.dart';
+import 'core/services/haptics_service.dart';
 
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
@@ -101,85 +103,145 @@ Future<void> _preloadCriticalAssets() async {
   return;
 }
 
+// Transiciones premium reutilizables para rutas
+CustomTransitionPage<void> _fadeThroughPage({required Widget child}) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionDuration: AppConstants.mediumAnimation,
+    reverseTransitionDuration: AppConstants.mediumAnimation,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeThroughTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        child: child,
+      );
+    },
+  );
+}
+
+CustomTransitionPage<void> _sharedAxisPage({
+  required Widget child,
+  SharedAxisTransitionType type = SharedAxisTransitionType.scaled,
+}) {
+  return CustomTransitionPage<void>(
+    child: child,
+    transitionDuration: AppConstants.mediumAnimation,
+    reverseTransitionDuration: AppConstants.mediumAnimation,
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SharedAxisTransition(
+        animation: animation,
+        secondaryAnimation: secondaryAnimation,
+        transitionType: type,
+        child: child,
+      );
+    },
+  );
+}
+
 final _router = GoRouter(
   initialLocation: '/',
+  observers: [HapticsRouteObserver()],
   routes: [
     GoRoute(
       path: '/',
-      builder: (context, state) => const SplashPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const SplashPage()),
     ),
     GoRoute(
       path: '/login',
-      builder: (context, state) => const LoginPage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const LoginPage(),
+        type: SharedAxisTransitionType.scaled,
+      ),
     ),
     GoRoute(
       path: '/auth/verify-phone',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final extra = state.extra as Map<String, dynamic>;
-        return VerifyPhonePage(
-          verificationId: extra['verificationId'],
-          phoneNumber: extra['phoneNumber'],
-          name: extra['name'] as String?,
+        return _sharedAxisPage(
+          child: VerifyPhonePage(
+            verificationId: extra['verificationId'],
+            phoneNumber: extra['phoneNumber'],
+            name: extra['name'] as String?,
+          ),
+          type: SharedAxisTransitionType.vertical,
         );
       },
     ),
     GoRoute(
       path: '/auth/forgot-password',
-      builder: (context, state) => const ForgotPasswordPage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const ForgotPasswordPage(),
+        type: SharedAxisTransitionType.vertical,
+      ),
     ),
     GoRoute(
       path: '/home',
-      builder: (context, state) => const MainNavigationPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const MainNavigationPage()),
     ),
     GoRoute(
       path: '/settings/notifications',
-      builder: (context, state) => const NotificationsSettingsPage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const NotificationsSettingsPage(),
+        type: SharedAxisTransitionType.horizontal,
+      ),
     ),
     GoRoute(
       path: '/settings/language',
-      builder: (context, state) => const LanguageSettingsPage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const LanguageSettingsPage(),
+        type: SharedAxisTransitionType.horizontal,
+      ),
     ),
     GoRoute(
       path: '/settings/edit-profile',
-      builder: (context, state) => const EditProfilePage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const EditProfilePage(),
+        type: SharedAxisTransitionType.horizontal,
+      ),
     ),
 
     GoRoute(
       path: '/settings/terms',
-      builder: (context, state) => const TermsConditionsPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const TermsConditionsPage()),
     ),
     GoRoute(
       path: '/search',
-      builder: (context, state) => const SearchPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const SearchPage()),
     ),
     GoRoute(
       path: '/categories',
-      builder: (context, state) => const CategoriesPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const CategoriesPage()),
     ),
     GoRoute(
       path: '/notifications',
-      builder: (context, state) => const NotificationsPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const NotificationsPage()),
     ),
     GoRoute(
       path: '/create-service',
-      builder: (context, state) => ServiceCreationPage(
-        createServiceUseCase: di.sl<CreateServiceUseCase>(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: ServiceCreationPage(
+          createServiceUseCase: di.sl<CreateServiceUseCase>(),
+        ),
+        type: SharedAxisTransitionType.scaled,
       ),
     ),
     GoRoute(
       path: '/profile',
-      builder: (context, state) => const ProfilePage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const ProfilePage()),
     ),
     GoRoute(
       path: '/addresses',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final extra = state.extra as Map<String, dynamic>;
-        return AddressesPage(userId: extra['userId'] as String);
+        return _sharedAxisPage(
+          child: AddressesPage(userId: extra['userId'] as String),
+          type: SharedAxisTransitionType.horizontal,
+        );
       },
     ),
     GoRoute(
       path: '/addresses/add',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final extra = state.extra as Map<String, dynamic>?;
         String userId = '';
         if (extra != null && extra['userId'] != null) {
@@ -190,49 +252,64 @@ final _router = GoRouter(
             userId = authState.user.id;
           }
         }
-        return EditAddressPage(userId: userId);
+        return _sharedAxisPage(
+          child: EditAddressPage(userId: userId),
+          type: SharedAxisTransitionType.horizontal,
+        );
       },
     ),
     GoRoute(
       path: '/addresses/edit',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final initial = state.extra as dynamic;
-        return EditAddressPage(userId: initial.userId as String, initial: initial);
+        return _sharedAxisPage(
+          child: EditAddressPage(userId: initial.userId as String, initial: initial),
+          type: SharedAxisTransitionType.horizontal,
+        );
       },
     ),
     GoRoute(
       path: '/addresses/map',
-      builder: (context, state) => const MapPickerPage(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: const MapPickerPage(),
+        type: SharedAxisTransitionType.scaled,
+      ),
     ),
     GoRoute(
       path: '/services/my-services',
-      builder: (context, state) => const MyServicesPage(),
+      pageBuilder: (context, state) => _fadeThroughPage(child: const MyServicesPage()),
     ),
     GoRoute(
       path: '/services/create',
-      builder: (context, state) => ServiceCreationPage(
-        createServiceUseCase: di.sl<CreateServiceUseCase>(),
+      pageBuilder: (context, state) => _sharedAxisPage(
+        child: ServiceCreationPage(
+          createServiceUseCase: di.sl<CreateServiceUseCase>(),
+        ),
+        type: SharedAxisTransitionType.scaled,
       ),
     ),
     GoRoute(
       path: '/services/:serviceId',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final serviceId = state.pathParameters['serviceId']!;
         final serviceEntity = state.extra as ServiceEntity?;
-        
-        if (serviceEntity != null) {
-          return ServiceDetailsPage(service: serviceEntity);
-        } else {
-          // Cargar servicio por ID cuando no se pasa el objeto completo
-          return ServiceDetailsPage(serviceId: serviceId);
-        }
+        final page = serviceEntity != null
+            ? ServiceDetailsPage(service: serviceEntity)
+            : ServiceDetailsPage(serviceId: serviceId);
+        return _sharedAxisPage(
+          child: page,
+          type: SharedAxisTransitionType.scaled,
+        );
       },
     ),
     GoRoute(
       path: '/services/edit/:serviceId',
-      builder: (context, state) {
+      pageBuilder: (context, state) {
         final serviceId = state.pathParameters['serviceId']!;
-        return ServiceEditPage(serviceId: serviceId);
+        return _sharedAxisPage(
+          child: ServiceEditPage(serviceId: serviceId),
+          type: SharedAxisTransitionType.horizontal,
+        );
       },
     ),
   ],

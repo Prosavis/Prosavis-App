@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../../../core/services/haptics_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../home/home_page.dart';
@@ -78,10 +80,12 @@ class _MainNavigationPageState extends State<MainNavigationPage>
         _selectedIndex = index;
       });
       _dispatchTabRefreshIfNeeded(index);
+      // Háptico sutil para dar sensación de calidad
+      HapticsService.onNavigation();
       _pageController.animateToPage(
         index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -130,6 +134,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
     return Scaffold(
       body: PageView(
         controller: _pageController,
+        physics: const BouncingScrollPhysics(),
         onPageChanged: (index) {
           // Optimización: Solo setState si el índice realmente cambió
           if (_selectedIndex != index) {
@@ -137,6 +142,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
               _selectedIndex = index;
             });
             _dispatchTabRefreshIfNeeded(index);
+            HapticsService.onNavigation();
           }
         },
         children: pages, // Usar el getter que maneja lazy loading
@@ -160,6 +166,7 @@ class _MainNavigationPageState extends State<MainNavigationPage>
         currentIndex: _selectedIndex,
         onTap: onItemTapped,
         type: BottomNavigationBarType.fixed,
+        enableFeedback: true,
         // Dejar que el Theme controle colores y estilos para respetar
         // los modos claro/oscuro definidos en AppTheme
         elevation: 0,

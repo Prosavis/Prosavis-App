@@ -64,22 +64,31 @@ class _NotificationsPageState extends State<NotificationsPage>
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
-        child: BlocBuilder<AuthBloc, AuthState>(
-          builder: (context, state) {
-            if (state is AuthAuthenticated) {
-              return const ComingSoonWidget(
-                title: 'Coming Soon',
-                subtitle: 'Las notificaciones estarán disponibles pronto. Te mantendremos informado de todas las actualizaciones importantes.',
-                emoji: '🔔',
-                buttonText: 'Entendido',
-              );
-            } else {
-              return const LoginRequiredWidget(
-                title: 'Inicia sesión para ver tus notificaciones',
-                subtitle: 'Necesitas tener una cuenta para recibir notificaciones sobre tus servicios.',
-              );
-            }
-          },
+        child: StretchingOverscrollIndicator(
+          axisDirection: AxisDirection.down,
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              child: BlocBuilder<AuthBloc, AuthState>(
+                builder: (context, state) {
+                  if (state is AuthAuthenticated) {
+                    return const ComingSoonWidget(
+                      title: 'Coming Soon',
+                      subtitle: 'Las notificaciones estarán disponibles pronto. Te mantendremos informado de todas las actualizaciones importantes.',
+                      emoji: '🔔',
+                      buttonText: 'Entendido',
+                    );
+                  } else {
+                    return const LoginRequiredWidget(
+                      title: 'Inicia sesión para ver tus notificaciones',
+                      subtitle: 'Necesitas tener una cuenta para recibir notificaciones sobre tus servicios.',
+                    );
+                  }
+                },
+              ),
+            ),
+          ),
         ),
       ),
     );

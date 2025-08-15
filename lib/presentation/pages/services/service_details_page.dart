@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:animations/animations.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
@@ -25,6 +26,7 @@ import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../widgets/reviews/review_card.dart';
 import '../../../data/services/firestore_service.dart';
+import '../../../core/services/haptics_service.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
   final ServiceEntity? service;
@@ -45,7 +47,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  final PageController _pageController = PageController();
+  final PageController _pageController = PageController(viewportFraction: 0.9);
   final ScrollController _scrollController = ScrollController();
   int _currentImageIndex = 0;
   String? _calculatedDistance;
@@ -415,18 +417,22 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         backgroundColor: AppTheme.getBackgroundColor(context),
         body: FadeTransition(
           opacity: _fadeAnimation,
-          child: CustomScrollView(
-            controller: _scrollController,
-            slivers: [
-              _buildAppBar(),
-              _buildServiceInfo(),
-              _buildImageGallery(),
-              _buildDescription(),
-              _buildAvailability(),
-              _buildProviderInfo(),
-              _buildReviews(),
-              _buildSimilarServices(),
-            ],
+          child: StretchingOverscrollIndicator(
+            axisDirection: AxisDirection.down,
+            child: CustomScrollView(
+              controller: _scrollController,
+              physics: const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+              slivers: [
+                _buildAppBar(),
+                _buildServiceInfo(),
+                _buildImageGallery(),
+                _buildDescription(),
+                _buildAvailability(),
+                _buildProviderInfo(),
+                _buildReviews(),
+                _buildSimilarServices(),
+              ],
+            ),
           ),
         ),
         bottomNavigationBar: _buildActionButtons(),
@@ -437,6 +443,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     return SliverAppBar(
       expandedHeight: 200,
       pinned: true,
+      stretch: true,
       backgroundColor: AppTheme.getSurfaceColor(context),
       leading: IconButton(
         onPressed: () => Navigator.pop(context),
@@ -531,10 +538,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         ),
       ],
       flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+          StretchMode.fadeTitle,
+        ],
         background: _currentService!.mainImage != null
             ? GestureDetector(
                 onTap: () => _showMainImageFullScreen(),
-                child: Container(
+                child: Hero(
+                  tag: 'service-image-${_currentService!.id}',
+                  child: Container(
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
                   ),
@@ -618,6 +632,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       ),
                     ),
                   ],
+                ),
                 ),
               ),
             )
@@ -907,7 +922,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 200,
+              height: 240,
               child: PageView.builder(
                 controller: _pageController,
                 onPageChanged: (index) {
@@ -918,81 +933,94 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 itemCount: galleryImages.length,
                 itemBuilder: (context, index) {
                   final imageUrl = galleryImages[index];
+                  final bool isCurrent = _currentImageIndex == index;
                   return GestureDetector(
                     onTap: () => _showImageFullScreen(imageUrl, index),
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        color: AppTheme.getContainerColor(context),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.1),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: imageUrl.startsWith('https://')
-                            ? Image.network(
-                              imageUrl,
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 3,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Symbols.broken_image,
-                                        size: 32,
-                                        color: AppTheme.getTextTertiary(context),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Error al cargar',
-                                        style: GoogleFonts.inter(
-                                          fontSize: 12,
-                                          color: AppTheme.getTextTertiary(context),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            )
-                          : Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Symbols.image,
-                                    size: 48,
-                                    color: AppTheme.getTextTertiary(context),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Trabajo ${index + 1}',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: AppTheme.getTextTertiary(context),
-                                    ),
-                                  ),
-                                ],
+                    child: AnimatedScale(
+                      duration: AppConstants.mediumAnimation,
+                      curve: Curves.easeOutCubic,
+                      scale: isCurrent ? 1.0 : 0.94,
+                      child: AnimatedOpacity(
+                        duration: AppConstants.mediumAnimation,
+                        opacity: isCurrent ? 1.0 : 0.7,
+                        child: Container(
+                          margin: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            color: AppTheme.getContainerColor(context),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
                               ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Hero(
+                              tag: 'gallery-image-${_currentService!.id}-$index',
+                              child: imageUrl.startsWith('https://')
+                                  ? Image.network(
+                                      imageUrl,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      fit: BoxFit.cover,
+                                      loadingBuilder: (context, child, loadingProgress) {
+                                        if (loadingProgress == null) return child;
+                                        return const Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 3,
+                                            color: AppTheme.primaryColor,
+                                          ),
+                                        );
+                                      },
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Center(
+                                          child: Column(
+                                            mainAxisAlignment: MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Symbols.broken_image,
+                                                size: 32,
+                                                color: AppTheme.getTextTertiary(context),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Error al cargar',
+                                                style: GoogleFonts.inter(
+                                                  fontSize: 12,
+                                                  color: AppTheme.getTextTertiary(context),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Symbols.image,
+                                            size: 48,
+                                            color: AppTheme.getTextTertiary(context),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Trabajo ${index + 1}',
+                                            style: GoogleFonts.inter(
+                                              fontSize: 12,
+                                              color: AppTheme.getTextTertiary(context),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
                             ),
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -1004,15 +1032,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: galleryImages.asMap().entries.map((entry) {
-                  return Container(
-                    width: 8,
-                    height: 8,
+                  final bool isActive = _currentImageIndex == entry.key;
+                  return AnimatedContainer(
+                    duration: AppConstants.shortAnimation,
+                    curve: Curves.easeOut,
+                    width: isActive ? 10 : 8,
+                    height: isActive ? 10 : 8,
                     margin: const EdgeInsets.symmetric(horizontal: 4),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _currentImageIndex == entry.key
-                          ? AppTheme.primaryColor
-                          : Colors.grey.shade300,
+                      color: isActive ? AppTheme.primaryColor : Colors.grey.shade300,
                     ),
                   );
                 }).toList(),
@@ -1259,7 +1288,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             const SizedBox(height: 16),
             Row(
               children: [
-                CircleAvatar(
+                Hero(
+                  tag: 'provider-avatar-${_currentService!.providerId}',
+                  child: CircleAvatar(
                   radius: 30,
                   backgroundColor: AppTheme.primaryColor,
                   backgroundImage: _currentService!.providerPhotoUrl != null 
@@ -1275,6 +1306,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                           ),
                         )
                       : null,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -1613,19 +1645,16 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             // Ancho alineado con el ancho interno del ServiceCard
             width: 180,
             margin: const EdgeInsets.only(right: 12),
-            child: ServiceCard(
-              service: service,
-              onTap: () {
-                // Navegar al detalle del servicio similar
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ServiceDetailsPage(
-                      service: service,
-                    ),
-                  ),
-                );
-              },
+            child: OpenContainer(
+              transitionDuration: AppConstants.mediumAnimation,
+              transitionType: ContainerTransitionType.fadeThrough,
+              closedElevation: 0,
+              closedColor: Colors.transparent,
+              openBuilder: (context, _) => ServiceDetailsPage(service: service),
+              closedBuilder: (context, openContainer) => ServiceCard(
+                service: service,
+                onTap: openContainer,
+              ),
             ),
           );
         },
@@ -1645,7 +1674,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       child: SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(
-          onPressed: _contactProvider,
+          onPressed: _onWhatsAppPressed,
           icon: Image.asset(
             'assets/icons/WhatsApp.svg.webp',
             height: 20,
@@ -1689,6 +1718,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Función de compartir próximamente')),
     );
+  }
+
+  void _onWhatsAppPressed() {
+    HapticsService.onPrimaryAction();
+    _contactProvider();
   }
 
   void _contactProvider() async {
@@ -2153,9 +2187,11 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               child: InteractiveViewer(
                 maxScale: 3.0,
                 minScale: 0.5,
-                child: Image.network(
-                  imageUrl,
-                  fit: BoxFit.contain,
+                child: Hero(
+                  tag: 'gallery-image-${_currentService!.id}-$initialIndex',
+                  child: Image.network(
+                    imageUrl,
+                    fit: BoxFit.contain,
                   loadingBuilder: (context, child, loadingProgress) {
                     if (loadingProgress == null) return child;
                     return const Center(
@@ -2186,6 +2222,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       ),
                     );
                   },
+                  ),
                 ),
               ),
             ),
