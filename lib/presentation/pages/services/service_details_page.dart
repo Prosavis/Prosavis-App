@@ -1392,7 +1392,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     if ((_currentService!.instagram ?? '').isNotEmpty) {
       addIcon(
         child: Image.asset(
-          'assets/icons/instagram.png',
+          'assets/icons/instagram-logo.webp',
           width: 18,
           height: 18,
           errorBuilder: (_, __, ___) => const Icon(Symbols.camera_alt, size: 18, color: AppTheme.primaryColor),
