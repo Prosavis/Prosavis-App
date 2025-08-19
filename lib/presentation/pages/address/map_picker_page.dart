@@ -22,6 +22,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
   String? _address;
   bool _loading = true;
   String? _errorMessage;
+  bool _resolvingAddress = false;
 
   @override
   void initState() {
@@ -57,7 +58,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
       final lng = pos?.longitude ?? -74.072090;
       _selected = LatLng(lat, lng);
       _initialCamera = CameraPosition(target: _selected!, zoom: 16);
-      await _reverseGeocode(lat, lng);
+      _address = await _addressFor(lat, lng);
       
       if (mounted) {
         setState(() {
@@ -80,27 +81,41 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
   }
 
-  Future<void> _reverseGeocode(double lat, double lng) async {
+  Future<String> _addressFor(double lat, double lng) async {
     try {
       final list = await placemarkFromCoordinates(lat, lng).timeout(
         const Duration(seconds: 5),
       );
       if (list.isNotEmpty) {
-        final p = list.first;
-        final sb = StringBuffer();
-        if (p.street != null && p.street!.isNotEmpty) sb.write(p.street);
-        if (p.subThoroughfare != null && p.subThoroughfare!.isNotEmpty) sb.write(' #${p.subThoroughfare}');
-        if (p.locality != null && p.locality!.isNotEmpty) sb.write(', ${p.locality}');
-        if (p.administrativeArea != null && p.administrativeArea!.isNotEmpty) sb.write(', ${p.administrativeArea}');
-        if (p.country != null && p.country!.isNotEmpty) sb.write(', ${p.country}');
-        _address = sb.toString().isNotEmpty ? sb.toString() : 'Ubicación encontrada';
-      } else {
-        _address = 'Ubicación encontrada';
+        return LocationUtils.composeAddressFromPlacemark(list.first);
       }
+      return 'Ubicación encontrada';
     } catch (e) {
       developer.log('Error en geocodificación inversa: $e', name: 'MapPickerPage');
-      _address = 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
+      return 'Lat: ${lat.toStringAsFixed(6)}, Lng: ${lng.toStringAsFixed(6)}';
     }
+  }
+
+  Future<void> _updateAddressForSelected() async {
+    if (_selected == null) return;
+    setState(() => _resolvingAddress = true);
+    final str = await _addressFor(_selected!.latitude, _selected!.longitude);
+    if (!mounted) return;
+    setState(() {
+      _address = str;
+      _resolvingAddress = false;
+    });
+  }
+
+  Future<void> _confirmSelection() async {
+    if (_selected == null) return;
+    final str = await _addressFor(_selected!.latitude, _selected!.longitude);
+    if (!mounted) return;
+    Navigator.pop(context, {
+      'latitude': _selected!.latitude,
+      'longitude': _selected!.longitude,
+      'address': str,
+    });
   }
 
   Future<void> _recenterToCurrent() async {
@@ -193,7 +208,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   padding: const EdgeInsets.only(bottom: totalUIHeight),
                   child: GoogleMap(
                     mapType: MapType.normal,
-                    myLocationEnabled: true,
+                    myLocationEnabled: false,
                     myLocationButtonEnabled: false,
                     initialCameraPosition: _initialCamera!,
                     onMapCreated: (c) => _controller.complete(c),
@@ -202,14 +217,13 @@ class _MapPickerPageState extends State<MapPickerPage> {
                     },
                     onCameraIdle: () async {
                       if (_selected != null) {
-                        await _reverseGeocode(_selected!.latitude, _selected!.longitude);
-                        if (mounted) setState(() {});
+                        await _updateAddressForSelected();
                       }
                     },
                     // Configuración del mapa
                     compassEnabled: true,
                     mapToolbarEnabled: false,
-                    zoomControlsEnabled: true, // ✅ Restaurar botones de zoom
+                    zoomControlsEnabled: true,
                     liteModeEnabled: false,
                     trafficEnabled: false,
                     buildingsEnabled: true,
@@ -296,13 +310,9 @@ class _MapPickerPageState extends State<MapPickerPage> {
                         width: double.infinity,
                         height: 50,
                         child: ElevatedButton.icon(
-                          onPressed: _selected == null
+                          onPressed: _selected == null || _resolvingAddress
                               ? null
-                              : () => Navigator.pop(context, {
-                                    'latitude': _selected!.latitude,
-                                    'longitude': _selected!.longitude,
-                                    'address': _address,
-                                  }),
+                              : _confirmSelection,
                           icon: const Icon(Symbols.check_circle, size: 20),
                           label: const Text(
                             'Confirmar ubicación',

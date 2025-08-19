@@ -58,13 +58,28 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
   Future<void> _onAdd(AddAddress event, Emitter<AddressState> emit) async {
     try {
       final current = state is AddressLoaded ? (state as AddressLoaded) : null;
+      final now = DateTime.now();
       final address = event.address.id.isEmpty
-          ? event.address.copyWith(id: const Uuid().v4(), createdAt: DateTime.now(), updatedAt: DateTime.now())
-          : event.address.copyWith(updatedAt: DateTime.now());
+          ? event.address.copyWith(id: const Uuid().v4(), createdAt: now, updatedAt: now)
+          : event.address.copyWith(updatedAt: now);
       await repository.addAddress(address);
       if (current != null) {
         final list = List<SavedAddressEntity>.from(current.addresses)..insert(0, address);
-        emit(current.copyWith(addresses: list, active: address.isDefault ? address : current.active));
+        // Si es default, establecerla como activa
+        final nextActive = address.isDefault ? address : current.active;
+        emit(current.copyWith(addresses: list, active: nextActive));
+      }
+      // Sincronizar con el perfil si es predeterminada
+      if (address.isDefault) {
+        try {
+          final currentUser = await _firestoreService.getUserById(address.userId);
+          if (currentUser != null) {
+            await _firestoreService.createOrUpdateUser(currentUser.copyWith(
+              location: address.addressLine,
+              updatedAt: DateTime.now(),
+            ));
+          }
+        } catch (_) {}
       }
     } catch (_) {
       emit(AddressError('No se pudo agregar la dirección'));
@@ -79,6 +94,18 @@ class AddressBloc extends Bloc<AddressEvent, AddressState> {
         final s = state as AddressLoaded;
         final list = s.addresses.map((e) => e.id == updated.id ? updated : e).toList();
         emit(s.copyWith(addresses: list, active: updated.isDefault ? updated : s.active));
+      }
+      // Sincronizar con el perfil si es predeterminada
+      if (updated.isDefault) {
+        try {
+          final currentUser = await _firestoreService.getUserById(updated.userId);
+          if (currentUser != null) {
+            await _firestoreService.createOrUpdateUser(currentUser.copyWith(
+              location: updated.addressLine,
+              updatedAt: DateTime.now(),
+            ));
+          }
+        } catch (_) {}
       }
     } catch (_) {
       emit(AddressError('No se pudo actualizar la dirección'));

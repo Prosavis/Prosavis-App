@@ -1,0 +1,10 @@
+<resources>
+    <!-- API Key de Google Maps para build DEBUG.
+         Reemplaza el valor por la clave configurada en Google Cloud con:
+         - Restricción de aplicación: Android
+         - Paquete: com.example.myapp (o el que tengas en build.gradle)
+         - SHA-1: el del keystore de debug
+         - Restricción de API: Maps SDK for Android
+    -->
+    <string name="google_maps_api_key">AIzaSyCk630Z7mZS7Z6qqWxHfIfK2Mmo0VCiSnE</string>
+</resources>

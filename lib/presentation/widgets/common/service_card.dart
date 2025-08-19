@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/service_entity.dart';
 import 'optimized_image.dart';
+import '../../../core/utils/location_utils.dart';
 
 /// Widget constante para el placeholder de imagen por defecto
 class _DefaultImagePlaceholder extends StatelessWidget {
@@ -284,7 +285,7 @@ class ServiceCard extends StatelessWidget {
           if (!isHorizontal) const SizedBox(height: 8),
           if (isHorizontal) const Spacer(),
           
-          // Rating y precio
+          // Rating, distancia (si aplica) y precio
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -305,6 +306,8 @@ class ServiceCard extends StatelessWidget {
                       color: AppTheme.getTextSecondary(context),
                     ),
                   ),
+                  // Distancia (si se puede calcular)
+                  _DistanceBadge(service: service),
                 ],
               ),
               
@@ -414,6 +417,57 @@ class LoginRequiredWidget extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _DistanceBadge extends StatelessWidget {
+  final ServiceEntity service;
+
+  const _DistanceBadge({required this.service});
+
+  @override
+  Widget build(BuildContext context) {
+    final Map<String, dynamic>? loc = service.location;
+    final double? lat = (loc?['latitude'] as num?)?.toDouble();
+    final double? lon = (loc?['longitude'] as num?)?.toDouble();
+    if (lat == null || lon == null) {
+      return const SizedBox.shrink();
+    }
+
+    return FutureBuilder<String?>(
+      future: LocationUtils.calculateDistanceToService(serviceLocation: loc),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          // Reservar espacio mínimo para evitar saltos fuertes al cargar
+          return const SizedBox.shrink();
+        }
+        final String? distanceText = snapshot.data;
+        if (distanceText == null || distanceText.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '·',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppTheme.getTextTertiary(context),
+              ),
+            ),
+            const SizedBox(width: 4),
+            Text(
+              distanceText,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                color: AppTheme.getTextSecondary(context),
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

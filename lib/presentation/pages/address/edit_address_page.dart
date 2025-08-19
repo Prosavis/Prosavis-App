@@ -259,8 +259,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
     setState(() {
       _lat = details['latitude'] as double?;
       _lng = details['longitude'] as double?;
-      if ((details['address'] as String?)?.isNotEmpty == true) {
-        _addressLine.text = details['address'] as String;
+      final addr = details['address'] as String?;
+      if (addr != null && addr.isNotEmpty) {
+        _addressLine.text = LocationUtils.normalizeAddress(addr);
       }
     });
   }
@@ -288,8 +289,9 @@ class _EditAddressPageState extends State<EditAddressPage> {
     }
 
     final now = DateTime.now();
+    final bool isNew = widget.initial == null || (widget.initial?.id.isEmpty ?? true);
     final entity = SavedAddressEntity(
-      id: widget.initial?.id ?? '',
+      id: isNew ? '' : (widget.initial!.id),
       userId: widget.userId,
       label: _label.text.trim(),
       addressLine: _addressLine.text.trim(),
@@ -302,7 +304,7 @@ class _EditAddressPageState extends State<EditAddressPage> {
       updatedAt: now,
     );
 
-    if (widget.initial == null) {
+    if (isNew) {
       context.read<AddressBloc>().add(AddAddress(entity));
     } else {
       context.read<AddressBloc>().add(UpdateAddress(entity));

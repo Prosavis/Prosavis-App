@@ -3,6 +3,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class LocationUtils {
+  // Cache simple en memoria para evitar solicitar la ubicación repetidamente
+  static Map<String, double>? _cachedUserLocation;
+
   /// Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
   /// Retorna la distancia en kilómetros
   static double calculateDistance(
@@ -100,6 +103,19 @@ class LocationUtils {
     }
   }
 
+  /// Igual que `getCurrentUserLocation` pero con cache en memoria.
+  /// Útil para listas de tarjetas donde se requiere la misma ubicación.
+  static Future<Map<String, double>?> getCachedUserLocation({bool forceRefresh = false}) async {
+    if (!forceRefresh && _cachedUserLocation != null) {
+      return _cachedUserLocation;
+    }
+    final result = await getCurrentUserLocation();
+    if (result != null) {
+      _cachedUserLocation = result;
+    }
+    return result;
+  }
+
   /// Obtiene la dirección actual basada en GPS real
   /// Retorna una cadena con la dirección o null si no se puede obtener
   static Future<String?> getCurrentAddress() async {
@@ -125,46 +141,7 @@ class LocationUtils {
       );
 
       if (placemarks.isNotEmpty) {
-        final Placemark place = placemarks.first;
-        
-        // Construir dirección en formato colombiano
-        final List<String> addressParts = [];
-        
-        // Añadir calle/carrera si está disponible
-        if (place.street != null && place.street!.isNotEmpty) {
-          addressParts.add(place.street!);
-        }
-        
-        // Añadir número si está disponible
-        if (place.subThoroughfare != null && place.subThoroughfare!.isNotEmpty) {
-          if (addressParts.isNotEmpty) {
-            addressParts[addressParts.length - 1] += ' #${place.subThoroughfare}';
-          } else {
-            addressParts.add('#${place.subThoroughfare}');
-          }
-        }
-        
-        // Añadir localidad/barrio
-        if (place.subLocality != null && place.subLocality!.isNotEmpty) {
-          addressParts.add(place.subLocality!);
-        }
-        
-        // Añadir ciudad
-        if (place.locality != null && place.locality!.isNotEmpty) {
-          addressParts.add(place.locality!);
-        }
-        
-        // Añadir departamento/estado
-        if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
-          addressParts.add(place.administrativeArea!);
-        }
-        
-        // Añadir país
-        if (place.country != null && place.country!.isNotEmpty) {
-          addressParts.add(place.country!);
-        }
-
-        return addressParts.join(', ');
+        return composeAddressFromPlacemark(placemarks.first);
       }
 
       return null;
@@ -232,13 +209,21 @@ class LocationUtils {
   static Future<String?> calculateDistanceToService({
     Map<String, dynamic>? serviceLocation,
   }) async {
-    if (serviceLocation == null ||
-        !serviceLocation.containsKey('latitude') ||
-        !serviceLocation.containsKey('longitude')) {
+    if (serviceLocation == null) {
       return null;
     }
 
-    final userLocation = await getCurrentUserLocation();
+    double? serviceLat;
+    double? serviceLon;
+    final dynamic latRaw = serviceLocation['latitude'] ?? serviceLocation['lat'];
+    final dynamic lonRaw = serviceLocation['longitude'] ?? serviceLocation['lng'] ?? serviceLocation['lon'];
+    if (latRaw is num) serviceLat = latRaw.toDouble();
+    if (lonRaw is num) serviceLon = lonRaw.toDouble();
+    if (serviceLat == null || serviceLon == null) {
+      return null;
+    }
+
+    final userLocation = await getCachedUserLocation();
     if (userLocation == null) {
       return null;
     }
@@ -246,10 +231,69 @@ class LocationUtils {
     final double distance = calculateDistance(
       userLocation['latitude']!,
       userLocation['longitude']!,
-      serviceLocation['latitude'].toDouble(),
-      serviceLocation['longitude'].toDouble(),
+      serviceLat,
+      serviceLon,
     );
 
     return formatDistance(distance);
+  }
+
+  /// Crea una línea de dirección legible a partir de un Placemark evitando
+  /// duplicar numeraciones como "##" o repetir el mismo número.
+  static String composeAddressFromPlacemark(Placemark place) {
+    final String street = (place.street ?? '').trim();
+    final String number = (place.subThoroughfare ?? '').trim();
+    final String line = _mergeStreetAndNumber(street, number);
+
+    final List<String> parts = [];
+    if (line.isNotEmpty) parts.add(line);
+    if (place.locality != null && place.locality!.isNotEmpty) {
+      parts.add(place.locality!.trim());
+    } else if (place.subLocality != null && place.subLocality!.isNotEmpty) {
+      parts.add(place.subLocality!.trim());
+    }
+    if (place.administrativeArea != null && place.administrativeArea!.isNotEmpty) {
+      parts.add(place.administrativeArea!.trim());
+    }
+    if (place.country != null && place.country!.isNotEmpty) {
+      parts.add(place.country!.trim());
+    }
+
+    return normalizeAddress(parts.join(', '));
+  }
+
+  /// Une calle y número evitando repetir si la calle ya contiene '# número'.
+  static String _mergeStreetAndNumber(String street, String number) {
+    if (street.isEmpty && number.isEmpty) return '';
+    if (street.isEmpty) return number;
+    if (number.isEmpty) return street;
+
+    final String pattern = r'#\s*' + RegExp.escape(number);
+    final RegExp re = RegExp(pattern, caseSensitive: false);
+    if (re.hasMatch(street)) {
+      return street; // Ya contiene el número
+    }
+
+    // Si la calle ya contiene algún '# <algo>' no añadimos otro número
+    if (RegExp(r'#\s*[\w\-]+', caseSensitive: false).hasMatch(street)) {
+      return street;
+    }
+
+    return '$street #$number';
+  }
+
+  /// Normaliza una dirección en texto: colapsa espacios, reemplaza '##' por '#'
+  /// y quita duplicados triviales.
+  static String normalizeAddress(String input) {
+    String out = input.replaceAll('##', '#');
+    out = out.replaceAll(RegExp(r'\s+,'), ',');
+    out = out.replaceAll(RegExp(r',\s*,+'), ', ');
+    out = out.replaceAll(RegExp(r'\s+'), ' ').trim();
+    // Eliminar repeticiones tipo "# 85-13 # 85-13"
+    out = out.replaceAllMapped(
+      RegExp(r'(#\s*([\w\-]+))\s*,?\s*#\s*\2', caseSensitive: false),
+      (m) => m.group(1) ?? '',
+    );
+    return out;
   }
 }

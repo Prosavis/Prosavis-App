@@ -43,15 +43,15 @@ class _HomePageState extends State<HomePage>
   
   late AnimationController _locationHighlightController;
   late Animation<double> _locationHighlightAnimation;
-  late Animation<Color?> _locationColorAnimation;
   
   final TextEditingController _searchController = TextEditingController();
   
   String? _currentGpsAddress;
   bool _isDetectingLocation = false;
   bool _hasDetectedGPS = false; // Flag para evitar múltiples detecciones
-  bool _showGpsBadge = false; // Flag para mostrar/ocultar badge GPS temporal
-  Timer? _gpsBadgeTimer; // Timer para ocultar badge después de 5 segundos
+  // Eliminado el badge visual; mantenemos el flag para no romper posibles referencias
+  // pero lo removemos si no se usa en el archivo.
+  // Eliminado timer de badge
 
   @override
   void initState() {
@@ -65,26 +65,20 @@ class _HomePageState extends State<HomePage>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    // Animación para destacar la ubicación (rápida - 1 segundo total)
+    // Animación más sutil para destacar la ubicación
     _locationHighlightController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 220),
       vsync: this,
     );
     
-    _locationHighlightAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+    _locationHighlightAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
       CurvedAnimation(
         parent: _locationHighlightController,
-        curve: Curves.elasticOut,
+        curve: Curves.easeOutCubic,
       ),
     );
     
-    _locationColorAnimation = ColorTween(
-      begin: AppTheme.accentColor,
-      end: AppTheme.primaryColor,
-    ).animate(CurvedAnimation(
-      parent: _locationHighlightController,
-      curve: Curves.easeInOut,
-    ));
+    // Sin animación de color (simplificado)
 
     _fadeController.forward();
     
@@ -112,7 +106,6 @@ class _HomePageState extends State<HomePage>
     _fadeController.dispose();
     _locationHighlightController.dispose();
     _searchController.dispose();
-    _gpsBadgeTimer?.cancel(); // Cancelar timer si existe
     super.dispose();
   }
 
@@ -161,17 +154,6 @@ class _HomePageState extends State<HomePage>
         setState(() {
           _currentGpsAddress = locationDetails['address'] as String;
           _isDetectingLocation = false;
-          _showGpsBadge = true; // Mostrar badge GPS temporal
-        });
-
-        // Timer para ocultar badge después de 5 segundos
-        _gpsBadgeTimer?.cancel(); // Cancelar timer anterior si existe
-        _gpsBadgeTimer = Timer(const Duration(seconds: 5), () {
-          if (mounted) {
-            setState(() {
-              _showGpsBadge = false;
-            });
-          }
         });
 
         // Crear entidad de dirección temporal basada en GPS
@@ -209,12 +191,12 @@ class _HomePageState extends State<HomePage>
           developer.log('❌ Error estableciendo dirección GPS: $e', name: 'HomePage');
         }
 
-        // Ejecutar animación rápida para llamar la atención (1 segundo total)
+        // Ejecutar animación sutil para llamar la atención
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
             developer.log('🎯 Ejecutando animación de atención', name: 'HomePage');
             _locationHighlightController.forward().then((_) {
-              Future.delayed(const Duration(milliseconds: 400), () {
+              Future.delayed(const Duration(milliseconds: 200), () {
                 if (mounted) {
                   _locationHighlightController.reverse();
                 }
@@ -367,33 +349,13 @@ class _HomePageState extends State<HomePage>
                       child: BlocBuilder<AddressBloc, AddressState>(
                         builder: (context, addrState) {
                           String subtitle = 'Toca para agregar ubicación';
-                          String? locationIndicator;
-                          bool isGpsLocation = false;
-                          
                           if (_isDetectingLocation) {
-                          subtitle = 'Detectando ubicación GPS...';
-                          locationIndicator = '🔍 GPS';
-                          isGpsLocation = true;
-                        } else if (addrState is AddressLoaded && addrState.active != null) {
-                          final active = addrState.active!;
-                          isGpsLocation = active.id == 'gps_current';
-                          
-                          if (isGpsLocation) {
-                            subtitle = active.addressLine;
-                            locationIndicator = _showGpsBadge ? '📍 GPS Actual' : null;
-                          } else {
-                            subtitle = active.label.isNotEmpty
-                                ? '${active.label} · ${active.addressLine}'
-                                : active.addressLine;
-                            locationIndicator = '💾 Guardada';
+                            subtitle = 'Detectando ubicación por GPS...';
+                          } else if (addrState is AddressLoaded && addrState.active != null) {
+                            subtitle = LocationUtils.normalizeAddress(addrState.active!.addressLine);
+                          } else if (_currentGpsAddress != null) {
+                            subtitle = LocationUtils.normalizeAddress(_currentGpsAddress!);
                           }
-                        } else if (_currentGpsAddress != null) {
-                          subtitle = _currentGpsAddress!;
-                          locationIndicator = _showGpsBadge ? '📍 GPS Actual' : null;
-                          isGpsLocation = true;
-                        } else {
-                          subtitle = 'Toca para agregar ubicación';
-                        }
                           
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,40 +368,19 @@ class _HomePageState extends State<HomePage>
                               Row(
                                 children: [
                                   AnimatedBuilder(
-                                    animation: _locationColorAnimation,
+                                    animation: _locationHighlightAnimation,
                                     builder: (context, child) {
-                                      return Icon(
-                                        _isDetectingLocation 
-                                          ? Symbols.my_location 
-                                          : (isGpsLocation ? Symbols.gps_fixed : Symbols.location_on), 
-                                        size: 16, 
-                                        color: _locationColorAnimation.value ?? AppTheme.accentColor,
+                                      return Transform.scale(
+                                        scale: _locationHighlightAnimation.value,
+                                        child: Icon(
+                                          _isDetectingLocation ? Symbols.my_location : Symbols.location_on,
+                                          size: 16,
+                                          color: AppTheme.accentColor,
+                                        ),
                                       );
                                     },
                                   ),
                                   const SizedBox(width: 4),
-                                  if (locationIndicator != null) ...[
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(
-                                        color: isGpsLocation ? Colors.green.withValues(alpha: 0.2) : AppTheme.primaryColor.withValues(alpha: 0.2),
-                                        borderRadius: BorderRadius.circular(8),
-                                        border: Border.all(
-                                          color: isGpsLocation ? Colors.green.withValues(alpha: 0.5) : AppTheme.primaryColor.withValues(alpha: 0.5),
-                                          width: 0.5,
-                                        ),
-                                      ),
-                                      child: Text(
-                                        locationIndicator,
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                          color: isGpsLocation ? Colors.green[700] : AppTheme.primaryColor,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 6),
-                                  ],
                                   Expanded(
                                     child: Text(
                                       subtitle,
@@ -526,46 +467,27 @@ class _HomePageState extends State<HomePage>
                     const SizedBox(height: 2),
                     BlocBuilder<AddressBloc, AddressState>(
                       builder: (context, addrState) {
-                        String subtitle = 'Toca para agregar ubicación';
-                        String? locationIndicator;
-                        bool isGpsLocation = false;
-                        
+                        String subtitle = 'Inicia sesión para gestionar direcciones';
                         if (_isDetectingLocation) {
-                          subtitle = 'Detectando ubicación GPS...';
-                          locationIndicator = '🔍 GPS';
-                          isGpsLocation = true;
+                          subtitle = 'Detectando ubicación por GPS...';
                         } else if (addrState is AddressLoaded && addrState.active != null) {
-                          final active = addrState.active!;
-                          isGpsLocation = active.id == 'gps_current';
-                          
-                          if (isGpsLocation) {
-                            subtitle = active.addressLine;
-                            locationIndicator = _showGpsBadge ? '📍 GPS Temporal' : null;
-                          } else {
-                            subtitle = active.label.isNotEmpty
-                                ? '${active.label} · ${active.addressLine}'
-                                : active.addressLine;
-                            locationIndicator = '💾 Guardada';
-                          }
+                          subtitle = LocationUtils.normalizeAddress(addrState.active!.addressLine);
                         } else if (_currentGpsAddress != null) {
-                          subtitle = _currentGpsAddress!;
-                          locationIndicator = _showGpsBadge ? '📍 GPS Temporal' : null;
-                          isGpsLocation = true;
-                        } else {
-                          subtitle = 'Inicia sesión para gestionar direcciones';
+                          subtitle = LocationUtils.normalizeAddress(_currentGpsAddress!);
                         }
                         
                         return Row(
                           children: [
                             AnimatedBuilder(
-                              animation: _locationColorAnimation,
+                              animation: _locationHighlightAnimation,
                               builder: (context, child) {
-                                return Icon(
-                                  isGpsLocation ? Symbols.gps_fixed : Symbols.location_on,
-                                  size: 16,
-                                  color: isGpsLocation 
-                                    ? _locationColorAnimation.value ?? AppTheme.accentColor
-                                    : AppTheme.accentColor,
+                                return Transform.scale(
+                                  scale: _locationHighlightAnimation.value,
+                                  child: Icon(
+                                    _isDetectingLocation ? Symbols.my_location : Symbols.location_on,
+                                    size: 16,
+                                    color: AppTheme.accentColor,
+                                  ),
                                 );
                               },
                             ),
@@ -578,33 +500,6 @@ class _HomePageState extends State<HomePage>
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            if (locationIndicator != null) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: isGpsLocation 
-                                    ? AppTheme.primaryColor.withValues(alpha: 0.1)
-                                    : Colors.green.withValues(alpha: 0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
-                                    color: isGpsLocation 
-                                      ? AppTheme.primaryColor.withValues(alpha: 0.3)
-                                      : Colors.green.withValues(alpha: 0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  locationIndicator,
-                                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: isGpsLocation 
-                                      ? AppTheme.primaryColor
-                                      : Colors.green.shade700,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         );
                       },
