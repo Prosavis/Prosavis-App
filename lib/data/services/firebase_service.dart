@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:developer' as developer;
 import 'package:prosavis/firebase_options.dart';
 import '../../core/config/app_config.dart';
@@ -72,7 +73,19 @@ class FirebaseService {
   // Inicializar Google Sign-In con configuración básica
   Future<void> _initializeGoogleSignIn() async {
     try {
-      _googleSignIn ??= GoogleSignIn.instance;
+      // Configurar con serverClientId para garantizar idToken en Android
+      if (_googleSignIn == null) {
+        final serverClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
+        if (serverClientId == null || serverClientId.isEmpty) {
+          developer.log('⚠️ GOOGLE_WEB_CLIENT_ID no definido en .env; inicializando GoogleSignIn por defecto');
+          _googleSignIn = GoogleSignIn();
+        } else {
+          _googleSignIn = GoogleSignIn(
+            serverClientId: serverClientId,
+            scopes: const ['email', 'profile'],
+          );
+        }
+      }
       await _googleSignIn!.initialize();
       developer.log('✅ Google Sign-In inicializado correctamente');
     } catch (e) {
