@@ -113,6 +113,9 @@ pubspec.lock
 secrets.json
 # Environment files
 .env
+# Android keystores (no versionar claves privadas)
+android/keystore/
+android/keystore/*.jks
 # Other
 *.iml
 *.ipr

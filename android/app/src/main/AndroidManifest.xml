@@ -1,5 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.myapp">
+    package="com.prosavis.app">
     
     <!-- Requerido para Firebase Auth (reCAPTCHA/Integrity) y acceso de red -->
     <uses-permission android:name="android.permission.INTERNET" />
