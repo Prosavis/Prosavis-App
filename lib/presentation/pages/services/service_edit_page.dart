@@ -9,7 +9,6 @@ import 'package:flutter/services.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/location_utils.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
 import '../../../domain/usecases/services/update_service_usecase.dart';
@@ -49,6 +48,8 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
   final _instagramController = TextEditingController();
   final _xController = TextEditingController();
   final _tiktokController = TextEditingController();
+  double? _lat; // se usa para persistir en updatedService.location
+  double? _lng; // se usa para persistir en updatedService.location
 
   String? _selectedCategory;
   String _priceType = 'fixed';
@@ -180,6 +181,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       setState(() {
         _service = service;
         _isLoading = false;
+        final loc = service.location;
+        final num? latRaw = (loc?['latitude'] ?? loc?['lat']) as num?;
+        final num? lngRaw = (loc?['longitude'] ?? loc?['lng'] ?? loc?['lon']) as num?;
+        _lat = latRaw?.toDouble();
+        _lng = lngRaw?.toDouble();
       });
     } catch (e) {
       setState(() {
@@ -268,6 +274,12 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
         tiktok: _tiktokController.text.trim().isNotEmpty ? _tiktokController.text.trim() : null,
         timeRange: null, // Ya no se usa horario de trabajo
+        location: (_lat != null && _lng != null)
+            ? {
+                'latitude': _lat!,
+                'longitude': _lng!,
+              }
+            : _service!.location,
         updatedAt: DateTime.now(),
       );
 
@@ -1495,13 +1507,13 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
                   SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
-                      onPressed: _getCurrentLocation,
+                      onPressed: _selectLocationOnMap,
                       icon: const Icon(
-                        Symbols.my_location,
+                        Symbols.map,
                         size: 18,
                       ),
                       label: Text(
-                        'GPS',
+                        'Mapa',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1708,110 +1720,17 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
     });
   }
 
-  Future<void> _getCurrentLocation() async {
-    if (!mounted) return;
-
-    // Mostrar indicador de carga
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '🔍 Obteniendo ubicación GPS...',
-              style: GoogleFonts.inter(),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 30), // Dar tiempo suficiente
-      ),
-    );
-
-    try {
-      final address = await LocationUtils.getCurrentAddress();
-      
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  Future<void> _selectLocationOnMap() async {
+    final result = await context.push('/addresses/map');
+    if (!mounted || result == null) return;
+    final map = result as Map<String, dynamic>;
+    setState(() {
+      _lat = (map['latitude'] as num?)?.toDouble();
+      _lng = (map['longitude'] as num?)?.toDouble();
+      final addr = map['address'] as String?;
+      if (addr != null && addr.isNotEmpty) {
+        _addressController.text = addr;
       }
-      
-      if (address != null && mounted) {
-        setState(() {
-          _addressController.text = address;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '📍 Ubicación obtenida: $address',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Configuración',
-              textColor: Colors.white,
-              onPressed: () async {
-                await LocationUtils.openLocationSettings();
-              },
-            ),
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    } catch (e) {
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
-      
-      if (mounted) {
-        String errorMessage = '❌ Error al obtener ubicación.';
-        SnackBarAction? action;
-        
-        if (e.toString().contains('Permisos de ubicación denegados')) {
-          errorMessage = '❌ Permisos de ubicación denegados.';
-          action = SnackBarAction(
-            label: 'Configurar',
-            textColor: Colors.white,
-            onPressed: () async {
-              await LocationUtils.openAppSettings();
-            },
-          );
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              errorMessage,
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: action,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    }
+    });
   }
 }

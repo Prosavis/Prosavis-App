@@ -6,6 +6,9 @@ import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/service_entity.dart';
 import 'optimized_image.dart';
 import '../../../core/utils/location_utils.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../blocs/address/address_bloc.dart';
+import '../../blocs/address/address_state.dart';
 
 /// Widget constante para el placeholder de imagen por defecto
 class _DefaultImagePlaceholder extends StatelessWidget {
@@ -429,14 +432,33 @@ class _DistanceBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Map<String, dynamic>? loc = service.location;
-    final double? lat = (loc?['latitude'] as num?)?.toDouble();
-    final double? lon = (loc?['longitude'] as num?)?.toDouble();
+    final double? lat = ((loc?['latitude'] ?? loc?['lat']) as num?)?.toDouble();
+    final double? lon = ((loc?['longitude'] ?? loc?['lng'] ?? loc?['lon']) as num?)?.toDouble();
     if (lat == null || lon == null) {
       return const SizedBox.shrink();
     }
 
+    // Intentar obtener coordenadas del usuario desde AddressBloc para más fiabilidad
+    double? userLat;
+    double? userLon;
+    try {
+      final state = context.read<AddressBloc>().state;
+      if (state is AddressLoaded && state.active != null) {
+        userLat = state.active!.latitude;
+        userLon = state.active!.longitude;
+      }
+    } catch (_) {}
+
+    Future<String?> distanceFuture() async {
+      if (userLat != null && userLon != null) {
+        final km = LocationUtils.calculateDistance(userLat, userLon, lat, lon);
+        return LocationUtils.formatDistance(km);
+      }
+      return LocationUtils.calculateDistanceToService(serviceLocation: loc);
+    }
+
     return FutureBuilder<String?>(
-      future: LocationUtils.calculateDistanceToService(serviceLocation: loc),
+      future: distanceFuture(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           // Reservar espacio mínimo para evitar saltos fuertes al cargar

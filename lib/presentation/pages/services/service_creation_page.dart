@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/utils/location_utils.dart';
 import '../../../core/utils/service_refresh_notifier.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/usecases/services/create_service_usecase.dart';
@@ -60,6 +59,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
   final List<String> _availableDays = [];
 
   bool _isCreatingService = false;
+  double? _lat;
+  double? _lng;
 
   final List<String> _priceTypes = [
     'fixed',
@@ -1352,13 +1353,13 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                   SizedBox(
                     height: 48,
                     child: ElevatedButton.icon(
-                      onPressed: _getCurrentLocation,
+                      onPressed: _selectLocationOnMap,
                       icon: const Icon(
-                        Symbols.my_location,
+                        Symbols.map,
                         size: 18,
                       ),
                       label: Text(
-                        'GPS',
+                        'Mapa',
                         style: GoogleFonts.inter(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
@@ -1506,111 +1507,18 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
     });
   }
 
-  Future<void> _getCurrentLocation() async {
-    if (!mounted) return;
-
-    // Mostrar indicador de carga
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '🔍 Obteniendo ubicación GPS...',
-              style: GoogleFonts.inter(),
-            ),
-          ],
-        ),
-        backgroundColor: Colors.blue,
-        duration: const Duration(seconds: 30), // Dar tiempo suficiente
-      ),
-    );
-
-    try {
-      final address = await LocationUtils.getCurrentAddress();
-      
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+  Future<void> _selectLocationOnMap() async {
+    final result = await context.push('/addresses/map');
+    if (!mounted || result == null) return;
+    final map = result as Map<String, dynamic>;
+    setState(() {
+      _lat = (map['latitude'] as num?)?.toDouble();
+      _lng = (map['longitude'] as num?)?.toDouble();
+      final addr = map['address'] as String?;
+      if (addr != null && addr.isNotEmpty) {
+        _addressController.text = addr;
       }
-      
-      if (address != null && mounted) {
-        setState(() {
-          _addressController.text = address;
-        });
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '📍 Ubicación obtenida: $address',
-                style: GoogleFonts.inter(),
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              '❌ No se pudo obtener la ubicación. Verifica que el GPS esté habilitado.',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: SnackBarAction(
-              label: 'Configuración',
-              textColor: Colors.white,
-              onPressed: () async {
-                await LocationUtils.openLocationSettings();
-              },
-            ),
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    } catch (e) {
-      // Ocultar indicador de carga
-      if (mounted) {
-        ScaffoldMessenger.of(context).hideCurrentSnackBar();
-      }
-      
-      if (mounted) {
-        String errorMessage = '❌ Error al obtener ubicación.';
-        SnackBarAction? action;
-        
-        if (e.toString().contains('Permisos de ubicación denegados')) {
-          errorMessage = '❌ Permisos de ubicación denegados.';
-          action = SnackBarAction(
-            label: 'Configurar',
-            textColor: Colors.white,
-            onPressed: () async {
-              await LocationUtils.openAppSettings();
-            },
-          );
-        }
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              errorMessage,
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: Colors.red,
-            action: action,
-            duration: const Duration(seconds: 6),
-          ),
-        );
-      }
-    }
+    });
   }
 
 
@@ -1678,6 +1586,12 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         features: finalFeatures,
         availableDays: _convertDaysToEnglish(_availableDays),
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
+        location: (_lat != null && _lng != null)
+            ? {
+                'latitude': _lat!,
+                'longitude': _lng!,
+              }
+            : null,
         timeRange: null, // Ya no se usa horario de trabajo
       );
 

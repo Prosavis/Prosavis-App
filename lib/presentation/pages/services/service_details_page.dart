@@ -62,6 +62,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   late final CheckUserReviewUseCase _checkUserReviewUseCase;
   late final SearchServicesUseCase _searchServicesUseCase;
   
+  
+  
   ServiceEntity? _currentService;
   bool _isLoadingService = false;
   bool _isUpdatingRating = false;
@@ -70,6 +72,26 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   // Claves para hacer scroll a la sección de reseñas y al botón
   final GlobalKey _reviewsSectionKey = GlobalKey();
   final GlobalKey _addReviewButtonKey = GlobalKey();
+
+  Future<void> _openInMaps() async {
+    if (_currentService == null) return;
+    Uri? uri;
+    // Si hay coordenadas, priorizar lat/lng
+    final loc = _currentService!.location;
+    final double? lat = ((loc?['latitude'] ?? loc?['lat']) as num?)?.toDouble();
+    final double? lng = ((loc?['longitude'] ?? loc?['lng'] ?? loc?['lon']) as num?)?.toDouble();
+    if (lat != null && lng != null) {
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$lat,$lng');
+    } else if (_currentService!.address != null && _currentService!.address!.isNotEmpty) {
+      final q = Uri.encodeComponent(_currentService!.address!);
+      uri = Uri.parse('https://www.google.com/maps/search/?api=1&query=$q');
+    }
+    if (uri != null) {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      }
+    }
+  }
 
   Future<void> _scrollToReviews({
     bool focusOnAddButton = true,
@@ -737,10 +759,14 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             if (_currentService!.address != null || _calculatedDistance != null)
               Row(
                 children: [
-                  Icon(
-                    Symbols.location_on,
-                    size: 20,
-                    color: AppTheme.getTextSecondary(context),
+                  GestureDetector(
+                    onTap: _openInMaps,
+                    behavior: HitTestBehavior.opaque,
+                    child: Icon(
+                      Symbols.location_on,
+                      size: 20,
+                      color: AppTheme.getTextSecondary(context),
+                    ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
@@ -748,14 +774,19 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         if (_currentService!.address != null)
-                          Text(
-                            _currentService!.address!,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: AppTheme.getTextSecondary(context),
+                          GestureDetector(
+                            onTap: _openInMaps,
+                            behavior: HitTestBehavior.opaque,
+                            child: Text(
+                              _currentService!.address!,
+                              style: GoogleFonts.inter(
+                                fontSize: 14,
+                                color: AppTheme.getTextSecondary(context),
+                                decoration: TextDecoration.underline,
+                              ),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         if (_calculatedDistance != null)
                           Text(
