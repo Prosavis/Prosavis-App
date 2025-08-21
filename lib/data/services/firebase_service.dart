@@ -227,7 +227,7 @@ class FirebaseService {
       final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
       if (AppConfig.enableDetailedLogs) developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
 
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
       final String? idToken = googleAuth.idToken;
       if (idToken == null) {
         developer.log('❌ No se pudo obtener idToken en fallback');
