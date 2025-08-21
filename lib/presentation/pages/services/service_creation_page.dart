@@ -440,7 +440,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       child: Column(
         children: [
           DropdownButtonFormField<String>(
-            value: _priceType,
+            initialValue: _priceType,
             decoration: InputDecoration(
               labelText: 'Tipo de precio',
               prefixIcon: Icon(
@@ -506,7 +506,7 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       title: 'Categoría',
       icon: Symbols.category,
       child: DropdownButtonFormField<String>(
-        value: _selectedCategory,
+        initialValue: _selectedCategory,
         decoration: InputDecoration(
           labelText: 'Categoría del servicio',
           prefixIcon: Icon(

@@ -167,20 +167,29 @@ class _MFAResolverDialogState extends State<MFAResolverDialog> {
         ...widget.resolver.hints.asMap().entries.map((entry) {
           final index = entry.key;
           final hint = entry.value;
-          
-          return RadioListTile<int>(
-            value: index,
-            groupValue: _selectedHintIndex,
-            onChanged: (value) {
+
+          final isSelected = _selectedHintIndex == index;
+
+          return ListTile(
+            onTap: () {
               setState(() {
-                _selectedHintIndex = value!;
+                _selectedHintIndex = index;
               });
             },
+            leading: Icon(
+              isSelected
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_off,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             title: Text(hint.displayName ?? 'Factor de autenticación'),
             subtitle: hint is PhoneMultiFactorInfo
                 ? Text('SMS: ${hint.phoneNumber}')
                 : const Text('Método de verificación'),
             dense: true,
+            selected: isSelected,
+            selectedColor: Theme.of(context).colorScheme.primary,
+            contentPadding: EdgeInsets.zero,
           );
         }),
       ],

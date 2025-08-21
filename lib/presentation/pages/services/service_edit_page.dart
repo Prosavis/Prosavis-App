@@ -581,7 +581,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       child: Column(
         children: [
           DropdownButtonFormField<String>(
-            value: _priceType,
+            initialValue: _priceType,
             decoration: InputDecoration(
               labelText: 'Tipo de precio',
               prefixIcon: const Icon(Symbols.schedule),
@@ -641,7 +641,7 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       title: 'Categoría',
       icon: Symbols.category,
       child: DropdownButtonFormField<String>(
-        value: _selectedCategory,
+        initialValue: _selectedCategory,
         decoration: InputDecoration(
           labelText: 'Categoría del servicio',
           prefixIcon: const Icon(Symbols.work),

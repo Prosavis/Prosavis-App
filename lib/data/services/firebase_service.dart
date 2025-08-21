@@ -74,19 +74,15 @@ class FirebaseService {
   Future<void> _initializeGoogleSignIn() async {
     try {
       // Configurar con serverClientId para garantizar idToken en Android
-      if (_googleSignIn == null) {
-        final serverClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
-        if (serverClientId == null || serverClientId.isEmpty) {
-          developer.log('⚠️ GOOGLE_WEB_CLIENT_ID no definido en .env; inicializando GoogleSignIn por defecto');
-          _googleSignIn = GoogleSignIn();
-        } else {
-          _googleSignIn = GoogleSignIn(
-            serverClientId: serverClientId,
-            scopes: const ['email', 'profile'],
-          );
-        }
+      _googleSignIn ??= GoogleSignIn.instance;
+
+      final serverClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
+      if (serverClientId == null || serverClientId.isEmpty) {
+        developer.log('⚠️ GOOGLE_WEB_CLIENT_ID no definido en .env; inicializando GoogleSignIn sin serverClientId');
+        await _googleSignIn!.initialize();
+      } else {
+        await _googleSignIn!.initialize(serverClientId: serverClientId);
       }
-      await _googleSignIn!.initialize();
       developer.log('✅ Google Sign-In inicializado correctamente');
     } catch (e) {
       developer.log('⚠️ Error al inicializar Google Sign-In: $e');
@@ -212,47 +208,66 @@ class FirebaseService {
       // 🔍 DIAGNÓSTICO: Verificar estado actual
       if (AppConfig.enableDetailedLogs) developer.log('📱 Verificando estado de Google Sign-In...');
       
-      // Limpiar cualquier sesión previa que pueda interferir
-      if (AppConfig.enableDetailedLogs) developer.log('🧹 Limpiando sesión previa de Google...');
+      // PRIMERO: usar el flujo recomendado por FirebaseAuth v6 (Credential Manager / OneTap)
+      try {
+        if (AppConfig.enableDetailedLogs) developer.log('🔑 Intentando signInWithProvider(GoogleAuthProvider)...');
+        final UserCredential userCredential = await _auth.signInWithProvider(GoogleAuthProvider());
+        if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In (provider) exitoso: ${userCredential.user?.email}');
+        return userCredential;
+      } catch (e) {
+        if (AppConfig.enableDetailedLogs) developer.log('⚠️ signInWithProvider falló, se usará fallback con google_sign_in: $e');
+      }
+
+      // SEGUNDO: fallback con google_sign_in (tokens) si el flujo de provider falla
+      if (AppConfig.enableDetailedLogs) developer.log('🧹 Limpiando sesión previa de Google (fallback)...');
       await _initializeGoogleSignIn();
       await _googleSignIn!.signOut();
-      
-      // Usar el flujo estándar de Google Sign-In
-      if (AppConfig.enableDetailedLogs) developer.log('🔑 Solicitando autenticación de Google...');
+
+      if (AppConfig.enableDetailedLogs) developer.log('🔑 Autenticando con google_sign_in.authenticate()...');
       final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
-      
       if (AppConfig.enableDetailedLogs) developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
 
-      // Obtener authentication details
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-      
-      // Verificar que tenemos el idToken requerido
-      if (googleAuth.idToken == null) {
-        developer.log('❌ No se pudo obtener el idToken de Google');
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
+      final String? idToken = googleAuth.idToken;
+      if (idToken == null) {
+        developer.log('❌ No se pudo obtener idToken en fallback');
         throw FirebaseAuthException(
           code: 'missing-id-token',
           message: 'No se pudo obtener el idToken de Google',
         );
       }
 
-      if (AppConfig.enableDetailedLogs) developer.log('✅ Token de Google obtenido correctamente');
-
-      // Crear credencial de Firebase con el idToken de Google
-      final OAuthCredential credential = GoogleAuthProvider.credential(
-        idToken: googleAuth.idToken,
-      );
-
-      if (AppConfig.enableDetailedLogs) developer.log('🔐 Iniciando sesión en Firebase con credencial de Google...');
-
-      // Iniciar sesión en Firebase con la credencial de Google
+      final OAuthCredential credential = GoogleAuthProvider.credential(idToken: idToken);
+      if (AppConfig.enableDetailedLogs) developer.log('🔐 Iniciando sesión en Firebase con credencial (fallback)...');
       final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      
-      if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In exitoso: ${userCredential.user?.email}');
+      if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In (fallback) exitoso: ${userCredential.user?.email}');
       return userCredential;
       
     } on Exception catch (e) {
       developer.log('⚠️ Error en Google Sign-In: $e');
       
+      // Fallback: usar el flujo nativo de Firebase Auth (signInWithProvider)
+      // cuando no obtuvimos tokens desde google_sign_in, que puede ocurrir si
+      // falta el serverClientId o hay problemas con Credential Manager.
+      final message = e.toString();
+      final isTokenIssue = message.contains('missing-google-tokens') ||
+          message.contains('missing-id-token');
+      if (isTokenIssue) {
+        try {
+          if (AppConfig.enableDetailedLogs) {
+            developer.log('🔁 Intentando fallback con FirebaseAuth.signInWithProvider(GoogleAuthProvider)');
+          }
+          final googleProvider = GoogleAuthProvider();
+          final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
+          if (AppConfig.enableDetailedLogs) {
+            developer.log('✅ Fallback con GoogleAuthProvider exitoso: ${userCredential.user?.email}');
+          }
+          return userCredential;
+        } catch (fallbackError) {
+          developer.log('❌ Fallback con GoogleAuthProvider falló: $fallbackError');
+        }
+      }
+
       // Manejar error de cancelación del usuario
       if (e.toString().contains('sign_in_canceled') || 
           e.toString().contains('user_canceled') ||

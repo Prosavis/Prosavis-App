@@ -286,21 +286,23 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
         _buildSectionTitle('Ordenar por'),
         const SizedBox(height: 12),
         ...SortOption.values.map((option) {
-          return RadioListTile<SortOption>(
+          final isSelected = _currentFilters.sortBy == option;
+          return ListTile(
+            onTap: () {
+              setState(() {
+                _currentFilters.sortBy = option;
+              });
+            },
+            leading: Icon(
+              isSelected ? Symbols.radio_button_checked : Symbols.radio_button_unchecked,
+              color: AppTheme.primaryColor,
+            ),
             title: Text(
               _getSortOptionName(option),
               style: GoogleFonts.inter(fontSize: 14),
             ),
-            value: option,
-            groupValue: _currentFilters.sortBy,
-            onChanged: (value) {
-              setState(() {
-                _currentFilters.sortBy = value!;
-              });
-            },
-            controlAffinity: ListTileControlAffinity.leading,
             contentPadding: EdgeInsets.zero,
-            activeColor: AppTheme.primaryColor,
+            selected: isSelected,
           );
         }),
       ],
