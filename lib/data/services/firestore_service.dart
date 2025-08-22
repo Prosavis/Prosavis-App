@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:developer' as developer;
 import '../../core/utils/location_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user_model.dart';
 import '../models/service_model.dart';
 import '../models/review_model.dart';
@@ -114,7 +115,6 @@ class FirestoreService {
         email: firebaseUser.email ?? '',
         photoUrl: firebaseUser.photoURL,
         phoneNumber: firebaseUser.phoneNumber,
-        bio: null, // Nuevo usuario, biografía vacía
         location: null, // Nuevo usuario, ubicación vacía
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
@@ -130,13 +130,92 @@ class FirestoreService {
     }
   }
 
-  /// Eliminar usuario
+  /// Eliminar usuario y todos sus datos asociados (eliminación en cascada)
   Future<void> deleteUser(String userId) async {
     try {
+      developer.log('🗑️ Iniciando eliminación en cascada del usuario: $userId');
+      
+      // === PASO 1: Obtener datos del usuario para eliminar su imagen de perfil ===
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data()!;
+        final String? photoUrl = userData['photoUrl'] as String?;
+        
+        if (photoUrl != null && photoUrl.isNotEmpty) {
+          try {
+            final ref = FirebaseStorage.instance.refFromURL(photoUrl);
+            await ref.delete();
+            developer.log('✅ Imagen de perfil eliminada: $photoUrl');
+          } catch (imageError) {
+            developer.log('⚠️ Error al eliminar imagen de perfil: $imageError');
+          }
+        }
+      }
+      
+      // === PASO 2: Eliminar todos los servicios del usuario (esto también eliminará sus imágenes) ===
+      try {
+        developer.log('🗑️ Eliminando servicios del usuario...');
+        final servicesQuery = await firestore
+            .collection('services')
+            .where('providerId', isEqualTo: userId)
+            .get();
+        
+        for (final serviceDoc in servicesQuery.docs) {
+          await deleteService(serviceDoc.id);
+        }
+        developer.log('🧹 ${servicesQuery.docs.length} servicios eliminados');
+      } catch (servicesError) {
+        developer.log('⚠️ Error al eliminar servicios del usuario: $servicesError');
+      }
+      
+      // === PASO 3: Eliminar favoritos del usuario ===
+      try {
+        developer.log('🗑️ Eliminando favoritos del usuario...');
+        final favoritesQuery = await firestore
+            .collection('favorites')
+            .where('userId', isEqualTo: userId)
+            .get();
+        
+        if (favoritesQuery.docs.isNotEmpty) {
+          final batch = firestore.batch();
+          for (final favoriteDoc in favoritesQuery.docs) {
+            batch.delete(favoriteDoc.reference);
+          }
+          await batch.commit();
+          developer.log('🧹 ${favoritesQuery.docs.length} favoritos eliminados');
+        }
+      } catch (favoritesError) {
+        developer.log('⚠️ Error al eliminar favoritos del usuario: $favoritesError');
+      }
+      
+      // === PASO 4: Eliminar reseñas del usuario ===
+      try {
+        developer.log('🗑️ Eliminando reseñas del usuario...');
+        final reviewsQuery = await firestore
+            .collection('reviews')
+            .where('userId', isEqualTo: userId)
+            .get();
+        
+        if (reviewsQuery.docs.isNotEmpty) {
+          final batch = firestore.batch();
+          for (final reviewDoc in reviewsQuery.docs) {
+            batch.delete(reviewDoc.reference);
+          }
+          await batch.commit();
+          developer.log('🧹 ${reviewsQuery.docs.length} reseñas eliminadas');
+        }
+      } catch (reviewsError) {
+        developer.log('⚠️ Error al eliminar reseñas del usuario: $reviewsError');
+      }
+      
+      // === PASO 5: Finalmente, eliminar el documento del usuario ===
       await firestore.collection('users').doc(userId).delete();
       developer.log('✅ Usuario eliminado de Firestore: $userId');
+      
+      developer.log('🎉 Eliminación en cascada completada exitosamente para el usuario: $userId');
+      
     } catch (e) {
-      developer.log('⚠️ Error al eliminar usuario: $e');
+      developer.log('⚠️ Error en eliminación en cascada del usuario: $e');
       rethrow;
     }
   }
@@ -392,10 +471,10 @@ class FirestoreService {
     }
   }
 
-  /// Eliminar servicio
+  /// Eliminar servicio y todos sus archivos asociados (eliminación en cascada)
   Future<void> deleteService(String serviceId) async {
     try {
-      developer.log('🗑️ Iniciando eliminación del servicio: $serviceId');
+      developer.log('🗑️ Iniciando eliminación en cascada del servicio: $serviceId');
       
       // Verificar que el usuario esté autenticado
       final currentUser = FirebaseAuth.instance.currentUser;
@@ -405,18 +484,108 @@ class FirestoreService {
       
       developer.log('👤 Usuario autenticado: ${currentUser.uid}');
       
-      // Verificar que el servicio existe antes de eliminar
+      // Verificar que el servicio existe y obtener sus datos
       final serviceDoc = await firestore.collection('services').doc(serviceId).get();
       if (!serviceDoc.exists) {
         throw Exception('Servicio no encontrado');
       }
       
-      developer.log('📄 Servicio encontrado, propietario: ${serviceDoc.data()?['providerId']}');
+      final serviceData = serviceDoc.data()!;
+      developer.log('📄 Servicio encontrado, propietario: ${serviceData['providerId']}');
       
+      // === PASO 1: Recopilar todas las URLs de imágenes ===
+      final List<String> imageUrlsToDelete = [];
+      
+      // Imagen principal
+      final String? mainImage = serviceData['mainImage'] as String?;
+      if (mainImage != null && mainImage.isNotEmpty) {
+        imageUrlsToDelete.add(mainImage);
+        developer.log('📷 Imagen principal encontrada: $mainImage');
+      }
+      
+      // Imágenes adicionales de la galería
+      final List<dynamic>? images = serviceData['images'] as List<dynamic>?;
+      if (images != null && images.isNotEmpty) {
+        for (final image in images) {
+          if (image is String && image.isNotEmpty) {
+            imageUrlsToDelete.add(image);
+          }
+        }
+        developer.log('🖼️ ${images.length} imágenes adicionales encontradas');
+      }
+      
+      developer.log('🔍 Total de imágenes a eliminar: ${imageUrlsToDelete.length}');
+      
+      // === PASO 2: Eliminar todas las imágenes de Firebase Storage ===
+      if (imageUrlsToDelete.isNotEmpty) {
+        developer.log('🗑️ Eliminando imágenes de Firebase Storage...');
+        
+        int successfulDeletes = 0;
+        for (final imageUrl in imageUrlsToDelete) {
+          try {
+            final ref = FirebaseStorage.instance.refFromURL(imageUrl);
+            await ref.delete();
+            successfulDeletes++;
+            developer.log('✅ Imagen eliminada: ${imageUrl.split('/').last}');
+          } catch (imageError) {
+            developer.log('⚠️ Error al eliminar imagen $imageUrl: $imageError');
+            // Continuar con las demás imágenes aunque una falle
+          }
+        }
+        
+        developer.log('🧹 $successfulDeletes/${imageUrlsToDelete.length} imágenes eliminadas de Storage');
+      }
+      
+      // === PASO 3: Eliminar reseñas asociadas al servicio ===
+      try {
+        developer.log('🗑️ Eliminando reseñas asociadas al servicio...');
+        final reviewsQuery = await firestore
+            .collection('reviews')
+            .where('serviceId', isEqualTo: serviceId)
+            .get();
+        
+        if (reviewsQuery.docs.isNotEmpty) {
+          final batch = firestore.batch();
+          for (final reviewDoc in reviewsQuery.docs) {
+            batch.delete(reviewDoc.reference);
+          }
+          await batch.commit();
+          developer.log('🧹 ${reviewsQuery.docs.length} reseñas eliminadas');
+        }
+      } catch (reviewsError) {
+        developer.log('⚠️ Error al eliminar reseñas: $reviewsError');
+        // Continuar aunque falle la eliminación de reseñas
+      }
+      
+      // === PASO 4: Eliminar favoritos asociados al servicio ===
+      try {
+        developer.log('🗑️ Eliminando favoritos asociados al servicio...');
+        final favoritesQuery = await firestore
+            .collection('favorites')
+            .where('serviceId', isEqualTo: serviceId)
+            .get();
+        
+        if (favoritesQuery.docs.isNotEmpty) {
+          final batch = firestore.batch();
+          for (final favoriteDoc in favoritesQuery.docs) {
+            batch.delete(favoriteDoc.reference);
+          }
+          await batch.commit();
+          developer.log('🧹 ${favoritesQuery.docs.length} favoritos eliminados');
+        }
+      } catch (favoritesError) {
+        developer.log('⚠️ Error al eliminar favoritos: $favoritesError');
+        // Continuar aunque falle la eliminación de favoritos
+      }
+      
+      // === PASO 5: Finalmente, eliminar el documento del servicio ===
       await firestore.collection('services').doc(serviceId).delete();
-      developer.log('✅ Servicio eliminado de Firestore: $serviceId');
+      developer.log('✅ Documento del servicio eliminado de Firestore: $serviceId');
+      
+      developer.log('🎉 Eliminación en cascada completada exitosamente para el servicio: $serviceId');
+      
     } catch (e) {
-      developer.log('⚠️ Error al eliminar servicio: $e');
+      developer.log('⚠️ Error en eliminación en cascada del servicio: $e');
       rethrow;
     }
   }

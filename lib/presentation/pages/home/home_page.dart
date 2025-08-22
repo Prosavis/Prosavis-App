@@ -22,10 +22,7 @@ import '../../widgets/common/press_scale.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
 import 'package:animations/animations.dart';
-import '../../blocs/address/address_bloc.dart';
-import '../../blocs/address/address_state.dart';
-import '../../blocs/address/address_event.dart';
-import '../../../domain/entities/saved_address_entity.dart';
+
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onProfileTapped;
@@ -43,6 +40,8 @@ class _HomePageState extends State<HomePage>
   
   late AnimationController _locationHighlightController;
   late Animation<double> _locationHighlightAnimation;
+  
+
   
   final TextEditingController _searchController = TextEditingController();
   
@@ -65,7 +64,7 @@ class _HomePageState extends State<HomePage>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    // Animación más sutil para destacar la ubicación
+    // Animación sutil para destacar la ubicación detectada
     _locationHighlightController = AnimationController(
       duration: const Duration(milliseconds: 220),
       vsync: this,
@@ -77,8 +76,7 @@ class _HomePageState extends State<HomePage>
         curve: Curves.easeOutCubic,
       ),
     );
-    
-    // Sin animación de color (simplificado)
+
 
     _fadeController.forward();
     
@@ -89,15 +87,7 @@ class _HomePageState extends State<HomePage>
       // SIEMPRE auto-detectar ubicación GPS al inicio (independiente de autenticación)
       _autoDetectLocation();
       
-      // Precargar direcciones solo si el usuario está autenticado
-      try {
-        final authState = context.read<AuthBloc>().state;
-        if (authState is AuthAuthenticated) {
-          context.read<AddressBloc>().add(LoadAddresses(authState.user.id));
-          // conectar HomeBloc con AddressBloc para usar coordenadas activas
-          context.read<HomeBloc>().addressBloc = context.read<AddressBloc>();
-        }
-      } catch (_) {}
+
     });
   }
 
@@ -156,45 +146,13 @@ class _HomePageState extends State<HomePage>
           _isDetectingLocation = false;
         });
 
-        // Crear entidad de dirección temporal basada en GPS
-        final gpsAddress = SavedAddressEntity(
-          id: 'gps_current',
-          userId: '',
-          label: 'Ubicación Actual (GPS)',
-          addressLine: _currentGpsAddress!,
-          latitude: (locationDetails['latitude'] as num).toDouble(),
-          longitude: (locationDetails['longitude'] as num).toDouble(),
-          isDefault: false,
-          createdAt: DateTime.now(),
-          updatedAt: DateTime.now(),
-        );
+        // La ubicación GPS ya está disponible en LocationUtils para cálculos de distancia
+        developer.log('✅ Ubicación GPS detectada y guardada en cache para cálculos de distancia', name: 'HomePage');
 
-        // Establecer como dirección activa temporal
-        try {
-          final authState = context.read<AuthBloc>().state;
-          if (mounted) {
-            developer.log('🔄 Estableciendo dirección GPS como activa...', name: 'HomePage');
-            // SIEMPRE establecer dirección GPS localmente (temporal)
-            context.read<AddressBloc>().add(SetActiveAddressLocal(gpsAddress));
-            
-            // Solo sincronizar con BD si está autenticado
-            if (authState is AuthAuthenticated) {
-              developer.log('🔐 Usuario autenticado - Sincronizando con base de datos', name: 'HomePage');
-              context.read<AddressBloc>().add(SyncActiveAddressToProfile(authState.user.id, gpsAddress));
-              developer.log('✅ Dirección GPS establecida y sincronizada', name: 'HomePage');
-            } else {
-              developer.log('👤 Usuario no autenticado - Usando dirección temporal', name: 'HomePage');
-              developer.log('✅ Dirección GPS establecida temporalmente', name: 'HomePage');
-            }
-          }
-        } catch (e) {
-          developer.log('❌ Error estableciendo dirección GPS: $e', name: 'HomePage');
-        }
-
-        // Ejecutar animación sutil para llamar la atención
+        // Ejecutar animación sutil para llamar la atención sobre la ubicación detectada
         Future.delayed(const Duration(milliseconds: 300), () {
           if (mounted) {
-            developer.log('🎯 Ejecutando animación de atención', name: 'HomePage');
+            developer.log('🎯 Ejecutando animación de atención para ubicación detectada', name: 'HomePage');
             _locationHighlightController.forward().then((_) {
               Future.delayed(const Duration(milliseconds: 200), () {
                 if (mounted) {
@@ -204,6 +162,7 @@ class _HomePageState extends State<HomePage>
             });
           }
         });
+
       } else {
         developer.log('❌ No se pudo obtener dirección GPS', name: 'HomePage');
         setState(() {
@@ -264,11 +223,7 @@ class _HomePageState extends State<HomePage>
         child: RefreshIndicator(
           onRefresh: () async {
             context.read<HomeBloc>().add(RefreshHomeServices());
-            // También refrescar direcciones si el AddressBloc está presente
-            try {
-              context.read<AddressBloc>();
-              // ignorar si no existe provider
-            } catch (_) {}
+
           },
           child: CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -339,67 +294,59 @@ class _HomePageState extends State<HomePage>
             
             // Welcome + ubicación activa
             Expanded(
-              child: GestureDetector(
-                onTap: () => context.push('/addresses', extra: {'userId': state.user.id}),
-                child: AnimatedBuilder(
-                  animation: _locationHighlightAnimation,
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _locationHighlightAnimation.value,
-                      child: BlocBuilder<AddressBloc, AddressState>(
-                        builder: (context, addrState) {
-                          String subtitle = 'Toca para agregar ubicación';
-                          if (_isDetectingLocation) {
-                            subtitle = 'Detectando ubicación por GPS...';
-                          } else if (addrState is AddressLoaded && addrState.active != null) {
-                            subtitle = LocationUtils.normalizeAddress(addrState.active!.addressLine);
-                          } else if (_currentGpsAddress != null) {
-                            subtitle = LocationUtils.normalizeAddress(_currentGpsAddress!);
-                          }
-                          
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+              child: AnimatedBuilder(
+                animation: _locationHighlightAnimation,
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _locationHighlightAnimation.value,
+                    child: GestureDetector(
+                      onTap: () {
+                        // La gestión de direcciones ya no está disponible
+                        // Solo se muestra la ubicación GPS para cálculos de distancia
+                      },
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¡Hola, ${state.user.name.split(' ').first}!',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
                             children: [
-                              Text(
-                                '¡Hola, ${state.user.name.split(' ').first}!',
-                                style: Theme.of(context).textTheme.headlineSmall,
+                              Icon(
+                                _isDetectingLocation
+                                    ? Symbols.my_location
+                                    : _currentGpsAddress != null
+                                        ? Symbols.location_on
+                                        : Symbols.location_off,
+                                size: 16,
+                                color: _isDetectingLocation
+                                    ? AppTheme.accentColor
+                                    : AppTheme.getTextSecondary(context),
                               ),
-                              const SizedBox(height: 2),
-                              Row(
-                                children: [
-                                  AnimatedBuilder(
-                                    animation: _locationHighlightAnimation,
-                                    builder: (context, child) {
-                                      return Transform.scale(
-                                        scale: _locationHighlightAnimation.value,
-                                        child: Icon(
-                                          _isDetectingLocation ? Symbols.my_location : Symbols.location_on,
-                                          size: 16,
-                                          color: AppTheme.accentColor,
-                                        ),
-                                      );
-                                    },
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _isDetectingLocation
+                                      ? 'Detectando ubicación por GPS...'
+                                      : _currentGpsAddress != null
+                                          ? LocationUtils.normalizeAddress(_currentGpsAddress!)
+                                          : 'Toca para agregar ubicación',
+                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    fontStyle: _isDetectingLocation ? FontStyle.italic : null,
                                   ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      subtitle,
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontStyle: _isDetectingLocation ? FontStyle.italic : null,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
                             ],
-                          );
-                        },
+                          ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ),
             
@@ -458,56 +405,45 @@ class _HomePageState extends State<HomePage>
                         _showAuthRequiredDialog('gestionar direcciones');
                       },
                       child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '¡Hola!',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                    const SizedBox(height: 2),
-                    BlocBuilder<AddressBloc, AddressState>(
-                      builder: (context, addrState) {
-                        String subtitle = 'Inicia sesión para gestionar direcciones';
-                        if (_isDetectingLocation) {
-                          subtitle = 'Detectando ubicación por GPS...';
-                        } else if (addrState is AddressLoaded && addrState.active != null) {
-                          subtitle = LocationUtils.normalizeAddress(addrState.active!.addressLine);
-                        } else if (_currentGpsAddress != null) {
-                          subtitle = LocationUtils.normalizeAddress(_currentGpsAddress!);
-                        }
-                        
-                        return Row(
-                          children: [
-                            AnimatedBuilder(
-                              animation: _locationHighlightAnimation,
-                              builder: (context, child) {
-                                return Transform.scale(
-                                  scale: _locationHighlightAnimation.value,
-                                  child: Icon(
-                                    _isDetectingLocation ? Symbols.my_location : Symbols.location_on,
-                                    size: 16,
-                                    color: AppTheme.accentColor,
-                                  ),
-                                );
-                              },
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                subtitle,
-                                style: Theme.of(context).textTheme.bodyMedium,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '¡Hola!',
+                            style: Theme.of(context).textTheme.headlineSmall,
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Icon(
+                                _isDetectingLocation
+                                    ? Symbols.my_location
+                                    : _currentGpsAddress != null
+                                        ? Symbols.location_on
+                                        : Symbols.location_off,
+                                size: 16,
+                                color: _isDetectingLocation
+                                    ? AppTheme.accentColor
+                                    : AppTheme.getTextSecondary(context),
                               ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  _isDetectingLocation
+                                      ? 'Detectando ubicación por GPS...'
+                                      : _currentGpsAddress != null
+                                          ? LocationUtils.normalizeAddress(_currentGpsAddress!)
+                                          : 'Inicia sesión para gestionar direcciones',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    );
+                    ),
+                  );
                 },
               ),
             ),

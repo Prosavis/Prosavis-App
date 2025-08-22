@@ -65,7 +65,6 @@ class AuthRepositoryImpl implements AuthRepository {
           email: firebaseUser.email ?? existingUser.email,
           photoUrl: firebaseUser.photoURL ?? existingUser.photoUrl,
           phoneNumber: firebaseUser.phoneNumber ?? existingUser.phoneNumber,
-          bio: null, // Campo de biografía eliminado
           location: existingUser.location, // Preservar ubicación existente
           createdAt: existingUser.createdAt,
           updatedAt: DateTime.now(),
@@ -185,7 +184,6 @@ class AuthRepositoryImpl implements AuthRepository {
           email: firebaseUser.email ?? existingUser.email,
           photoUrl: firebaseUser.photoURL ?? existingUser.photoUrl,
           phoneNumber: firebaseUser.phoneNumber ?? existingUser.phoneNumber,
-          bio: existingUser.bio,
           location: existingUser.location,
           createdAt: existingUser.createdAt,
           updatedAt: DateTime.now(),

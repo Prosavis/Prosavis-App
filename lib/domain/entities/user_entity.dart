@@ -6,7 +6,7 @@ class UserEntity extends Equatable {
   final String email;
   final String? photoUrl;
   final String? phoneNumber;
-  final String? bio;
+
   final String? location;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -17,7 +17,6 @@ class UserEntity extends Equatable {
     required this.email,
     this.photoUrl,
     this.phoneNumber,
-    this.bio,
     this.location,
     required this.createdAt,
     required this.updatedAt,
@@ -29,7 +28,6 @@ class UserEntity extends Equatable {
     String? email,
     String? photoUrl,
     String? phoneNumber,
-    String? bio,
     String? location,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -40,7 +38,6 @@ class UserEntity extends Equatable {
       email: email ?? this.email,
       photoUrl: photoUrl ?? this.photoUrl,
       phoneNumber: phoneNumber ?? this.phoneNumber,
-      bio: bio ?? this.bio,
       location: location ?? this.location,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -54,7 +51,6 @@ class UserEntity extends Equatable {
         email,
         photoUrl,
         phoneNumber,
-        bio,
         location,
         createdAt,
         updatedAt,

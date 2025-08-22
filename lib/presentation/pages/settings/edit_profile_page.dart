@@ -838,7 +838,6 @@ class _EditProfilePageState extends State<EditProfilePage>
                 ? '+57${_phoneController.text.trim()}'
                 : _phoneController.text.trim()) 
             : null,
-        bio: null, // Campo eliminado
         location: null,
         photoUrl: _profileImageUrl,
         createdAt: currentUser.createdAt,

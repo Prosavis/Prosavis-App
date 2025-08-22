@@ -2,7 +2,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 import 'dart:developer' as developer;
 import 'package:prosavis/firebase_options.dart';
 import '../../core/config/app_config.dart';
@@ -73,17 +73,11 @@ class FirebaseService {
   // Inicializar Google Sign-In con configuración básica
   Future<void> _initializeGoogleSignIn() async {
     try {
-      // Configurar con serverClientId para garantizar idToken en Android
-      _googleSignIn ??= GoogleSignIn.instance;
-
-      final serverClientId = dotenv.env['GOOGLE_WEB_CLIENT_ID'];
-      if (serverClientId == null || serverClientId.isEmpty) {
-        developer.log('⚠️ GOOGLE_WEB_CLIENT_ID no definido en .env; inicializando GoogleSignIn sin serverClientId');
-        await _googleSignIn!.initialize();
-      } else {
-        await _googleSignIn!.initialize(serverClientId: serverClientId);
+      // Solo inicializar si no existe
+      if (_googleSignIn == null) {
+        _googleSignIn = GoogleSignIn.instance;
+        developer.log('✅ Google Sign-In inicializado correctamente');
       }
-      developer.log('✅ Google Sign-In inicializado correctamente');
     } catch (e) {
       developer.log('⚠️ Error al inicializar Google Sign-In: $e');
     }
@@ -214,8 +208,15 @@ class FirebaseService {
       }
 
       try {
-        final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
-        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+        final GoogleSignInAccount? googleUser = await _googleSignIn!.authenticate();
+        if (googleUser == null) {
+          // Usuario canceló el flujo
+          throw FirebaseAuthException(
+            code: 'sign_in_canceled',
+            message: 'Usuario canceló el inicio de sesión',
+          );
+        }
+        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
         final String? idToken = googleAuth.idToken;
 
         if (idToken != null && idToken.isNotEmpty) {
@@ -234,19 +235,14 @@ class FirebaseService {
           if (AppConfig.enableDetailedLogs) {
             developer.log('⚠️ idToken nulo; no se pudo completar flujo nativo');
           }
+          throw FirebaseAuthException(
+            code: 'missing-id-token',
+            message: 'No se pudo obtener el token de identificación de Google',
+          );
         }
       } catch (nativeError) {
-        developer.log('⚠️ Flujo nativo con google_sign_in falló: $nativeError');
-      }
-
-      // 2) Fallback: usar provider (puede abrir navegador si no hay GMS)
-      try {
-        if (AppConfig.enableDetailedLogs) developer.log('🔁 Intentando fallback con FirebaseAuth.signInWithProvider(GoogleAuthProvider)');
-        final UserCredential userCredential = await _auth.signInWithProvider(GoogleAuthProvider());
-        if (AppConfig.enableDetailedLogs) developer.log('✅ Fallback con provider exitoso: ${userCredential.user?.email}');
-        return userCredential;
-      } catch (providerError) {
-        developer.log('❌ Fallback con provider falló: $providerError');
+        developer.log('⚠️ Error en flujo nativo Google Sign-In: $nativeError');
+        // Re-lanzar el error sin usar fallback que abre navegador
         rethrow;
       }
     } on Exception catch (e) {

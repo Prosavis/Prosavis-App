@@ -19,7 +19,6 @@ class FavoriteModel extends FavoriteEntity {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'userId': userId,
       'serviceId': serviceId,
       'createdAt': createdAt.toIso8601String(),

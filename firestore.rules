@@ -10,15 +10,13 @@ service cloud.firestore {
       allow write: if request.auth != null && 
                   request.auth.uid == userId &&
                   // 🖼️ Validar URL de imagen de perfil (si se actualiza)
-                  (!request.resource.data.keys().hasAny(['profileImageUrl']) || 
-                   request.resource.data.profileImageUrl == null || 
-                   request.resource.data.profileImageUrl.matches('https://firebasestorage.googleapis.com/.*'));
+                  (!request.resource.data.keys().hasAny(['photoUrl']) || 
+                   request.resource.data.photoUrl == null || 
+                   request.resource.data.photoUrl.matches('https://firebasestorage.googleapis.com/.*'));
       
-      // === SUBCOLECCIÓN: DIRECCIONES GUARDADAS ===
-      // Cada usuario puede gestionar sus propias direcciones
-      match /addresses/{addressId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
-      }
+      // ✅ ELIMINACIÓN EN CASCADA: Solo el propietario puede eliminar su cuenta
+      // La eliminación en cascada se maneja en el backend
+      allow delete: if request.auth != null && request.auth.uid == userId;
     }
     
     // === SERVICIOS ===
@@ -83,8 +81,10 @@ service cloud.firestore {
                      request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId &&
                      // 🚫 No permitir múltiples reseñas del mismo usuario para el mismo servicio
                      !exists(/databases/$(database)/documents/services/$(serviceId)/reviews/$(request.auth.uid));
-        allow update, delete: if request.auth != null && 
-                             request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
+        // ✅ ELIMINACIÓN: Usuario puede eliminar sus reseñas  
+        // O eliminación en cascada desde el backend (sin autenticación)
+        allow update, delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
+                             request.auth == null; // Permitir eliminación desde backend sin auth
       }
       
       // === IMÁGENES DE SERVICIOS ===
@@ -108,11 +108,15 @@ service cloud.firestore {
       
       allow create: if request.auth != null && 
                    request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
+                   // 📋 Validar campos obligatorios
+                   request.resource.data.keys().hasAll(['userId', 'serviceId']) &&
                    // 📋 Validar que el servicio existe
                    exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId));
       
-      allow delete: if request.auth != null && 
-                   request.auth.uid == resource.data.userId;
+      // ✅ ELIMINACIÓN: Usuario puede eliminar sus favoritos 
+      // O eliminación en cascada desde el backend (sin autenticación)
+      allow delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
+                   request.auth == null; // Permitir eliminación desde backend sin auth
     }
     
     // === RESEÑAS GLOBALES ===
@@ -133,8 +137,10 @@ service cloud.firestore {
                    exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId)) &&
                    // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
                    request.auth.uid != get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.providerId;
-      allow update, delete: if request.auth != null && 
-                           request.auth.uid == resource.data.userId; // 🔐 Solo el autor de la reseña
+      // ✅ ELIMINACIÓN: Usuario puede eliminar sus reseñas
+      // O eliminación en cascada desde el backend (sin autenticación)
+      allow update, delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
+                           request.auth == null; // Permitir eliminación desde backend sin auth
     }
     
     // === CATEGORÍAS DE SERVICIOS ===

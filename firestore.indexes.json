@@ -1,14 +1,4 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "addresses",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "isDefault", "order": "DESCENDING" },
-        { "fieldPath": "updatedAt", "order": "DESCENDING" },
-        { "fieldPath": "__name__", "order": "DESCENDING" }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

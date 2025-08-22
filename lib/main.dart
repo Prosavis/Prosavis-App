@@ -28,11 +28,9 @@ import 'presentation/pages/auth/verify_phone_page.dart';
 import 'presentation/pages/auth/forgot_password_page.dart';
 import 'presentation/pages/settings/notifications_settings_page.dart';
 import 'presentation/pages/settings/language_settings_page.dart';
-import 'presentation/pages/address/addresses_page.dart';
-import 'presentation/pages/address/edit_address_page.dart';
-import 'presentation/pages/address/map_picker_page.dart';
-import 'presentation/pages/settings/edit_profile_page.dart';
 
+import 'presentation/pages/settings/edit_profile_page.dart';
+import 'presentation/pages/address/map_picker_page.dart';
 import 'presentation/pages/settings/terms_conditions_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
@@ -47,8 +45,8 @@ import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'presentation/blocs/address/address_bloc.dart';
-import 'presentation/blocs/auth/auth_state.dart';
+
+
 import 'core/services/haptics_service.dart';
 
 void main() async {
@@ -230,45 +228,6 @@ final _router = GoRouter(
       pageBuilder: (context, state) => _fadeThroughPage(child: const ProfilePage()),
     ),
     GoRoute(
-      path: '/addresses',
-      pageBuilder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>;
-        return _sharedAxisPage(
-          child: AddressesPage(userId: extra['userId'] as String),
-          type: SharedAxisTransitionType.horizontal,
-        );
-      },
-    ),
-    GoRoute(
-      path: '/addresses/add',
-      pageBuilder: (context, state) {
-        final extra = state.extra as Map<String, dynamic>?;
-        String userId = '';
-        if (extra != null && extra['userId'] != null) {
-          userId = extra['userId'] as String;
-        } else {
-          final authState = context.read<AuthBloc>().state;
-          if (authState is AuthAuthenticated) {
-            userId = authState.user.id;
-          }
-        }
-        return _sharedAxisPage(
-          child: EditAddressPage(userId: userId),
-          type: SharedAxisTransitionType.horizontal,
-        );
-      },
-    ),
-    GoRoute(
-      path: '/addresses/edit',
-      pageBuilder: (context, state) {
-        final initial = state.extra as dynamic;
-        return _sharedAxisPage(
-          child: EditAddressPage(userId: initial.userId as String, initial: initial),
-          type: SharedAxisTransitionType.horizontal,
-        );
-      },
-    ),
-    GoRoute(
       path: '/addresses/map',
       pageBuilder: (context, state) => _sharedAxisPage(
         child: const MapPickerPage(),
@@ -371,9 +330,7 @@ class MyApp extends StatelessWidget {
         BlocProvider<FavoritesBloc>(
           create: (_) => di.sl<FavoritesBloc>(),
         ),
-        BlocProvider<AddressBloc>(
-          create: (_) => di.sl<AddressBloc>(),
-        ),
+
       ],
       child: BlocBuilder<ThemeBloc, ThemeState>(
         builder: (context, themeState) {

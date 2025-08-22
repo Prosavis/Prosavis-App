@@ -12,11 +12,16 @@ service firebase.storage {
       // Permitir lectura de imágenes de perfil para mostrar en la app
       allow read: if true;
       
-      // Solo usuarios autenticados pueden subir/modificar sus propias imágenes
-      allow write: if request.auth != null && 
-                   fileName.matches('.*' + request.auth.uid + '.*') &&
-                   request.resource.size < 5 * 1024 * 1024 && // Máximo 5MB
-                   request.resource.contentType.matches('image/.*'); // Solo imágenes
+      // ✅ SUBIDA: Solo usuarios autenticados pueden subir sus propias imágenes
+      allow create, update: if request.auth != null && 
+                           fileName.matches('.*' + request.auth.uid + '.*') &&
+                           request.resource.size < 5 * 1024 * 1024 && // Máximo 5MB
+                           request.resource.contentType.matches('image/.*'); // Solo imágenes
+                           
+      // ✅ ELIMINACIÓN: Usuario puede eliminar sus imágenes
+      // O eliminación en cascada desde el backend (sin autenticación)
+      allow delete: if (request.auth != null && fileName.matches('.*' + request.auth.uid + '.*')) ||
+                   request.auth == null; // Permitir eliminación desde backend sin auth
     }
     
     // === IMÁGENES DE SERVICIOS ===
@@ -25,21 +30,21 @@ service firebase.storage {
       // Permitir lectura pública de imágenes de servicios para navegación
       allow read: if true;
       
-      // Solo usuarios autenticados pueden subir/modificar imágenes de servicios
-      // Reglas más permisivas para solucionar errores de upload
-      allow write: if request.auth != null && 
-                   request.resource != null &&
-                   request.resource.size < 10 * 1024 * 1024 && // Máximo 10MB para servicios
-                   request.resource.contentType != null &&
-                   request.resource.contentType.matches('image/.*') && // Solo imágenes
-                   // Validar formatos permitidos (JPEG, PNG, WebP)
-                   (request.resource.contentType == 'image/jpeg' ||
-                    request.resource.contentType == 'image/png' ||
-                    request.resource.contentType == 'image/webp' ||
-                    request.resource.contentType == 'image/jpg');
+      // ✅ SUBIDA/ACTUALIZACIÓN: Solo usuarios autenticados pueden subir imágenes de servicios
+      allow create, update: if request.auth != null && 
+                           request.resource != null &&
+                           request.resource.size < 10 * 1024 * 1024 && // Máximo 10MB para servicios
+                           request.resource.contentType != null &&
+                           request.resource.contentType.matches('image/.*') && // Solo imágenes
+                           // Validar formatos permitidos (JPEG, PNG, WebP)
+                           (request.resource.contentType == 'image/jpeg' ||
+                            request.resource.contentType == 'image/png' ||
+                            request.resource.contentType == 'image/webp' ||
+                            request.resource.contentType == 'image/jpg');
       
-      // Permitir actualización de metadatos
-      allow update: if request.auth != null;
+      // ✅ ELIMINACIÓN: Cualquier proceso puede eliminar imágenes de servicios
+      // (Usuario autenticado o eliminación en cascada desde el backend)
+      allow delete: if true;
     }
     
     // === DOCUMENTOS Y CERTIFICADOS ===
