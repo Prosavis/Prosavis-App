@@ -9,10 +9,10 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && 
                   request.auth.uid == userId &&
-                  // 🖼️ Validar URL de imagen de perfil (si se actualiza)
+                  // 🖼️ Validar URL de imagen de perfil (Firebase Storage + Google + YouTube)
                   (!request.resource.data.keys().hasAny(['photoUrl']) || 
                    request.resource.data.photoUrl == null || 
-                   request.resource.data.photoUrl.matches('https://firebasestorage.googleapis.com/.*'));
+                   request.resource.data.photoUrl.matches('https://(firebasestorage\\.googleapis\\.com|lh3\\.googleusercontent\\.com|lh4\\.googleusercontent\\.com|lh5\\.googleusercontent\\.com|lh6\\.googleusercontent\\.com|yt3\\.ggpht\\.com)/.*'));
       
       // ✅ ELIMINACIÓN EN CASCADA: Solo el propietario puede eliminar su cuenta
       // La eliminación en cascada se maneja en el backend
