@@ -3,8 +3,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
 class LocationUtils {
-  // Cache simple en memoria para evitar solicitar la ubicación repetidamente
+  // Cache inteligente en memoria para evitar solicitar la ubicación repetidamente
   static Map<String, double>? _cachedUserLocation;
+  static DateTime? _cacheTimestamp;
+  static const Duration _cacheValidDuration = Duration(minutes: 5); // Cache válido por 5 minutos
 
   /// Calcula la distancia entre dos puntos geográficos usando la fórmula de Haversine
   /// Retorna la distancia en kilómetros
@@ -86,11 +88,12 @@ class LocationUtils {
       final hasPermission = await _handleLocationPermission();
       if (!hasPermission) return null;
 
-      // Obtener ubicación actual
+      // Obtener ubicación actual con timeout
       final Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 10,
+          timeLimit: Duration(seconds: 15), // Timeout de 15 segundos
         ),
       );
 
@@ -106,12 +109,21 @@ class LocationUtils {
   /// Igual que `getCurrentUserLocation` pero con cache en memoria.
   /// Útil para listas de tarjetas donde se requiere la misma ubicación.
   static Future<Map<String, double>?> getCachedUserLocation({bool forceRefresh = false}) async {
-    if (!forceRefresh && _cachedUserLocation != null) {
+    final now = DateTime.now();
+    
+    // Verificar si el cache es válido (no expirado)
+    final isCacheValid = _cacheTimestamp != null && 
+        _cachedUserLocation != null && 
+        now.difference(_cacheTimestamp!).compareTo(_cacheValidDuration) < 0;
+    
+    if (!forceRefresh && isCacheValid) {
       return _cachedUserLocation;
     }
+    
     final result = await getCurrentUserLocation();
     if (result != null) {
       _cachedUserLocation = result;
+      _cacheTimestamp = now;
     }
     return result;
   }
@@ -126,11 +138,12 @@ class LocationUtils {
         throw Exception('Permisos de ubicación denegados');
       }
 
-      // Obtener ubicación actual
+      // Obtener ubicación actual con timeout
       final Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 10,
+          timeLimit: Duration(seconds: 15), // Timeout de 15 segundos
         ),
       );
 
@@ -159,16 +172,30 @@ class LocationUtils {
       final hasPermission = await _handleLocationPermission();
       if (!hasPermission) return null;
 
-      // Obtener ubicación actual
+      // Obtener ubicación actual con timeout para evitar esperas indefinidas
       final Position position = await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 10,
+          timeLimit: Duration(seconds: 15), // Timeout de 15 segundos
         ),
       );
 
-      // Obtener dirección
-      final address = await getCurrentAddress();
+      // Obtener dirección usando la posición ya obtenida (evitar doble llamada GPS)
+      String? address;
+      try {
+        final List<Placemark> placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+        
+        if (placemarks.isNotEmpty) {
+          address = composeAddressFromPlacemark(placemarks.first);
+        }
+      } catch (e) {
+        // Si falla el geocoding, continuar sin dirección
+        address = null;
+      }
 
       return {
         'latitude': position.latitude,
@@ -202,6 +229,73 @@ class LocationUtils {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Limpia el cache de ubicación forzando una nueva detección
+  static void clearLocationCache() {
+    _cachedUserLocation = null;
+    _cacheTimestamp = null;
+  }
+
+  /// Actualiza el cache manualmente con una ubicación
+  static void updateLocationCache(Map<String, double> location) {
+    _cachedUserLocation = location;
+    _cacheTimestamp = DateTime.now();
+  }
+
+  /// Obtiene ubicación con estrategia de fallback mejorada
+  /// Primero intenta GPS de alta precisión, luego GPS de precisión media si falla
+  static Future<Map<String, double>?> getUserLocationWithFallback() async {
+    try {
+      // Verificar permisos
+      final hasPermission = await _handleLocationPermission();
+      if (!hasPermission) return null;
+
+      // Intentar primero con alta precisión y timeout corto
+      try {
+        final Position position = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.high,
+            distanceFilter: 10,
+            timeLimit: Duration(seconds: 10), // Timeout más agresivo
+          ),
+        );
+
+        return {
+          'latitude': position.latitude,
+          'longitude': position.longitude,
+        };
+      } catch (e) {
+        // Si falla alta precisión, intentar con precisión media
+        try {
+          final Position position = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.medium,
+              distanceFilter: 50,
+              timeLimit: Duration(seconds: 8), // Timeout aún más corto
+            ),
+          );
+
+          return {
+            'latitude': position.latitude,
+            'longitude': position.longitude,
+          };
+        } catch (e) {
+          // Como último recurso, usar la última ubicación conocida
+          final Position? lastKnown = await Geolocator.getLastKnownPosition();
+          if (lastKnown != null) {
+            return {
+              'latitude': lastKnown.latitude,
+              'longitude': lastKnown.longitude,
+            };
+          }
+        }
+      }
+    } catch (e) {
+      // Error general
+    }
+    
+    return null;
   }
 
   /// Calcula y formatea la distancia entre el usuario actual y un servicio

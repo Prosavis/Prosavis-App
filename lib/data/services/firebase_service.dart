@@ -70,25 +70,32 @@ class FirebaseService {
     // Defer: no inicializar Google Sign-In hasta que se necesite
   }
 
-  // Inicializar Google Sign-In con configuración básica
   Future<void> _initializeGoogleSignIn() async {
     try {
-      // Solo inicializar si no existe
       if (_googleSignIn == null) {
+        // Inicializar GoogleSignIn instance
         _googleSignIn = GoogleSignIn.instance;
-        developer.log('✅ Google Sign-In inicializado correctamente');
+        
+        // Configurar con serverClientId para obtener idToken válido
+        await _googleSignIn!.initialize(
+          serverClientId: '967024953650-hf412jilid7magc39du5scn9p1knja9n.apps.googleusercontent.com',
+        );
+        developer.log('✅ Google Sign-In inicializado correctamente con serverClientId');
       }
     } catch (e) {
       developer.log('⚠️ Error al inicializar Google Sign-In: $e');
+      // Continuar sin Google Sign-In si falla la inicialización
     }
   }
 
   // Método de logout
   Future<void> signOut() async {
     try {
-      // Cerrar sesión en Google Sign-In primero
+      // Cerrar sesión en Google Sign-In primero si está inicializado
       await _initializeGoogleSignIn();
-      await _googleSignIn!.signOut();
+      if (_googleSignIn != null) {
+        await _googleSignIn!.signOut();
+      }
       
       // Cerrar sesión en Firebase
       await _auth.signOut();
@@ -194,98 +201,58 @@ class FirebaseService {
     }
   }
 
-  // Google Sign-In nativo primero; web/provider como último recurso
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      developer.log('🚀 Iniciando flujo de Google Sign-In (nativo primero)...');
-
-      // 1) Intentar flujo nativo con google_sign_in para evitar abrir Chrome
+      developer.log('🚀 Iniciando flujo de Google Sign-In nativo...');
       await _initializeGoogleSignIn();
-      await _googleSignIn!.signOut(); // limpiar sesión previa
 
-      if (AppConfig.enableDetailedLogs) {
-        developer.log('🔑 Intentando GoogleSignIn.authenticate() con serverClientId de .env');
-      }
-
-      try {
-        final GoogleSignInAccount? googleUser = await _googleSignIn!.authenticate();
-        if (googleUser == null) {
-          // Usuario canceló el flujo
-          throw FirebaseAuthException(
-            code: 'sign_in_canceled',
-            message: 'Usuario canceló el inicio de sesión',
-          );
-        }
-        final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-        final String? idToken = googleAuth.idToken;
-
-        if (idToken != null && idToken.isNotEmpty) {
-          final OAuthCredential credential = GoogleAuthProvider.credential(
-            idToken: idToken,
-          );
-          if (AppConfig.enableDetailedLogs) {
-            developer.log('🔐 Iniciando sesión en Firebase con credencial nativa...');
-          }
-          final UserCredential userCredential = await _auth.signInWithCredential(credential);
-          if (AppConfig.enableDetailedLogs) {
-            developer.log('✅ Google Sign-In nativo exitoso: ${userCredential.user?.email}');
-          }
-          return userCredential;
-        } else {
-          if (AppConfig.enableDetailedLogs) {
-            developer.log('⚠️ idToken nulo; no se pudo completar flujo nativo');
-          }
-          throw FirebaseAuthException(
-            code: 'missing-id-token',
-            message: 'No se pudo obtener el token de identificación de Google',
-          );
-        }
-      } catch (nativeError) {
-        developer.log('⚠️ Error en flujo nativo Google Sign-In: $nativeError');
-        // Re-lanzar el error sin usar fallback que abre navegador
-        rethrow;
-      }
-    } on Exception catch (e) {
-      developer.log('⚠️ Error en Google Sign-In: $e');
-
-      // Cancelación explícita
-      if (e.toString().contains('sign_in_canceled') ||
-          e.toString().contains('user_canceled') ||
-          e.toString().contains('canceled')) {
+      // Verificar que Google Sign-In se inicializó correctamente
+      if (_googleSignIn == null) {
         throw FirebaseAuthException(
-          code: 'sign_in_canceled',
-          message: 'Usuario canceló el inicio de sesión',
+          code: 'google-signin-unavailable',
+          message: 'Google Sign-In no está disponible',
         );
       }
 
-      if (e is FirebaseAuthException) {
-        switch (e.code) {
-          case 'account-exists-with-different-credential':
-            developer.log('❌ Ya existe una cuenta con este email usando un método diferente');
-            break;
-          case 'invalid-credential':
-            developer.log('❌ Credenciales de Google inválidas');
-            break;
-          case 'operation-not-allowed':
-            developer.log('❌ Google Sign-In no está habilitado en Firebase Console');
-            break;
-          case 'user-disabled':
-            developer.log('❌ Esta cuenta ha sido deshabilitada');
-            break;
-          case 'unsupported-platform':
-            developer.log('❌ Plataforma no soportada para Google Sign-In');
-            break;
-          case 'missing-id-token':
-            developer.log('❌ Fallo al obtener idToken de Google');
-            break;
-          case 'missing-authorization':
-            developer.log('❌ Fallo en la autorización de Google');
-            break;
-          default:
-            developer.log('❌ Error de Firebase Auth: ${e.code} - ${e.message}');
-        }
+      // Opcional: limpia sesión previa de forma no bloqueante
+      await Future.microtask(() => _googleSignIn!.signOut());
+
+      // 1) El flujo correcto para esta versión es authenticate()
+      final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
+      
+      // 2) authentication es una propiedad sincrónica, no un Future
+      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+
+      // 3) A partir de aquí NO uses await (no son Futures) y NO uses tipos nullable
+      if (googleAuth.idToken == null) {
+        throw FirebaseAuthException(
+          code: 'missing-google-tokens',
+          message: 'No se obtuvo idToken de Google',
+        );
       }
 
+      final OAuthCredential credential = GoogleAuthProvider.credential(
+        idToken: googleAuth.idToken,
+        // accessToken no disponible en esta versión
+      );
+
+      final UserCredential userCredential =
+          await _auth.signInWithCredential(credential);
+
+      developer.log('✅ Google Sign-In nativo exitoso: ${userCredential.user?.email}');
+      return userCredential;
+    } on FirebaseAuthException catch (e) {
+      developer.log('❌ FirebaseAuthException: ${e.code} - ${e.message}');
+      rethrow;
+    } catch (e) {
+      developer.log('⚠️ Error en Google Sign-In: $e');
+      // Si es un error de Google Play Services, proporcionar un mensaje más claro
+      if (e.toString().contains('DEVELOPER_ERROR') || e.toString().contains('Unknown calling package')) {
+        throw FirebaseAuthException(
+          code: 'google-services-unavailable',
+          message: 'Google Play Services no está disponible en este dispositivo',
+        );
+      }
       rethrow;
     }
   }

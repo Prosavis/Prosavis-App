@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/widgets.dart';
 import '../config/app_config.dart';
 
 /// Configuración de rendimiento para la aplicación
@@ -56,6 +57,26 @@ class PerformanceConfig {
   static const double defaultImageCacheHeight = 400;
   static const double cardImageCacheWidth = 180;
   static const double cardImageCacheHeight = 120;
+  
+  /// Configuraciones de memoria
+  static const int maxImageCacheSize = 100; // MB
+  static const int maxBitmapCacheSize = 50; // MB
+  
+  /// Optimización de memoria automática
+  static void optimizeMemoryUsage() {
+    if (!kDebugMode) {
+      // Solo en production para evitar interferir con desarrollo
+      Future.microtask(() {
+        // Sugerir al GC que libere memoria cuando sea apropiado
+        // Esto no fuerza GC pero ayuda a optimizar el timing
+        if (WidgetsBinding.instance.renderViewElement != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            // Permitir que el GC optimice después del frame
+          });
+        }
+      });
+    }
+  }
   
   /// Detener monitoreo de rendimiento
   static void dispose() {

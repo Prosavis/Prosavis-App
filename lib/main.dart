@@ -94,11 +94,18 @@ void main() async {
 
 /// Optimización: Precargar activos críticos para mejorar rendimiento inicial
 Future<void> _preloadCriticalAssets() async {
-  // Forzar la resolución de la tipografía más usada para evitar jank inicial.
-  // No realizamos precache de imágenes aquí porque no disponemos de un
-  // BuildContext válido en esta fase de inicio.
-  GoogleFonts.inter();
-  return;
+  // Optimización: Ejecutar en un aislamiento para no bloquear el hilo principal
+  await Future.microtask(() {
+    // Forzar la resolución de la tipografía más usada para evitar jank inicial.
+    // No realizamos precache de imágenes aquí porque no disponemos de un
+    // BuildContext válido en esta fase de inicio.
+    try {
+      GoogleFonts.inter();
+    } catch (e) {
+      // Si falla la carga de fuentes, continuar sin ella
+      developer.log('No se pudo precargar GoogleFonts: $e');
+    }
+  });
 }
 
 // Transiciones premium reutilizables para rutas

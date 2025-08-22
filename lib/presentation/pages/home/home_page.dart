@@ -129,45 +129,73 @@ class _HomePageState extends State<HomePage>
     });
 
     try {
-      developer.log('📍 Obteniendo ubicación GPS...', name: 'HomePage');
-      // Obtener ubicación GPS con detalles completos
-      final locationDetails = await LocationUtils.getCurrentLocationDetails();
+      developer.log('📍 Verificando cache de ubicación primero...', name: 'HomePage');
       
-      if (!mounted) {
-        developer.log('❌ Widget no montado después de obtener ubicación', name: 'HomePage');
-        return;
+      // Primero intentar obtener ubicación desde cache
+      final cachedLocation = await LocationUtils.getCachedUserLocation();
+      
+      if (cachedLocation != null && mounted) {
+        developer.log('💾 Ubicación encontrada en cache, obteniendo dirección...', name: 'HomePage');
+        
+        // Si hay ubicación en cache, obtener solo la dirección
+        try {
+          final address = await LocationUtils.getCurrentAddress();
+          if (mounted && address != null) {
+            developer.log('✅ Dirección obtenida desde cache: $address', name: 'HomePage');
+            
+            setState(() {
+              _currentGpsAddress = address;
+              _isDetectingLocation = false;
+            });
+            
+            _showLocationHighlight();
+            return;
+          }
+        } catch (e) {
+          developer.log('⚠️ Error obteniendo dirección desde cache: $e', name: 'HomePage');
+        }
       }
       
-      if (locationDetails != null && locationDetails['address'] != null) {
-        developer.log('✅ Ubicación GPS obtenida: ${locationDetails['address']}', name: 'HomePage');
+      // Si no hay cache válido, usar estrategia de fallback
+      developer.log('📍 Obteniendo ubicación GPS con fallback...', name: 'HomePage');
+      final userLocation = await LocationUtils.getUserLocationWithFallback();
+      
+      if (userLocation != null && mounted) {
+        // Guardar en cache manualmente
+        LocationUtils.updateLocationCache(userLocation);
         
-        setState(() {
-          _currentGpsAddress = locationDetails['address'] as String;
-          _isDetectingLocation = false;
-        });
-
-        // La ubicación GPS ya está disponible en LocationUtils para cálculos de distancia
-        developer.log('✅ Ubicación GPS detectada y guardada en cache para cálculos de distancia', name: 'HomePage');
-
-        // Ejecutar animación sutil para llamar la atención sobre la ubicación detectada
-        Future.delayed(const Duration(milliseconds: 300), () {
-          if (mounted) {
-            developer.log('🎯 Ejecutando animación de atención para ubicación detectada', name: 'HomePage');
-            _locationHighlightController.forward().then((_) {
-              Future.delayed(const Duration(milliseconds: 200), () {
-                if (mounted) {
-                  _locationHighlightController.reverse();
-                }
-              });
+        // Obtener dirección por separado (de forma asíncrona)
+        try {
+          final address = await LocationUtils.getCurrentAddress();
+          if (mounted && address != null) {
+            setState(() {
+              _currentGpsAddress = address;
+              _isDetectingLocation = false;
             });
+            _showLocationHighlight();
+            return;
           }
-        });
-
-      } else {
-        developer.log('❌ No se pudo obtener dirección GPS', name: 'HomePage');
+        } catch (e) {
+          developer.log('⚠️ Error obteniendo dirección: $e', name: 'HomePage');
+        }
+      }
+      
+      // Fallback final: mostrar coordenadas si no se puede obtener dirección
+      if (userLocation != null && mounted) {
+        final lat = userLocation['latitude']!.toStringAsFixed(4);
+        final lng = userLocation['longitude']!.toStringAsFixed(4);
         setState(() {
+          _currentGpsAddress = 'Lat: $lat, Lng: $lng';
           _isDetectingLocation = false;
         });
+        _showLocationHighlight();
+      } else {
+        developer.log('❌ No se pudo obtener ubicación GPS', name: 'HomePage');
+        if (mounted) {
+          setState(() {
+            _isDetectingLocation = false;
+          });
+        }
       }
     } catch (e) {
       developer.log('❌ Error en auto-detección GPS: $e', name: 'HomePage');
@@ -177,6 +205,25 @@ class _HomePageState extends State<HomePage>
         });
       }
     }
+  }
+
+  /// Muestra la animación de highlight para la ubicación detectada
+  void _showLocationHighlight() {
+    developer.log('✅ Ubicación GPS detectada y guardada en cache para cálculos de distancia', name: 'HomePage');
+
+    // Ejecutar animación sutil para llamar la atención sobre la ubicación detectada
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        developer.log('🎯 Ejecutando animación de atención para ubicación detectada', name: 'HomePage');
+        _locationHighlightController.forward().then((_) {
+          Future.delayed(const Duration(milliseconds: 200), () {
+            if (mounted) {
+              _locationHighlightController.reverse();
+            }
+          });
+        });
+      }
+    });
   }
 
   /// Muestra diálogo de autenticación requerida

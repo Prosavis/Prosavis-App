@@ -18,116 +18,85 @@ class SplashPage extends StatefulWidget {
 class _SplashPageState extends State<SplashPage> 
     with TickerProviderStateMixin {
   
-  late AnimationController _scaleController;
-  late AnimationController _fadeController;
-  late AnimationController _textController;
+  // Optimización: Un solo controlador para todas las animaciones
+  late AnimationController _mainController;
   
   late Animation<double> _scaleAnimation;
   late Animation<double> _fadeAnimation;
   late Animation<double> _textFadeAnimation;
   late Animation<Offset> _textSlideAnimation;
-  late AnimationController _bgController;
   AudioPlayer? _audioPlayer;
 
   @override
   void initState() {
     super.initState();
     
-    // Controlador para la animación de escala del logo
-    _scaleController = AnimationController(
-      duration: const Duration(milliseconds: 1100),
+    // Optimización: Un solo controlador maestro para reducir overhead
+    _mainController = AnimationController(
+      duration: const Duration(milliseconds: 1800), // Duración total optimizada
       vsync: this,
-    );
-    
-    // Controlador para el fade general
-    _fadeController = AnimationController(
-      duration: const Duration(milliseconds: 900),
-      vsync: this,
-    );
-    
-    // Controlador para la animación del texto
-    _textController = AnimationController(
-      duration: const Duration(milliseconds: 800),
-      vsync: this,
-    );
-
-    // Controlador para fondo animado sutil
-    _bgController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 3000),
     );
     if (AppConfig.enableSplashSound) {
       _audioPlayer = AudioPlayer();
     }
 
-    // Configurar animaciones
+    // Optimización: Todas las animaciones usan el mismo controlador con intervalos
     _scaleAnimation = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.2, end: 1.05), weight: 70),
-      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 30),
+      TweenSequenceItem(tween: Tween(begin: 0.2, end: 1.05), weight: 50),
+      TweenSequenceItem(tween: Tween(begin: 1.05, end: 1.0), weight: 50),
     ]).animate(CurvedAnimation(
-      parent: _scaleController,
-      curve: Curves.easeOut,
+      parent: _mainController,
+      curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
     ));
 
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeInOut,
+      parent: _mainController,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeInOut),
     ));
 
     _textFadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
     ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeInOut,
+      parent: _mainController,
+      curve: const Interval(0.3, 0.8, curve: Curves.easeInOut),
     ));
 
     _textSlideAnimation = Tween<Offset>(
       begin: const Offset(0, 0.6),
       end: Offset.zero,
     ).animate(CurvedAnimation(
-      parent: _textController,
-      curve: Curves.easeOutExpo,
+      parent: _mainController,
+      curve: const Interval(0.3, 0.8, curve: Curves.easeOutExpo),
     ));
 
     _startAnimations();
   }
 
   void _startAnimations() async {
-    // Delay inicial para suavizar el inicio
-    await Future.delayed(const Duration(milliseconds: 100));
+    // Optimización: Reducir delay inicial
+    await Future.delayed(const Duration(milliseconds: 50));
     
     if (mounted) {
-      // Reproducir sonido de bienvenida
+      // Reproducir sonido de bienvenida de forma no bloqueante
       _playWelcomeSound();
       
-      // Iniciar fade y escala del logo simultáneamente
-      _fadeController.forward();
-      _scaleController.forward();
-      _bgController.repeat(reverse: true);
+      // Iniciar todas las animaciones con un solo controlador
+      _mainController.forward();
       
-      // Delay antes de mostrar el texto
-      await Future.delayed(const Duration(milliseconds: 400));
-      
-      if (mounted) {
-        _textController.forward();
-        
-        // Sonido adicional cuando aparece el texto
-        await Future.delayed(const Duration(milliseconds: 100));
-        if (mounted) {
-          _playTextSound();
-        }
-        
-         // Reducir espera total para acelerar navegación al home
-         await Future.delayed(const Duration(milliseconds: 1100));
-        
-        if (mounted) {
-          context.go('/home');
-        }
-      }
+      // Optimización: Navegación más rápida tras completar animaciones
+      _mainController.addStatusListener(_onAnimationComplete);
+    }
+  }
+  
+  void _onAnimationComplete(AnimationStatus status) {
+    if (status == AnimationStatus.completed && mounted) {
+      // Remover listener para evitar memory leaks
+      _mainController.removeStatusListener(_onAnimationComplete);
+      context.go('/home');
     }
   }
 
@@ -147,24 +116,11 @@ class _SplashPageState extends State<SplashPage>
     }
   }
 
-  void _playTextSound() {
-    try {
-      // Sonido más sutil para la aparición del texto (solo móvil)
-      if (!kIsWeb) {
-        HapticFeedback.selectionClick();
-      }
-    } catch (e) {
-      // Si hay error, continuar sin sonido
-      developer.log('Error reproduciendo vibración: $e');
-    }
-  }
+
 
   @override
   void dispose() {
-    _scaleController.dispose();
-    _fadeController.dispose();
-    _textController.dispose();
-    _bgController.dispose();
+    _mainController.dispose();
     _audioPlayer?.dispose();
     super.dispose();
   }
