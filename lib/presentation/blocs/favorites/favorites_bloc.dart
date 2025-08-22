@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:cloud_firestore/cloud_firestore.dart' show FirebaseException;
 
 import '../../../domain/usecases/favorites/add_to_favorites_usecase.dart';
 import '../../../domain/usecases/favorites/check_favorite_status_usecase.dart';
@@ -72,12 +73,27 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
       // Suscripción en tiempo real
       await _favoritesSubscription?.cancel();
       if (watchUserFavoritesUseCase != null) {
-        _favoritesSubscription = watchUserFavoritesUseCase!(event.userId).listen((services) {
-          // Verificar si el bloc no está cerrado antes de agregar eventos
-          if (!isClosed) {
-            add(FavoritesStreamUpdated(services));
-          }
-        });
+        _favoritesSubscription = watchUserFavoritesUseCase!(event.userId).listen(
+          (services) {
+            if (!isClosed) {
+              add(FavoritesStreamUpdated(services));
+            }
+          },
+          onError: (error, stack) {
+            // Manejar permisos insuficientes al cerrar sesión u otros errores
+            final message = error.toString();
+            final isPermissionDenied = (error is FirebaseException && error.code == 'permission-denied') ||
+                message.contains('permission-denied');
+            if (isPermissionDenied) {
+              _favoritesSubscription?.cancel();
+              if (!isClosed) {
+                // Volver a un estado seguro sin favoritos
+                emit(const FavoritesLoaded(favorites: [], favoriteStatus: {}));
+              }
+            }
+          },
+          cancelOnError: false,
+        );
       }
     } catch (e) {
       emit(FavoritesError('Error al cargar favoritos: $e'));

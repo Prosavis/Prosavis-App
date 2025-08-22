@@ -200,76 +200,60 @@ class FirebaseService {
     }
   }
 
-  // Google Sign-In con implementación robusta compatible con múltiples versiones
+  // Google Sign-In nativo primero; web/provider como último recurso
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      developer.log('🚀 Iniciando flujo de Google Sign-In...');
-      
-      // 🔍 DIAGNÓSTICO: Verificar estado actual
-      if (AppConfig.enableDetailedLogs) developer.log('📱 Verificando estado de Google Sign-In...');
-      
-      // PRIMERO: usar el flujo recomendado por FirebaseAuth v6 (Credential Manager / OneTap)
-      try {
-        if (AppConfig.enableDetailedLogs) developer.log('🔑 Intentando signInWithProvider(GoogleAuthProvider)...');
-        final UserCredential userCredential = await _auth.signInWithProvider(GoogleAuthProvider());
-        if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In (provider) exitoso: ${userCredential.user?.email}');
-        return userCredential;
-      } catch (e) {
-        if (AppConfig.enableDetailedLogs) developer.log('⚠️ signInWithProvider falló, se usará fallback con google_sign_in: $e');
-      }
+      developer.log('🚀 Iniciando flujo de Google Sign-In (nativo primero)...');
 
-      // SEGUNDO: fallback con google_sign_in (tokens) si el flujo de provider falla
-      if (AppConfig.enableDetailedLogs) developer.log('🧹 Limpiando sesión previa de Google (fallback)...');
+      // 1) Intentar flujo nativo con google_sign_in para evitar abrir Chrome
       await _initializeGoogleSignIn();
-      await _googleSignIn!.signOut();
+      await _googleSignIn!.signOut(); // limpiar sesión previa
 
-      if (AppConfig.enableDetailedLogs) developer.log('🔑 Autenticando con google_sign_in.authenticate()...');
-      final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
-      if (AppConfig.enableDetailedLogs) developer.log('✅ Usuario de Google autenticado: ${googleUser.email}');
-
-      final GoogleSignInAuthentication googleAuth = googleUser.authentication;
-      final String? idToken = googleAuth.idToken;
-      if (idToken == null) {
-        developer.log('❌ No se pudo obtener idToken en fallback');
-        throw FirebaseAuthException(
-          code: 'missing-id-token',
-          message: 'No se pudo obtener el idToken de Google',
-        );
+      if (AppConfig.enableDetailedLogs) {
+        developer.log('🔑 Intentando GoogleSignIn.authenticate() con serverClientId de .env');
       }
 
-      final OAuthCredential credential = GoogleAuthProvider.credential(idToken: idToken);
-      if (AppConfig.enableDetailedLogs) developer.log('🔐 Iniciando sesión en Firebase con credencial (fallback)...');
-      final UserCredential userCredential = await _auth.signInWithCredential(credential);
-      if (AppConfig.enableDetailedLogs) developer.log('✅ Google Sign-In (fallback) exitoso: ${userCredential.user?.email}');
-      return userCredential;
-      
-    } on Exception catch (e) {
-      developer.log('⚠️ Error en Google Sign-In: $e');
-      
-      // Fallback: usar el flujo nativo de Firebase Auth (signInWithProvider)
-      // cuando no obtuvimos tokens desde google_sign_in, que puede ocurrir si
-      // falta el serverClientId o hay problemas con Credential Manager.
-      final message = e.toString();
-      final isTokenIssue = message.contains('missing-google-tokens') ||
-          message.contains('missing-id-token');
-      if (isTokenIssue) {
-        try {
+      try {
+        final GoogleSignInAccount googleUser = await _googleSignIn!.authenticate();
+        final GoogleSignInAuthentication googleAuth = googleUser.authentication;
+        final String? idToken = googleAuth.idToken;
+
+        if (idToken != null && idToken.isNotEmpty) {
+          final OAuthCredential credential = GoogleAuthProvider.credential(
+            idToken: idToken,
+          );
           if (AppConfig.enableDetailedLogs) {
-            developer.log('🔁 Intentando fallback con FirebaseAuth.signInWithProvider(GoogleAuthProvider)');
+            developer.log('🔐 Iniciando sesión en Firebase con credencial nativa...');
           }
-          final googleProvider = GoogleAuthProvider();
-          final UserCredential userCredential = await _auth.signInWithProvider(googleProvider);
+          final UserCredential userCredential = await _auth.signInWithCredential(credential);
           if (AppConfig.enableDetailedLogs) {
-            developer.log('✅ Fallback con GoogleAuthProvider exitoso: ${userCredential.user?.email}');
+            developer.log('✅ Google Sign-In nativo exitoso: ${userCredential.user?.email}');
           }
           return userCredential;
-        } catch (fallbackError) {
-          developer.log('❌ Fallback con GoogleAuthProvider falló: $fallbackError');
+        } else {
+          if (AppConfig.enableDetailedLogs) {
+            developer.log('⚠️ idToken nulo; no se pudo completar flujo nativo');
+          }
         }
+      } catch (nativeError) {
+        developer.log('⚠️ Flujo nativo con google_sign_in falló: $nativeError');
       }
 
-      // Manejar error de cancelación del usuario
-      if (e.toString().contains('sign_in_canceled') || 
+      // 2) Fallback: usar provider (puede abrir navegador si no hay GMS)
+      try {
+        if (AppConfig.enableDetailedLogs) developer.log('🔁 Intentando fallback con FirebaseAuth.signInWithProvider(GoogleAuthProvider)');
+        final UserCredential userCredential = await _auth.signInWithProvider(GoogleAuthProvider());
+        if (AppConfig.enableDetailedLogs) developer.log('✅ Fallback con provider exitoso: ${userCredential.user?.email}');
+        return userCredential;
+      } catch (providerError) {
+        developer.log('❌ Fallback con provider falló: $providerError');
+        rethrow;
+      }
+    } on Exception catch (e) {
+      developer.log('⚠️ Error en Google Sign-In: $e');
+
+      // Cancelación explícita
+      if (e.toString().contains('sign_in_canceled') ||
           e.toString().contains('user_canceled') ||
           e.toString().contains('canceled')) {
         throw FirebaseAuthException(
@@ -277,8 +261,7 @@ class FirebaseService {
           message: 'Usuario canceló el inicio de sesión',
         );
       }
-      
-      // Manejar errores específicos de Firebase
+
       if (e is FirebaseAuthException) {
         switch (e.code) {
           case 'account-exists-with-different-credential':
@@ -306,7 +289,7 @@ class FirebaseService {
             developer.log('❌ Error de Firebase Auth: ${e.code} - ${e.message}');
         }
       }
-      
+
       rethrow;
     }
   }
