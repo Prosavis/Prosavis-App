@@ -60,7 +60,20 @@ class UserEntity extends Equatable {
   bool get isProfileComplete {
     return name.isNotEmpty &&
            email.isNotEmpty &&
-           phoneNumber != null && phoneNumber!.isNotEmpty &&
-           location != null && location!.isNotEmpty;
+           phoneNumber != null && phoneNumber!.isNotEmpty;
+  }
+  
+  /// Obtiene una lista de los campos requeridos que faltan por completar
+  List<String> get missingRequiredFields {
+    final List<String> missing = [];
+    
+    if (name.isEmpty) {
+      missing.add('Nombre completo');
+    }
+    if (phoneNumber == null || phoneNumber!.isEmpty) {
+      missing.add('Número de teléfono');
+    }
+    
+    return missing;
   }
 } 

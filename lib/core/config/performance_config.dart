@@ -69,7 +69,7 @@ class PerformanceConfig {
       Future.microtask(() {
         // Sugerir al GC que libere memoria cuando sea apropiado
         // Esto no fuerza GC pero ayuda a optimizar el timing
-        if (WidgetsBinding.instance.renderViewElement != null) {
+        if (WidgetsBinding.instance.rootElement != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             // Permitir que el GC optimice después del frame
           });

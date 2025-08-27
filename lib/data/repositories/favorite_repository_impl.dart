@@ -93,14 +93,18 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
       final query = await _firestore
           .collection('favorites')
           .where('userId', isEqualTo: userId)
-          .orderBy('createdAt', descending: true)
           .get();
 
-      return query.docs.map((doc) {
+      final favorites = query.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
         return FavoriteModel.fromJson(data);
       }).toList();
+      
+      // Ordenar en memoria por fecha de creación (más reciente primero)
+      favorites.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      
+      return favorites;
     } catch (e) {
       throw Exception('Error al obtener favoritos: $e');
     }
@@ -128,7 +132,6 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
           _firestore
               .collection('services')
               .where(FieldPath.documentId, whereIn: batch)
-              .where('isActive', isEqualTo: true)
               .get(),
         );
       }
@@ -140,6 +143,7 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
                 data['id'] = doc.id;
                 return ServiceModel.fromJson(data);
               }))
+          .where((service) => service.isActive) // Filtrar servicios activos en memoria
           .toList();
 
       // Ordenar por fecha de favorito (más reciente primero) usando un mapa O(1)
@@ -177,10 +181,18 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
         final query = await _firestore
             .collection('services')
             .where(FieldPath.documentId, whereIn: batch)
-            .where('isActive', isEqualTo: true)
             .get();
 
-        validServiceIds.addAll(query.docs.map((doc) => doc.id));
+        validServiceIds.addAll(
+          query.docs
+              .map((doc) {
+                final data = doc.data();
+                data['id'] = doc.id;
+                return ServiceModel.fromJson(data);
+              })
+              .where((service) => service.isActive)
+              .map((service) => service.id),
+        );
       }
 
       // Eliminar favoritos de servicios que ya no existen o están inactivos

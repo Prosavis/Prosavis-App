@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_state.dart';
 
 class ProfileCompletionDialog extends StatelessWidget {
   const ProfileCompletionDialog({super.key});
@@ -17,6 +20,12 @@ class ProfileCompletionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener el usuario actual y los campos faltantes
+    final authState = context.read<AuthBloc>().state;
+    final missingFields = authState is AuthAuthenticated 
+        ? authState.user.missingRequiredFields 
+        : <String>[];
+    
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -55,9 +64,11 @@ class ProfileCompletionDialog extends StatelessWidget {
           
           const SizedBox(height: 12),
           
-          // Descripción
+          // Descripción dinámica
           Text(
-            'Para ofrecer servicios necesitas completar tu perfil con la siguiente información:',
+            missingFields.isNotEmpty 
+                ? 'Para ofrecer servicios necesitas completar la siguiente información:'
+                : 'Tu perfil está completo para ofrecer servicios.',
             style: GoogleFonts.inter(
               fontSize: 14,
               color: AppTheme.textSecondary,
@@ -67,24 +78,20 @@ class ProfileCompletionDialog extends StatelessWidget {
           
           const SizedBox(height: 16),
           
-          // Lista de requisitos
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade200),
+          // Lista de requisitos dinámicos
+          if (missingFields.isNotEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: missingFields.map((field) => _buildRequirement(field)).toList(),
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildRequirement('Nombre completo'),
-                _buildRequirement('Número de teléfono'),
-                _buildRequirement('Biografía personal'),
-                _buildRequirement('Ubicación'),
-              ],
-            ),
-          ),
           
           const SizedBox(height: 24),
           

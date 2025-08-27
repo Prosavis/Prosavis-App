@@ -4,7 +4,6 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
-import 'dart:developer' as developer;
 import '../../../core/config/app_config.dart';
 import '../../../core/themes/app_theme.dart';
 

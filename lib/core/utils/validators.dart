@@ -104,6 +104,44 @@ class Validators {
     return phoneNumber; // Retornar original si no cumple formato
   }
 
+  // Extraer solo el número sin indicativo para almacenar
+  static String extractColombianPhoneNumber(String phoneNumber) {
+    // Remover espacios y caracteres especiales
+    final cleanPhone = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Si ya es un número de 10 dígitos válido, retornarlo
+    if (cleanPhone.length == 10 && cleanPhone.startsWith('3')) {
+      return cleanPhone;
+    }
+    
+    // Si tiene 12 dígitos y empieza con 57, extraer los últimos 10
+    if (cleanPhone.length == 12 && cleanPhone.startsWith('57')) {
+      final extractedNumber = cleanPhone.substring(2);
+      if (extractedNumber.startsWith('3')) {
+        return extractedNumber;
+      }
+    }
+    
+    // Si tiene +57 al inicio, extraer el número
+    if (phoneNumber.startsWith('+57')) {
+      final extractedNumber = phoneNumber.substring(3).replaceAll(RegExp(r'[^\d]'), '');
+      if (extractedNumber.length == 10 && extractedNumber.startsWith('3')) {
+        return extractedNumber;
+      }
+    }
+    
+    return phoneNumber; // Retornar original si no se puede procesar
+  }
+
+  // Formatear número completo para WhatsApp (con +57)
+  static String formatForWhatsApp(String phoneNumber) {
+    final cleanNumber = extractColombianPhoneNumber(phoneNumber);
+    if (cleanNumber.length == 10 && cleanNumber.startsWith('3')) {
+      return '57$cleanNumber'; // WhatsApp no necesita el +
+    }
+    return phoneNumber;
+  }
+
   // Formatear número para mostrar en UI (con espacios)
   static String formatPhoneForDisplay(String phoneNumber) {
     // Remover espacios y caracteres especiales

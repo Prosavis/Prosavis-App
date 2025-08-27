@@ -571,28 +571,60 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
       icon: Symbols.chat,
       child: Column(
         children: [
-          TextFormField(
-            controller: _whatsappController,
-            decoration: InputDecoration(
-              labelText: 'WhatsApp (opcional)',
-              hintText: _whatsappHint ?? 'Ej: 3001234567',
-              prefixIcon: Icon(
-                Symbols.chat,
-                color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+          Row(
+            children: [
+              Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                  color: Colors.grey.shade100,
+                ),
+                child: Text(
+                  '+57',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
               ),
-              helperText: _whatsappHint != null
-                  ? 'Déjalo vacío para usar tu número: ${_whatsappHint!}'
-                  : 'Se usará para el botón «Contactar por WhatsApp»',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+              Expanded(
+                child: TextFormField(
+                  controller: _whatsappController,
+                  decoration: InputDecoration(
+                    labelText: 'WhatsApp (opcional)',
+                    hintText: _whatsappHint != null 
+                        ? Validators.extractColombianPhoneNumber(_whatsappHint!)
+                        : '3001234567',
+                    prefixIcon: Icon(
+                      Symbols.chat,
+                      color: Theme.of(context).brightness == Brightness.dark ? Colors.white : null,
+                    ),
+                    helperText: _whatsappHint != null
+                        ? 'Déjalo vacío para usar tu número registrado'
+                        : 'Se usará para el botón «Contactar por WhatsApp»',
+                    border: OutlineInputBorder(
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
               ),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
             ],
-            maxLength: 10,
           ),
           const SizedBox(height: 12),
           Row(
@@ -1569,16 +1601,16 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
         providerName: authState.user.name,
         providerPhotoUrl: authState.user.photoUrl,
         whatsappNumber: _whatsappController.text.trim().isNotEmpty
-            ? Validators.formatColombianPhone(_whatsappController.text.trim())
+            ? Validators.extractColombianPhoneNumber(_whatsappController.text.trim())
             : (authState.user.phoneNumber != null && authState.user.phoneNumber!.isNotEmpty
-                ? Validators.formatColombianPhone(authState.user.phoneNumber!)
+                ? Validators.extractColombianPhoneNumber(authState.user.phoneNumber!)
                 : null),
         instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
         xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
         tiktok: _tiktokController.text.trim().isNotEmpty ? _tiktokController.text.trim() : null,
         callPhones: [
-          if (_phone1Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone1Controller.text.trim()),
-          if (_phone2Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone2Controller.text.trim()),
+          if (_phone1Controller.text.trim().isNotEmpty) Validators.extractColombianPhoneNumber(_phone1Controller.text.trim()),
+          if (_phone2Controller.text.trim().isNotEmpty) Validators.extractColombianPhoneNumber(_phone2Controller.text.trim()),
         ],
         mainImage: null, // Se añadirá después
         images: const [], // Se añadirán después

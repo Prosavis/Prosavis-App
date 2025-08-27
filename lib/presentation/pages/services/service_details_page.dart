@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
+import '../../../core/utils/validators.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -1753,17 +1754,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   void _contactProvider() async {
-    // Tomar número desde el servicio; si no hay, intentar con el teléfono del proveedor si el usuario actual lo está viendo
-    // Normalizar el número a formato internacional si viene con 10 dígitos
+    // Tomar número desde el servicio
     String phoneNumber = _currentService!.whatsappNumber ?? '';
-    if (phoneNumber.isNotEmpty) {
-      final digits = phoneNumber.replaceAll(RegExp(r'[^0-9]'), '');
-      if (digits.length == 10) {
-        phoneNumber = '+57$digits';
-      } else if (phoneNumber.startsWith('57') && digits.length == 12) {
-        phoneNumber = '+$digits';
-      }
-    }
     if (phoneNumber.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1774,11 +1766,15 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       }
       return;
     }
+    
+    // Formatear para WhatsApp (57 + número sin +)
+    final formattedNumber = Validators.formatForWhatsApp(phoneNumber);
+    
     final message = Uri.encodeComponent(
       'Hola! Estoy interesado en tu servicio: ${_currentService!.title}. ¿Podrías darme más información?'
     );
     
-    final whatsappUrl = 'https://wa.me/$phoneNumber?text=$message';
+    final whatsappUrl = 'https://wa.me/$formattedNumber?text=$message';
     final uri = Uri.parse(whatsappUrl);
     
     try {

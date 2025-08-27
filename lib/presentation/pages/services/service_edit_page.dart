@@ -153,11 +153,13 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       _selectedSkills = List.from(service.features);
       _availableDays = List.from(service.availableDays);
       _addressController.text = service.address ?? '';
-      _whatsappController.text = service.whatsappNumber ?? '';
+      _whatsappController.text = service.whatsappNumber != null 
+          ? Validators.extractColombianPhoneNumber(service.whatsappNumber!)
+          : '';
       if (service.callPhones.isNotEmpty) {
-        _phone1Controller.text = service.callPhones.first;
+        _phone1Controller.text = Validators.extractColombianPhoneNumber(service.callPhones.first);
         if (service.callPhones.length > 1) {
-          _phone2Controller.text = service.callPhones[1];
+          _phone2Controller.text = Validators.extractColombianPhoneNumber(service.callPhones[1]);
         }
       }
       _instagramController.text = service.instagram ?? '';
@@ -264,11 +266,11 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
         availableDays: _availableDays,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
         whatsappNumber: _whatsappController.text.trim().isNotEmpty
-            ? Validators.formatColombianPhone(_whatsappController.text.trim())
+            ? Validators.extractColombianPhoneNumber(_whatsappController.text.trim())
             : null,
         callPhones: [
-          if (_phone1Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone1Controller.text.trim()),
-          if (_phone2Controller.text.trim().isNotEmpty) Validators.formatColombianPhone(_phone2Controller.text.trim()),
+          if (_phone1Controller.text.trim().isNotEmpty) Validators.extractColombianPhoneNumber(_phone1Controller.text.trim()),
+          if (_phone2Controller.text.trim().isNotEmpty) Validators.extractColombianPhoneNumber(_phone2Controller.text.trim()),
         ],
         instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
         xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
@@ -700,23 +702,53 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
       icon: Symbols.chat,
       child: Column(
         children: [
-          TextFormField(
-            controller: _whatsappController,
-            decoration: InputDecoration(
-              labelText: 'WhatsApp (opcional)',
-              hintText: 'Ej: 3001234567',
-              prefixIcon: const Icon(Symbols.chat),
-              helperText: 'Se usará para el botón «Contactar por WhatsApp»',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+          Row(
+            children: [
+              Container(
+                height: 56,
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade400),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    bottomLeft: Radius.circular(12),
+                  ),
+                  color: Colors.grey.shade100,
+                ),
+                child: Text(
+                  '+57',
+                  style: GoogleFonts.inter(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
               ),
-            ),
-            keyboardType: TextInputType.phone,
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(10),
+              Expanded(
+                child: TextFormField(
+                  controller: _whatsappController,
+                  decoration: InputDecoration(
+                    labelText: 'WhatsApp (opcional)',
+                    hintText: '3001234567',
+                    prefixIcon: const Icon(Symbols.chat),
+                    helperText: 'Se usará para el botón «Contactar por WhatsApp»',
+                    border: OutlineInputBorder(
+                      borderRadius: const BorderRadius.only(
+                        topRight: Radius.circular(12),
+                        bottomRight: Radius.circular(12),
+                      ),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                  ),
+                  keyboardType: TextInputType.phone,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  maxLength: 10,
+                ),
+              ),
             ],
-            maxLength: 10,
           ),
           const SizedBox(height: 12),
           Row(
