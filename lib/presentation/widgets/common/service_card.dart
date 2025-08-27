@@ -242,7 +242,7 @@ class ServiceCard extends StatelessWidget {
 
     if (!enableHero) return imageContent;
     return Hero(
-      tag: 'service-image-${service.id}',
+      tag: 'service-image-${service.id}-${service.title.hashCode}',
       child: Material(
         type: MaterialType.transparency,
         child: imageContent,

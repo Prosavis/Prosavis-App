@@ -727,18 +727,18 @@ class _ServiceEditPageState extends State<ServiceEditPage> {
               Expanded(
                 child: TextFormField(
                   controller: _whatsappController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'WhatsApp (opcional)',
                     hintText: '3001234567',
-                    prefixIcon: const Icon(Symbols.chat),
+                    prefixIcon: Icon(Symbols.chat),
                     helperText: 'Se usará para el botón «Contactar por WhatsApp»',
                     border: OutlineInputBorder(
-                      borderRadius: const BorderRadius.only(
+                      borderRadius: BorderRadius.only(
                         topRight: Radius.circular(12),
                         bottomRight: Radius.circular(12),
                       ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
                   ),
                   keyboardType: TextInputType.phone,
                   inputFormatters: [

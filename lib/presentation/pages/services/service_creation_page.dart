@@ -608,8 +608,8 @@ class _ServiceCreationPageState extends State<ServiceCreationPage>
                     helperText: _whatsappHint != null
                         ? 'Déjalo vacío para usar tu número registrado'
                         : 'Se usará para el botón «Contactar por WhatsApp»',
-                    border: OutlineInputBorder(
-                      borderRadius: const BorderRadius.only(
+                    border: const OutlineInputBorder(
+                      borderRadius: BorderRadius.only(
                         topRight: Radius.circular(12),
                         bottomRight: Radius.circular(12),
                       ),

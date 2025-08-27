@@ -1755,7 +1755,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
   void _contactProvider() async {
     // Tomar número desde el servicio
-    String phoneNumber = _currentService!.whatsappNumber ?? '';
+    final String phoneNumber = _currentService!.whatsappNumber ?? '';
     if (phoneNumber.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
