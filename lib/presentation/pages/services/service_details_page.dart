@@ -10,15 +10,20 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
 import '../../../core/utils/validators.dart';
 import '../../../domain/entities/service_entity.dart';
+import '../../../domain/entities/user_entity.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/favorites/favorites_bloc.dart';
 import '../../blocs/favorites/favorites_event.dart';
 import '../../blocs/favorites/favorites_state.dart';
-import '../../widgets/common/service_card.dart';
+import '../../widgets/common/service_card.dart' hide LoginRequiredWidget;
 import '../../widgets/common/optimized_image.dart';
 import '../../widgets/reviews/write_review_dialog.dart';
 import '../../widgets/reviews/review_restriction_dialog.dart';
+import '../../widgets/reviews/edit_review_dialog.dart';
+import '../../widgets/reviews/delete_review_dialog.dart';
+import '../../widgets/reviews/profile_completion_dialog.dart';
+import '../../widgets/common/coming_soon_widget.dart' show LoginRequiredWidget;
 // import '../../widgets/rating_stars.dart';
 import '../../../domain/entities/review_entity.dart';
 import '../../../domain/usecases/reviews/get_service_reviews_usecase.dart';
@@ -27,7 +32,8 @@ import '../../../domain/usecases/services/get_service_by_id_usecase.dart';
 import '../../../domain/usecases/services/search_services_usecase.dart';
 import '../../../core/injection/injection_container.dart';
 import '../../widgets/reviews/review_card.dart';
-import '../../../data/services/firestore_service.dart';
+import '../../blocs/review/review_bloc.dart';
+
 import '../../../core/services/haptics_service.dart';
 
 class ServiceDetailsPage extends StatefulWidget {
@@ -73,6 +79,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   // Claves para hacer scroll a la sección de reseñas y al botón
   final GlobalKey _reviewsSectionKey = GlobalKey();
   final GlobalKey _addReviewButtonKey = GlobalKey();
+
 
   Future<void> _openInMaps() async {
     if (_currentService == null) return;
@@ -201,41 +208,53 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     });
     
     try {
-      // Ejecutar ambas operaciones en paralelo para mejor rendimiento
-      final results = await Future.wait([
-        _getServiceReviewsUseCase(GetServiceReviewsParams(
-          serviceId: _currentService!.id,
-          limit: 20,
-        )),
-        _getServiceByIdUseCase(_currentService!.id), // Recargar servicio actualizado
-      ]);
+      // Ejecutar operación de reseñas primero (prioritaria)
+      final fetchedReviews = await _getServiceReviewsUseCase(GetServiceReviewsParams(
+        serviceId: _currentService!.id,
+        limit: 20,
+      ));
       
-      // Enriquecer reseñas que no tengan userPhotoUrl consultando el usuario
-      var fetchedReviews = results[0] as List<ReviewEntity>;
+      // Intentar recargar servicio actualizado (opcional, no crítico)
+      ServiceEntity? fetchedService;
+      try {
+        fetchedService = await _getServiceByIdUseCase(_currentService!.id);
+      } catch (serviceError) {
+        // Error al recargar servicio (no crítico)
+        fetchedService = null;
+      }
+      
+      // TEMPORAL: Omitir enriquecimiento para evitar errores de permisos
+      
+      /*
       final reviewsNeedingPhoto = fetchedReviews
           .where((r) => r.userPhotoUrl == null || r.userPhotoUrl!.isEmpty)
           .toList();
       if (reviewsNeedingPhoto.isNotEmpty) {
-        final firestoreService = FirestoreService();
-        final uniqueUserIds = reviewsNeedingPhoto.map((r) => r.userId).toSet().toList();
-        final users = await Future.wait(uniqueUserIds.map((id) => firestoreService.getUserById(id)));
-        final userIdToPhoto = <String, String?>{};
-        for (var i = 0; i < uniqueUserIds.length; i++) {
-          userIdToPhoto[uniqueUserIds[i]] = users[i]?.photoUrl;
+        try {
+          final firestoreService = FirestoreService();
+          final uniqueUserIds = reviewsNeedingPhoto.map((r) => r.userId).toSet().toList();
+          final users = await Future.wait(uniqueUserIds.map((id) => firestoreService.getUserById(id)));
+          final userIdToPhoto = <String, String?>{};
+          for (var i = 0; i < uniqueUserIds.length; i++) {
+            userIdToPhoto[uniqueUserIds[i]] = users[i]?.photoUrl;
+          }
+          fetchedReviews = fetchedReviews
+              .map((r) => (r.userPhotoUrl == null || r.userPhotoUrl!.isEmpty)
+                  ? r.copyWith(userPhotoUrl: userIdToPhoto[r.userId])
+                  : r)
+              .toList();
+        } catch (e) {
+          // Error al enriquecer fotos, continuando sin fotos
+          // Continuar con las reseñas sin fotos
         }
-        fetchedReviews = fetchedReviews
-            .map((r) => (r.userPhotoUrl == null || r.userPhotoUrl!.isEmpty)
-                ? r.copyWith(userPhotoUrl: userIdToPhoto[r.userId])
-                : r)
-            .toList();
       }
+      */
 
       if (mounted) {
         setState(() {
           _reviews = fetchedReviews;
 
           // Servicio retornado desde base de datos (puede no reflejar aún los agregados de CF)
-          final fetchedService = results[1] as ServiceEntity?;
           if (fetchedService != null) {
             _currentService = fetchedService;
           }
@@ -301,6 +320,14 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           _reviews = [];
           _isUpdatingRating = false;
         });
+        
+        // Mostrar error al usuario
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar reseñas: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     }
   }
@@ -1424,7 +1451,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     if ((_currentService!.instagram ?? '').isNotEmpty) {
       addIcon(
         child: Image.asset(
-          'assets/icons/instagram-logo.webp',
+          'assets/icons/social/instagram.webp',
           width: 18,
           height: 18,
           errorBuilder: (_, __, ___) => const Icon(Symbols.camera_alt, size: 18, color: AppTheme.primaryColor),
@@ -1435,7 +1462,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     if ((_currentService!.xProfile ?? '').isNotEmpty) {
       addIcon(
         child: Image.asset(
-          'assets/icons/X-Logo.png',
+          'assets/icons/social/x.png',
           width: 18,
           height: 18,
           errorBuilder: (_, __, ___) => const Icon(Symbols.alternate_email, size: 18, color: AppTheme.primaryColor),
@@ -1446,7 +1473,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     if ((_currentService!.tiktok ?? '').isNotEmpty) {
       addIcon(
         child: Image.asset(
-          'assets/icons/tiktok-logo.png',
+          'assets/icons/social/tiktok.png',
           width: 18,
           height: 18,
           errorBuilder: (_, __, ___) => const Icon(Symbols.music_note, size: 18, color: AppTheme.primaryColor),
@@ -1496,6 +1523,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             ),
             const SizedBox(height: 16),
             
+
             if (_reviews.isEmpty)
               Container(
                 width: double.infinity,
@@ -1557,6 +1585,8 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
               ),
             ),
+            
+
           ],
         ),
       ),
@@ -1564,11 +1594,17 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   }
 
   Widget _buildReviewItem(ReviewEntity review) {
+    final authState = context.watch<AuthBloc>().state;
+    final currentUserId = authState is AuthAuthenticated ? authState.user.id : null;
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       child: ReviewCard(
         review: review,
-        isCompact: true,
+        isCompact: false, // Cambiar a false para mostrar botones de editar/eliminar
+        currentUserId: currentUserId,
+        onEdit: () => _showEditReviewDialog(review),
+        onDelete: () => _showDeleteReviewDialog(review),
       ),
     );
   }
@@ -1704,7 +1740,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         child: ElevatedButton.icon(
           onPressed: _onWhatsAppPressed,
           icon: Image.asset(
-            'assets/icons/WhatsApp.svg.webp',
+            'assets/icons/social/whatsapp.webp',
             height: 20,
             width: 20,
             errorBuilder: (_, __, ___) => const Icon(Symbols.chat, color: Colors.white),
@@ -2072,6 +2108,45 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     );
   }
 
+  /// Valida si el perfil del usuario está completo para escribir reseñas
+  /// Retorna una lista de campos faltantes
+  List<String> _validateUserProfileForReview(UserEntity user) {
+    final missingFields = <String>[];
+    
+    // Validar nombre (no puede estar vacío o ser solo espacios)
+    if (user.name.trim().isEmpty) {
+      missingFields.add('name');
+    }
+    
+    // Validar email (no puede estar vacío)
+    if (user.email.trim().isEmpty) {
+      missingFields.add('email');
+    }
+    
+    // Validar teléfono (debe estar presente)
+    if (user.phoneNumber == null || user.phoneNumber!.trim().isEmpty) {
+      missingFields.add('phoneNumber');
+    }
+    
+    return missingFields;
+  }
+
+  /// Muestra el diálogo de perfil incompleto
+  void _showProfileCompletionDialog(List<String> missingFields) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return ProfileCompletionDialog(
+          missingFields: missingFields,
+          onEditProfile: () {
+            // Navegar a la página de edición de perfil
+            context.push('/profile/edit');
+          },
+        );
+      },
+    );
+  }
+
   Future<void> _onReviewsCountTap() async {
     // Desplaza a la sección de reseñas y abre el listado completo
     await _scrollToReviews(focusOnAddButton: false, openWriteDialog: false);
@@ -2091,6 +2166,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     }
 
     final currentUser = authState.user;
+
+    // Verificar si el perfil está completo
+    final missingFields = _validateUserProfileForReview(currentUser);
+    if (missingFields.isNotEmpty) {
+      _showProfileCompletionDialog(missingFields);
+      return;
+    }
 
     // Verificar si es su propio servicio
     if (_currentService!.providerId == currentUser.id) {
@@ -2126,10 +2208,13 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       showDialog(
         context: context,
         builder: (BuildContext context) {
-          return WriteReviewDialog(
-            serviceId: _currentService!.id,
-            serviceName: _currentService!.title,
-            onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
+          return BlocProvider.value(
+            value: context.read<ReviewBloc>(),
+            child: WriteReviewDialog(
+              serviceId: _currentService!.id,
+              serviceName: _currentService!.title,
+              onReviewCreated: _loadReviews, // Recargar reseñas cuando se cree una nueva
+            ),
           );
         },
       );
@@ -2204,6 +2289,42 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
               ),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Future<void> _showEditReviewDialog(ReviewEntity review) async {
+    if (_currentService == null) return;
+    
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BlocProvider.value(
+          value: context.read<ReviewBloc>(),
+          child: EditReviewDialog(
+            review: review,
+            serviceName: _currentService!.title,
+            onReviewUpdated: _loadReviews, // Recargar reseñas cuando se actualice
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _showDeleteReviewDialog(ReviewEntity review) async {
+    if (_currentService == null) return;
+    
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return BlocProvider.value(
+          value: context.read<ReviewBloc>(),
+          child: DeleteReviewDialog(
+            review: review,
+            serviceName: _currentService!.title,
+            onReviewDeleted: _loadReviews, // Recargar reseñas cuando se elimine
+          ),
         );
       },
     );

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -374,29 +374,8 @@ Para ver los términos completos, descarga nuestra aplicación.
     context.push('/settings/privacy');
   }
 
-  void _contactSupport() async {
-    final Uri emailUri = Uri(
-      scheme: 'mailto',
-      path: 'soporte@prosavis.com',
-      query: 'subject=Consulta sobre Términos y Condiciones',
-    );
-
-    try {
-      await launchUrl(emailUri);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'No se pudo abrir el cliente de correo',
-              style: GoogleFonts.inter(),
-            ),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
+  void _contactSupport() {
+    context.push('/support');
   }
 
   void _downloadPDF() async {

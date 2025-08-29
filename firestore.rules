@@ -119,29 +119,8 @@ service cloud.firestore {
                    request.auth == null; // Permitir eliminación desde backend sin auth
     }
     
-    // === RESEÑAS GLOBALES ===
-    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede leer reseñas
-    // 🔒 GESTIÓN PERSONAL: Solo el autor puede modificar sus reseñas
-    match /reviews/{reviewId} {
-      allow read: if true; // 📖 Lectura pública para ver reseñas
-      allow create: if request.auth != null && 
-                   request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                   // 📋 Validar campos obligatorios (comentario opcional)
-                   request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating']) &&
-                   request.resource.data.rating is number && 
-                   request.resource.data.rating >= 1 && 
-                   request.resource.data.rating <= 5 &&
-                   // 📋 Si viene comentario, validar que sea string (sin límites)
-                   (!request.resource.data.keys().hasAny(['comment']) || request.resource.data.comment is string) &&
-                   // 📋 Validar que el servicio existe
-                   exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId)) &&
-                   // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
-                   request.auth.uid != get(/databases/$(database)/documents/services/$(request.resource.data.serviceId)).data.providerId;
-      // ✅ ELIMINACIÓN: Usuario puede eliminar sus reseñas
-      // O eliminación en cascada desde el backend (sin autenticación)
-      allow update, delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
-                           request.auth == null; // Permitir eliminación desde backend sin auth
-    }
+    // NOTA: Las reseñas se almacenan como subcolecciones dentro de cada servicio
+    // Ver reglas de reseñas en la sección de servicios (líneas 67-88)
     
     // === CATEGORÍAS DE SERVICIOS ===
     // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede ver categorías
@@ -151,13 +130,7 @@ service cloud.firestore {
       allow write: if false; // 🔐 Solo administradores (desde backend/consola)
     }
     
-    // === NOTIFICACIONES ===
-    // Sistema de notificaciones para usuarios
-    match /notifications/{notificationId} {
-      allow read: if request.auth != null && 
-                 request.auth.uid == resource.data.userId; // 🔐 Solo el destinatario
-      allow write: if false; // 🔐 Solo el sistema puede crear notificaciones
-    }
+
     
     // === CONFIGURACIÓN GLOBAL ===
     // Configuración pública de la aplicación

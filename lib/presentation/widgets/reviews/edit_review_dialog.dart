@@ -6,38 +6,37 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/review_entity.dart';
-import '../../blocs/auth/auth_bloc.dart';
-import '../../blocs/auth/auth_state.dart';
 import '../../blocs/review/review_bloc.dart';
 import '../../blocs/review/review_event.dart';
-import '../../blocs/review/review_state.dart';
 import '../interactive_rating_stars.dart';
 
-
-class WriteReviewDialog extends StatefulWidget {
-  final String serviceId;
+class EditReviewDialog extends StatefulWidget {
+  final ReviewEntity review;
   final String serviceName;
-  final VoidCallback? onReviewCreated;
+  final VoidCallback? onReviewUpdated;
 
-  const WriteReviewDialog({
+  const EditReviewDialog({
     super.key,
-    required this.serviceId,
+    required this.review,
     required this.serviceName,
-    this.onReviewCreated,
+    this.onReviewUpdated,
   });
 
   @override
-  State<WriteReviewDialog> createState() => _WriteReviewDialogState();
+  State<EditReviewDialog> createState() => _EditReviewDialogState();
 }
 
-class _WriteReviewDialogState extends State<WriteReviewDialog> {
-  final _commentController = TextEditingController();
-  double _rating = 5.0;
+class _EditReviewDialogState extends State<EditReviewDialog> {
+  late final TextEditingController _commentController;
+  late double _rating;
   bool _isSubmitting = false;
 
   @override
   void initState() {
     super.initState();
+    // Inicializar con los valores actuales de la reseña
+    _commentController = TextEditingController(text: widget.review.comment);
+    _rating = widget.review.rating;
   }
 
   @override
@@ -51,64 +50,13 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     final mediaQuery = MediaQuery.of(context);
     final keyboardInset = mediaQuery.viewInsets.bottom;
 
-    return BlocListener<ReviewBloc, ReviewState>(
-      listener: (context, state) {
-        if (state is ReviewActionSuccess && state.action == 'create') {
-          if (mounted) {
-            context.pop();
-            
-            // Llamar al callback para actualizar la lista de reseñas
-            widget.onReviewCreated?.call();
-            
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Row(
-                  children: [
-                    const Icon(
-                      Symbols.check_circle,
-                      color: Colors.white,
-                      size: 16,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'Reseña publicada exitosamente',
-                        style: GoogleFonts.inter(),
-                      ),
-                    ),
-                  ],
-                ),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-        } else if (state is ReviewError) {
-          if (mounted) {
-            setState(() => _isSubmitting = false);
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  'Error al publicar reseña: ${state.message}',
-                  style: GoogleFonts.inter(),
-                ),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        } else if (state is ReviewActionLoading && state.action == 'creating') {
-          setState(() => _isSubmitting = true);
-        }
-      },
-      child: Dialog(
+    return Dialog(
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          // Evita overflow limitando la altura del diálogo; cuando el
-          // teclado aparece, el padding de abajo permite el scroll.
           maxHeight: mediaQuery.size.height * 0.9,
         ),
         child: SingleChildScrollView(
@@ -131,7 +79,6 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             ),
           ),
         ),
-        ),
       ),
     );
   }
@@ -146,7 +93,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             borderRadius: BorderRadius.circular(12),
           ),
           child: const Icon(
-            Symbols.rate_review,
+            Symbols.edit,
             color: AppTheme.primaryColor,
             size: 24,
           ),
@@ -157,7 +104,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Escribir reseña',
+                'Editar reseña',
                 style: GoogleFonts.inter(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -295,7 +242,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
         const SizedBox(width: 12),
         Expanded(
           child: ElevatedButton(
-            onPressed: _isSubmitting ? null : _submitReview,
+            onPressed: _isSubmitting ? null : _updateReview,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppTheme.primaryColor,
               foregroundColor: Colors.white,
@@ -314,7 +261,7 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
                     ),
                   )
                 : Text(
-                    'Publicar',
+                    'Actualizar',
                     style: GoogleFonts.inter(
                       fontWeight: FontWeight.w600,
                     ),
@@ -342,40 +289,66 @@ class _WriteReviewDialogState extends State<WriteReviewDialog> {
     }
   }
 
-  Future<void> _submitReview() async {
+  Future<void> _updateReview() async {
     final comment = _commentController.text.trim();
 
-    try {
-      final authState = context.read<AuthBloc>().state;
-      if (authState is! AuthAuthenticated) {
-        throw Exception('Debes iniciar sesión para escribir una reseña');
-      }
+    setState(() => _isSubmitting = true);
 
-      final review = ReviewEntity(
-        id: '', // Se asignará automáticamente
-        serviceId: widget.serviceId,
-        userId: authState.user.id,
-        userName: authState.user.name,
-        userPhotoUrl: authState.user.photoUrl,
+    try {
+      // Crear la reseña actualizada con el timestamp de actualización
+      final updatedReview = widget.review.copyWith(
         rating: _rating,
         comment: comment,
-        createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      // Usar ReviewBloc para crear la reseña
-      context.read<ReviewBloc>().add(CreateReview(review));
+      // Enviar evento al ReviewBloc para actualizar la reseña
+      context.read<ReviewBloc>().add(UpdateReview(updatedReview));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(
+                  Symbols.check_circle,
+                  color: Colors.white,
+                  size: 16,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Reseña actualizada exitosamente',
+                    style: GoogleFonts.inter(),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        
+        context.pop();
+        
+        // Llamar al callback para actualizar los datos
+        widget.onReviewUpdated?.call();
+      }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Error al publicar reseña: $e',
+              '❌ Error al actualizar reseña: $e',
               style: GoogleFonts.inter(),
             ),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
       }
     }
   }

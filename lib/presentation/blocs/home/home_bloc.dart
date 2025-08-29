@@ -6,20 +6,24 @@ import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 import 'home_event.dart';
 import 'home_state.dart';
 import '../../../core/utils/location_utils.dart';
+import '../location/location_bloc.dart';
+import '../location/location_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final GetFeaturedServicesUseCase _getFeaturedServicesUseCase;
   final GetNearbyServicesUseCase _getNearbyServicesUseCase;
   final GetServiceReviewStatsUseCase _getServiceReviewStatsUseCase;
-
+  final LocationBloc _locationBloc;
 
   HomeBloc({
     required GetFeaturedServicesUseCase getFeaturedServicesUseCase,
     required GetNearbyServicesUseCase getNearbyServicesUseCase,
     required GetServiceReviewStatsUseCase getServiceReviewStatsUseCase,
+    required LocationBloc locationBloc,
   }) : _getFeaturedServicesUseCase = getFeaturedServicesUseCase,
        _getNearbyServicesUseCase = getNearbyServicesUseCase,
        _getServiceReviewStatsUseCase = getServiceReviewStatsUseCase,
+       _locationBloc = locationBloc,
        super(HomeInitial()) {
     on<LoadHomeServices>(_onLoadHomeServices);
     on<RefreshHomeServices>(_onRefreshHomeServices);
@@ -42,13 +46,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
   Future<void> _loadServices(Emitter<HomeState> emit) async {
     try {
-      // Obtener ubicación del usuario para servicios cercanos
+      // Obtener ubicación del usuario desde LocationBloc centralizado
       double? lat;
       double? lng;
-      final userLocation = await LocationUtils.getCachedUserLocation();
-      if (userLocation != null) {
-        lat = userLocation['latitude'];
-        lng = userLocation['longitude'];
+      final locationState = _locationBloc.state;
+      if (locationState is LocationLoaded) {
+        lat = locationState.latitude;
+        lng = locationState.longitude;
+        developer.log('📍 Usando ubicación del LocationBloc: ${locationState.address}', name: 'HomeBloc');
+      } else {
+        // Fallback: intentar obtener desde cache si LocationBloc no tiene ubicación
+        final userLocation = await LocationUtils.getCachedUserLocation();
+        if (userLocation != null) {
+          lat = userLocation['latitude'];
+          lng = userLocation['longitude'];
+          developer.log('📍 Usando ubicación desde cache como fallback', name: 'HomeBloc');
+        } else {
+          developer.log('⚠️ No hay ubicación disponible para servicios cercanos', name: 'HomeBloc');
+        }
       }
 
       final results = await Future.wait([

@@ -305,15 +305,7 @@ class _ProfilePageState extends State<ProfilePage>
             
             const SizedBox(height: 12),
             
-            _buildOptionTile(
-              icon: Symbols.notifications,
-              title: 'Notificaciones',
-              subtitle: 'Configura tus notificaciones',
-              onTap: () => context.push('/settings/notifications'),
-              showArrow: true,
-            ),
-            
-            const SizedBox(height: 12),
+
             
             _buildOptionTile(
               icon: Symbols.language,

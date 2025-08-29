@@ -29,8 +29,8 @@ class ReviewRepositoryImpl implements ReviewRepository {
   }
 
   @override
-  Future<void> deleteReview(String reviewId) async {
-    await _firestoreService.deleteReview(reviewId);
+  Future<void> deleteReview(String reviewId, {String? serviceId}) async {
+    await _firestoreService.deleteReview(reviewId, serviceId: serviceId);
   }
 
   @override

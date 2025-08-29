@@ -180,18 +180,18 @@ class BrandConstants {
   // ========== ASSETS DE LOGO PROSAVIS ==========
   
   /// Logo principal - Siempre sin fondo (PNG)
-  static const String logoColorSvg = 'assets/images/logo-no-background.png';
+  static const String logoColorSvg = 'assets/branding/logos/logo-no-background.svg';
   
   /// Rutas de los logos PNG - Todas unificadas a sin fondo
-  static const String logoColor = 'assets/images/logo-no-background.png';
-  static const String logoGrayscale = 'assets/images/logo-no-background.png';
-  static const String logoGrayscaleInverted = 'assets/images/logo-no-background.png';
-  static const String logoNoBackground = 'assets/images/logo-no-background.png';
+  static const String logoColor = 'assets/branding/logos/logo-color.png';
+  static const String logoGrayscale = 'assets/branding/logos/logo-grayscale.png';
+  static const String logoGrayscaleInverted = 'assets/branding/logos/logo-grayscale-inverted.png';
+  static const String logoNoBackground = 'assets/branding/logos/logo-no-background.png';
   
   /// Rutas de los logos SVG - Todas unificadas a sin fondo (PNG)
-  static const String logoGrayscaleSvg = 'assets/images/logo-no-background.png';
-  static const String logoGrayscaleInvertedSvg = 'assets/images/logo-no-background.png';
-  static const String logoNoBackgroundSvg = 'assets/images/logo-no-background.png';
+  static const String logoGrayscaleSvg = 'assets/branding/logos/logo-grayscale.svg';
+  static const String logoGrayscaleInvertedSvg = 'assets/branding/logos/logo-grayscale-inverted.svg';
+  static const String logoNoBackgroundSvg = 'assets/branding/logos/logo-no-background.svg';
 
   // ========== ESPACIADO ==========
   

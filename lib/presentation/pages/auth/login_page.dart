@@ -750,7 +750,7 @@ class _LoginPageState extends State<LoginPage>
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Image.asset(
-                    'assets/icons/Google.svg.png',
+                    'assets/icons/social/google.png',
                     height: 20,
                     width: 20,
                     filterQuality: FilterQuality.high,
@@ -777,51 +777,27 @@ class _LoginPageState extends State<LoginPage>
   }
 
   Widget _buildAdditionalLinks() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        TextButton.icon(
-          onPressed: () {
-            // Navegar a la página de ayuda
-          },
-          icon: Icon(
-            Symbols.help,
-            size: 18,
+    return Center(
+      child: TextButton.icon(
+        onPressed: () {
+          context.push('/support');
+        },
+        icon: Icon(
+          Symbols.support_agent,
+          size: 18,
+          color: AppTheme.getTextSecondary(context),
+        ),
+        label: Text(
+          'Soporte',
+          style: GoogleFonts.inter(
+            fontSize: 14,
             color: AppTheme.getTextSecondary(context),
           ),
-          label: Text(
-            'Ayuda',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: AppTheme.getTextSecondary(context),
-            ),
-          ),
-          style: TextButton.styleFrom(
-            foregroundColor: AppTheme.getTextSecondary(context),
-          ),
         ),
-        const SizedBox(width: 24),
-        TextButton.icon(
-          onPressed: () {
-            // Navegar a soporte
-          },
-          icon: Icon(
-            Symbols.support_agent,
-            size: 18,
-            color: AppTheme.getTextSecondary(context),
-          ),
-          label: Text(
-            'Soporte',
-            style: GoogleFonts.inter(
-              fontSize: 14,
-              color: AppTheme.getTextSecondary(context),
-            ),
-          ),
-          style: TextButton.styleFrom(
-            foregroundColor: AppTheme.getTextSecondary(context),
-          ),
+        style: TextButton.styleFrom(
+          foregroundColor: AppTheme.getTextSecondary(context),
         ),
-      ],
+      ),
     );
   }
 
@@ -841,7 +817,7 @@ class _LoginPageState extends State<LoginPage>
           children: [
             TextButton(
               onPressed: () {
-                // Navegar a Términos de Servicio
+                context.push('/settings/terms');
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
@@ -868,7 +844,7 @@ class _LoginPageState extends State<LoginPage>
             ),
             TextButton(
               onPressed: () {
-                // Navegar a Política de Privacidad
+                context.push('/settings/privacy');
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,

@@ -15,9 +15,12 @@ import '../../blocs/auth/auth_state.dart';
 import '../../blocs/home/home_bloc.dart';
 import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
+import '../../blocs/location/location_bloc.dart';
+import '../../blocs/location/location_event.dart';
+import '../../blocs/location/location_state.dart';
 
 import '../../widgets/common/service_card.dart';
-import '../../widgets/common/auth_required_dialog.dart';
+
 import '../../widgets/dialogs/location_permission_dialog.dart';
 import '../../widgets/common/press_scale.dart';
 import '../services/category_services_page.dart';
@@ -45,13 +48,6 @@ class _HomePageState extends State<HomePage>
 
   
   final TextEditingController _searchController = TextEditingController();
-  
-  String? _currentGpsAddress;
-  bool _isDetectingLocation = false;
-  bool _hasDetectedGPS = false; // Flag para evitar múltiples detecciones
-  // Eliminado el badge visual; mantenemos el flag para no romper posibles referencias
-  // pero lo removemos si no se usa en el archivo.
-  // Eliminado timer de badge
 
   @override
   void initState() {
@@ -85,10 +81,8 @@ class _HomePageState extends State<HomePage>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeBloc>().add(LoadHomeServices());
       
-      // SIEMPRE auto-detectar ubicación GPS al inicio (independiente de autenticación)
-      _autoDetectLocation();
-      
-
+      // Auto-detectar ubicación usando LocationBloc centralizado
+      context.read<LocationBloc>().add(DetectLocationEvent());
     });
   }
 
@@ -115,98 +109,7 @@ class _HomePageState extends State<HomePage>
     return NetworkImage(photoUrl);
   }
 
-  /// Auto-detecta la ubicación GPS al iniciar la aplicación (solo una vez)
-  Future<void> _autoDetectLocation() async {
-    developer.log('🔍 Iniciando auto-detección de ubicación GPS...', name: 'HomePage');
-    
-    if (!mounted || _hasDetectedGPS) {
-      developer.log('❌ Widget no montado o GPS ya detectado, cancelando detección', name: 'HomePage');
-      return;
-    }
-    
-    setState(() {
-      _isDetectingLocation = true;
-      _hasDetectedGPS = true; // Marcar como detectado para evitar repeticiones
-    });
 
-    try {
-      developer.log('📍 Verificando cache de ubicación primero...', name: 'HomePage');
-      
-      // Primero intentar obtener ubicación desde cache
-      final cachedLocation = await LocationUtils.getCachedUserLocation();
-      
-      if (cachedLocation != null && mounted) {
-        developer.log('💾 Ubicación encontrada en cache, obteniendo dirección...', name: 'HomePage');
-        
-        // Si hay ubicación en cache, obtener solo la dirección
-        try {
-          final address = await LocationUtils.getCurrentAddress();
-          if (mounted && address != null) {
-            developer.log('✅ Dirección obtenida desde cache: $address', name: 'HomePage');
-            
-            setState(() {
-              _currentGpsAddress = address;
-              _isDetectingLocation = false;
-            });
-            
-            _showLocationHighlight();
-            return;
-          }
-        } catch (e) {
-          developer.log('⚠️ Error obteniendo dirección desde cache: $e', name: 'HomePage');
-        }
-      }
-      
-      // Si no hay cache válido, usar estrategia de fallback
-      developer.log('📍 Obteniendo ubicación GPS con fallback...', name: 'HomePage');
-      final userLocation = await LocationUtils.getUserLocationWithFallback();
-      
-      if (userLocation != null && mounted) {
-        // Guardar en cache manualmente
-        LocationUtils.updateLocationCache(userLocation);
-        
-        // Obtener dirección por separado (de forma asíncrona)
-        try {
-          final address = await LocationUtils.getCurrentAddress();
-          if (mounted && address != null) {
-            setState(() {
-              _currentGpsAddress = address;
-              _isDetectingLocation = false;
-            });
-            _showLocationHighlight();
-            return;
-          }
-        } catch (e) {
-          developer.log('⚠️ Error obteniendo dirección: $e', name: 'HomePage');
-        }
-      }
-      
-      // Fallback final: mostrar coordenadas si no se puede obtener dirección
-      if (userLocation != null && mounted) {
-        final lat = userLocation['latitude']!.toStringAsFixed(4);
-        final lng = userLocation['longitude']!.toStringAsFixed(4);
-        setState(() {
-          _currentGpsAddress = 'Lat: $lat, Lng: $lng';
-          _isDetectingLocation = false;
-        });
-        _showLocationHighlight();
-      } else {
-        developer.log('❌ No se pudo obtener ubicación GPS', name: 'HomePage');
-        if (mounted) {
-          setState(() {
-            _isDetectingLocation = false;
-          });
-        }
-      }
-    } catch (e) {
-      developer.log('❌ Error en auto-detección GPS: $e', name: 'HomePage');
-      if (mounted) {
-        setState(() {
-          _isDetectingLocation = false;
-        });
-      }
-    }
-  }
 
   /// Muestra la animación de highlight para la ubicación detectada
   void _showLocationHighlight() {
@@ -227,39 +130,44 @@ class _HomePageState extends State<HomePage>
     });
   }
 
-  /// Muestra diálogo de autenticación requerida
-  void _showAuthRequiredDialog(String featureName) {
-    showDialog(
-      context: context,
-      builder: (context) => AuthRequiredDialog(
-        title: 'Inicia Sesión',
-        message: 'Para acceder a $featureName necesitas iniciar sesión en tu cuenta.',
-        onLoginTapped: () {
-          widget.onProfileTapped?.call();
-        },
-      ),
-    );
-  }
+
 
   /// Muestra el dialog de configuración de ubicación
   void _showLocationDialog() async {
     final result = await LocationPermissionDialog.show(context);
     if (result == true && mounted) {
-      // Si se configuró la ubicación correctamente, refrescar
-      _autoDetectLocation();
+      // Si se configuró la ubicación correctamente, refrescar usando LocationBloc
+      context.read<LocationBloc>().add(RefreshLocationEvent());
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        // Cuando el usuario inicia sesión, auto-detectar ubicación si no se ha hecho
-        if (state is AuthAuthenticated && !_hasDetectedGPS) {
-          developer.log('🔐 Usuario autenticado - Iniciando auto-detección GPS', name: 'HomePage');
-          _autoDetectLocation();
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<AuthBloc, AuthState>(
+          listener: (context, state) {
+            // Cuando el usuario inicia sesión, detectar ubicación si aún no está disponible
+            if (state is AuthAuthenticated) {
+              final locationBloc = context.read<LocationBloc>();
+              if (!locationBloc.hasLocation) {
+                developer.log('🔐 Usuario autenticado - Iniciando detección GPS', name: 'HomePage');
+                locationBloc.add(DetectLocationEvent());
+              }
+            }
+          },
+        ),
+        BlocListener<LocationBloc, LocationState>(
+          listener: (context, state) {
+            // Cuando se detecta ubicación exitosamente, mostrar animación de highlight
+            if (state is LocationLoaded) {
+              _showLocationHighlight();
+              // Recargar servicios cercanos con la nueva ubicación
+              context.read<HomeBloc>().add(RefreshHomeServices());
+            }
+          },
+        ),
+      ],
       child: BlocBuilder<AuthBloc, AuthState>(
         builder: (context, state) {
           if (state is AuthAuthenticated) {
@@ -349,7 +257,7 @@ class _HomePageState extends State<HomePage>
             
             const SizedBox(width: 12),
             
-            // Welcome + ubicación activa
+            // Welcome + ubicación activa usando LocationBloc
             Expanded(
               child: AnimatedBuilder(
                 animation: _locationHighlightAnimation,
@@ -368,35 +276,39 @@ class _HomePageState extends State<HomePage>
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                _isDetectingLocation
-                                    ? Symbols.my_location
-                                    : _currentGpsAddress != null
-                                        ? Symbols.location_on
-                                        : Symbols.location_off,
-                                size: 16,
-                                color: _isDetectingLocation
-                                    ? AppTheme.accentColor
-                                    : AppTheme.getTextSecondary(context),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _isDetectingLocation
-                                      ? 'Detectando ubicación por GPS...'
-                                      : _currentGpsAddress != null
-                                          ? LocationUtils.normalizeAddress(_currentGpsAddress!)
-                                          : 'Toca para agregar ubicación',
-                                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    fontStyle: _isDetectingLocation ? FontStyle.italic : null,
+                          BlocBuilder<LocationBloc, LocationState>(
+                            builder: (context, locationState) {
+                              return Row(
+                                children: [
+                                  Icon(
+                                    locationState is LocationLoading
+                                        ? Symbols.my_location
+                                        : locationState is LocationLoaded
+                                            ? Symbols.location_on
+                                            : Symbols.location_off,
+                                    size: 16,
+                                    color: locationState is LocationLoading
+                                        ? AppTheme.accentColor
+                                        : AppTheme.getTextSecondary(context),
                                   ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      locationState is LocationLoading
+                                          ? 'Detectando ubicación por GPS...'
+                                          : locationState is LocationLoaded
+                                              ? LocationUtils.normalizeAddress(locationState.address)
+                                              : 'Toca para agregar ubicación',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        fontStyle: locationState is LocationLoading ? FontStyle.italic : null,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -406,13 +318,13 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             
-            // Notifications
+            // Support
             IconButton(
               onPressed: () {
-                context.push('/notifications');
+                context.push('/support');
               },
               icon: const Icon(
-                Symbols.notifications,
+                Symbols.support_agent,
                 color: AppTheme.textSecondary,
               ),
             ),
@@ -449,7 +361,7 @@ class _HomePageState extends State<HomePage>
             
             const SizedBox(width: 12),
             
-            // Welcome Message for anonymous user + Ubicación GPS temporal
+            // Welcome Message for anonymous user + Ubicación GPS usando LocationBloc
             Expanded(
               child: AnimatedBuilder(
                 animation: _locationHighlightAnimation,
@@ -468,33 +380,37 @@ class _HomePageState extends State<HomePage>
                             style: Theme.of(context).textTheme.headlineSmall,
                           ),
                           const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(
-                                _isDetectingLocation
-                                    ? Symbols.my_location
-                                    : _currentGpsAddress != null
-                                        ? Symbols.location_on
-                                        : Symbols.location_off,
-                                size: 16,
-                                color: _isDetectingLocation
-                                    ? AppTheme.accentColor
-                                    : AppTheme.getTextSecondary(context),
-                              ),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  _isDetectingLocation
-                                      ? 'Detectando ubicación por GPS...'
-                                      : _currentGpsAddress != null
-                                          ? LocationUtils.normalizeAddress(_currentGpsAddress!)
-                                          : 'Inicia sesión para gestionar direcciones',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
+                          BlocBuilder<LocationBloc, LocationState>(
+                            builder: (context, locationState) {
+                              return Row(
+                                children: [
+                                  Icon(
+                                    locationState is LocationLoading
+                                        ? Symbols.my_location
+                                        : locationState is LocationLoaded
+                                            ? Symbols.location_on
+                                            : Symbols.location_off,
+                                    size: 16,
+                                    color: locationState is LocationLoading
+                                        ? AppTheme.accentColor
+                                        : AppTheme.getTextSecondary(context),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      locationState is LocationLoading
+                                          ? 'Detectando ubicación por GPS...'
+                                          : locationState is LocationLoaded
+                                              ? LocationUtils.normalizeAddress(locationState.address)
+                                              : 'Inicia sesión para gestionar direcciones',
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -504,13 +420,13 @@ class _HomePageState extends State<HomePage>
               ),
             ),
             
-            // Notifications - Protegido para usuarios anónimos
+            // Support - Disponible para usuarios anónimos
             IconButton(
               onPressed: () {
-                _showAuthRequiredDialog('las notificaciones');
+                context.push('/support');
               },
               icon: Icon(
-                Symbols.notifications,
+                Symbols.support_agent,
                 color: AppTheme.getTextSecondary(context),
               ),
             ),

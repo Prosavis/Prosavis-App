@@ -20,13 +20,15 @@ import 'presentation/blocs/search/search_event.dart';
 import 'presentation/blocs/profile/profile_bloc.dart';
 import 'presentation/blocs/home/home_bloc.dart';
 import 'presentation/blocs/favorites/favorites_bloc.dart';
+import 'presentation/blocs/review/review_bloc.dart';
+import 'presentation/blocs/location/location_bloc.dart';
 import 'data/services/image_storage_service.dart';
 import 'presentation/pages/splash/splash_page.dart';
 import 'presentation/pages/main/main_navigation_page.dart';
 import 'presentation/pages/auth/login_page.dart';
 import 'presentation/pages/auth/verify_phone_page.dart';
 import 'presentation/pages/auth/forgot_password_page.dart';
-import 'presentation/pages/settings/notifications_settings_page.dart';
+
 import 'presentation/pages/settings/language_settings_page.dart';
 
 import 'presentation/pages/settings/edit_profile_page.dart';
@@ -35,7 +37,7 @@ import 'presentation/pages/settings/terms_conditions_page.dart';
 import 'presentation/pages/settings/privacy_policy_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
-import 'presentation/pages/notifications/notifications_page.dart';
+import 'presentation/pages/support/support_page.dart';
 import 'presentation/pages/profile/profile_page.dart';
 import 'presentation/pages/services/service_creation_page.dart';
 import 'presentation/pages/services/my_services_page.dart';
@@ -184,13 +186,7 @@ final _router = GoRouter(
       path: '/home',
       pageBuilder: (context, state) => _fadeThroughPage(child: const MainNavigationPage()),
     ),
-    GoRoute(
-      path: '/settings/notifications',
-      pageBuilder: (context, state) => _sharedAxisPage(
-        child: const NotificationsSettingsPage(),
-        type: SharedAxisTransitionType.horizontal,
-      ),
-    ),
+
     GoRoute(
       path: '/settings/language',
       pageBuilder: (context, state) => _sharedAxisPage(
@@ -223,8 +219,8 @@ final _router = GoRouter(
       pageBuilder: (context, state) => _fadeThroughPage(child: const CategoriesPage()),
     ),
     GoRoute(
-      path: '/notifications',
-      pageBuilder: (context, state) => _fadeThroughPage(child: const NotificationsPage()),
+      path: '/support',
+      pageBuilder: (context, state) => _fadeThroughPage(child: const SupportPage()),
     ),
     GoRoute(
       path: '/create-service',
@@ -341,6 +337,12 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<FavoritesBloc>(
           create: (_) => di.sl<FavoritesBloc>(),
+        ),
+        BlocProvider<ReviewBloc>(
+          create: (_) => di.sl<ReviewBloc>(),
+        ),
+        BlocProvider<LocationBloc>(
+          create: (_) => di.sl<LocationBloc>(),
         ),
 
       ],

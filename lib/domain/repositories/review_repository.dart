@@ -14,7 +14,7 @@ abstract class ReviewRepository {
   Future<void> updateReview(ReviewEntity review);
   
   /// Eliminar una reseña
-  Future<void> deleteReview(String reviewId);
+  Future<void> deleteReview(String reviewId, {String? serviceId});
   
   /// Verificar si un usuario ya reseñó un servicio
   Future<bool> hasUserReviewedService(String userId, String serviceId);

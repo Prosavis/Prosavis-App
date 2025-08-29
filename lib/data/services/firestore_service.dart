@@ -536,12 +536,13 @@ class FirestoreService {
         developer.log('🧹 $successfulDeletes/${imageUrlsToDelete.length} imágenes eliminadas de Storage');
       }
       
-      // === PASO 3: Eliminar reseñas asociadas al servicio ===
+      // === PASO 3: Eliminar reseñas asociadas al servicio (subcolección) ===
       try {
         developer.log('🗑️ Eliminando reseñas asociadas al servicio...');
         final reviewsQuery = await firestore
+            .collection('services')
+            .doc(serviceId)
             .collection('reviews')
-            .where('serviceId', isEqualTo: serviceId)
             .get();
         
         if (reviewsQuery.docs.isNotEmpty) {
@@ -743,8 +744,11 @@ class FirestoreService {
   Future<String> createReview(ReviewEntity review) async {
     try {
       developer.log('📝 Creando reseña para servicio: ${review.serviceId}');
+      developer.log('📝 Usuario: ${review.userId} (${review.userName})');
+      developer.log('📝 Rating: ${review.rating}, Comentario: "${review.comment}"');
       
       final reviewModel = ReviewModel.fromEntity(review);
+      developer.log('📝 Datos a guardar: ${reviewModel.toJson()}');
       
       // Usar el userId como ID del documento para garantizar una reseña por usuario
       final docRef = firestore
@@ -753,12 +757,25 @@ class FirestoreService {
           .collection('reviews')
           .doc(review.userId);
       
+      developer.log('📝 Ruta de guardado: services/${review.serviceId}/reviews/${review.userId}');
+      
       await docRef.set(reviewModel.toJson());
       
-      developer.log('✅ Reseña creada con ID: ${review.userId}');
+      developer.log('✅ Reseña creada exitosamente con ID: ${review.userId}');
+      
+      // Verificar que se guardó correctamente
+      final savedDoc = await docRef.get();
+      if (savedDoc.exists) {
+        developer.log('✅ Verificación: Documento guardado exitosamente');
+        developer.log('✅ Datos guardados: ${savedDoc.data()}');
+      } else {
+        developer.log('⚠️ Advertencia: El documento no existe después de guardarlo');
+      }
+      
       return review.userId;
     } catch (e) {
       developer.log('⚠️ Error al crear reseña: $e');
+      developer.log('⚠️ Stack trace: ${StackTrace.current}');
       rethrow;
     }
   }
@@ -767,6 +784,7 @@ class FirestoreService {
   Future<List<ReviewEntity>> getServiceReviews(String serviceId, {int limit = 20}) async {
     try {
       developer.log('📖 Obteniendo reseñas del servicio: $serviceId');
+      developer.log('📖 Ruta: services/$serviceId/reviews');
       
       final querySnapshot = await firestore
           .collection('services')
@@ -776,14 +794,22 @@ class FirestoreService {
           .limit(limit)
           .get();
       
+      developer.log('📖 Documentos encontrados: ${querySnapshot.docs.length}');
+      
+      if (querySnapshot.docs.isNotEmpty) {
+        developer.log('📖 Primer documento ID: ${querySnapshot.docs.first.id}');
+        developer.log('📖 Primer documento data: ${querySnapshot.docs.first.data()}');
+      }
+      
       final reviews = querySnapshot.docs
           .map((doc) => ReviewModel.fromFirestore(doc).toEntity())
           .toList();
       
-      developer.log('✅ ${reviews.length} reseñas encontradas');
+      developer.log('✅ ${reviews.length} reseñas procesadas y convertidas');
       return reviews;
     } catch (e) {
       developer.log('⚠️ Error al obtener reseñas: $e');
+      developer.log('⚠️ Stack trace: ${StackTrace.current}');
       return []; // Retornar lista vacía en caso de error
     }
   }
@@ -812,14 +838,14 @@ class FirestoreService {
   /// Actualizar una reseña existente
   Future<void> updateReview(ReviewEntity review) async {
     try {
-      developer.log('📝 Actualizando reseña: ${review.id}');
+      developer.log('📝 Actualizando reseña del usuario: ${review.userId} para servicio: ${review.serviceId}');
       
       final reviewModel = ReviewModel.fromEntity(review);
       await firestore
           .collection('services')
           .doc(review.serviceId)
           .collection('reviews')
-          .doc(review.id)
+          .doc(review.userId) // Usar userId como ID del documento
           .update(reviewModel.toJson());
       
       developer.log('✅ Reseña actualizada');
@@ -830,18 +856,33 @@ class FirestoreService {
   }
 
   /// Eliminar una reseña
-  Future<void> deleteReview(String reviewId) async {
+  Future<void> deleteReview(String reviewId, {String? serviceId}) async {
     try {
-      // Eliminar de todas las subcolecciones reviews
-      final querySnapshot = await firestore
-          .collectionGroup('reviews')
-          .where(FieldPath.documentId, isEqualTo: reviewId)
-          .limit(1)
-          .get();
-      
-      if (querySnapshot.docs.isNotEmpty) {
-        await querySnapshot.docs.first.reference.delete();
+      if (serviceId != null) {
+        // Usar serviceId para eliminación directa (más eficiente)
+        developer.log('🗑️ Eliminando reseña del usuario: $reviewId para servicio: $serviceId');
+        await firestore
+            .collection('services')
+            .doc(serviceId)
+            .collection('reviews')
+            .doc(reviewId) // reviewId es el userId en nuestro sistema
+            .delete();
         developer.log('✅ Reseña eliminada');
+      } else {
+        // Fallback: buscar en todas las subcolecciones (menos eficiente)
+        developer.log('🗑️ Eliminando reseña por ID (búsqueda global): $reviewId');
+        final querySnapshot = await firestore
+            .collectionGroup('reviews')
+            .where(FieldPath.documentId, isEqualTo: reviewId)
+            .limit(1)
+            .get();
+        
+        if (querySnapshot.docs.isNotEmpty) {
+          await querySnapshot.docs.first.reference.delete();
+          developer.log('✅ Reseña eliminada');
+        } else {
+          developer.log('⚠️ Reseña no encontrada: $reviewId');
+        }
       }
     } catch (e) {
       developer.log('⚠️ Error al eliminar reseña: $e');

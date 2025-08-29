@@ -270,7 +270,9 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.white,
+                          height: 1.4,
                         ),
+                        softWrap: true,
                       ),
                     ),
                   ],
@@ -287,7 +289,7 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
                   text: 'Activar Ubicación',
                   isPrimary: true,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
               ],
               
               if (!_hasLocationPermission && _isLocationServiceEnabled) ...[
@@ -297,7 +299,7 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
                   text: 'Permitir Ubicación',
                   isPrimary: true,
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
               ],
               
               // Botón de configuración manual
@@ -308,7 +310,7 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
                 isPrimary: false,
               ),
               
-              const SizedBox(height: 12),
+              const SizedBox(height: 14),
               
               // Botón de verificar de nuevo
               _buildActionButton(
@@ -349,7 +351,9 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
                         style: GoogleFonts.inter(
                           fontSize: 13,
                           color: Colors.white,
+                          height: 1.3,
                         ),
+                        softWrap: true,
                       ),
                     ],
                   ),
@@ -379,15 +383,21 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
   }) {
     return SizedBox(
       width: double.infinity,
-      height: 44,
+      height: 50,
       child: ElevatedButton.icon(
         onPressed: onPressed,
         icon: Icon(icon, size: 18),
-        label: Text(
-          text,
-          style: GoogleFonts.inter(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
+        label: Flexible(
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
         style: ElevatedButton.styleFrom(
@@ -399,8 +409,9 @@ class _LocationPermissionDialogState extends State<LocationPermissionDialog> {
             : Colors.white,
           elevation: isPrimary ? 6 : 2,
           shadowColor: Colors.black.withValues(alpha: 0.2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(25),
             side: isPrimary 
               ? BorderSide.none 
               : BorderSide(

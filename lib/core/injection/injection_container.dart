@@ -43,6 +43,8 @@ import 'package:prosavis/presentation/blocs/auth/auth_bloc.dart';
 import 'package:prosavis/presentation/blocs/search/search_bloc.dart';
 import 'package:prosavis/presentation/blocs/home/home_bloc.dart';
 import 'package:prosavis/presentation/blocs/favorites/favorites_bloc.dart';
+import 'package:prosavis/presentation/blocs/review/review_bloc.dart';
+import 'package:prosavis/presentation/blocs/location/location_bloc.dart';
 
 
 import 'dart:developer' as developer;
@@ -148,6 +150,7 @@ Future<void> init() async {
       getFeaturedServicesUseCase: sl<GetFeaturedServicesUseCase>(),
       getNearbyServicesUseCase: sl<GetNearbyServicesUseCase>(),
       getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
+      locationBloc: sl<LocationBloc>(),
     ));
     
     sl.registerFactory(() => FavoritesBloc(
@@ -159,8 +162,13 @@ Future<void> init() async {
       getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
     ));
     
+    sl.registerFactory(() => ReviewBloc(sl<ReviewRepository>()));
+    
+    // LocationBloc - Singleton para mantener estado global de ubicación
+    sl.registerLazySingleton(() => LocationBloc());
+    
     if (AppConfig.enableDetailedLogs) {
-      developer.log('✅ BLoCs registrados: Auth, Search, Home, Favorites');
+      developer.log('✅ BLoCs registrados: Auth, Search, Home, Favorites, Review, Location');
     }
 
 
