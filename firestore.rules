@@ -3,160 +3,199 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     
+    // === FUNCIONES HELPER ===
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isOwnerId(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+    function isServiceOwner(serviceId) {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/services/$(serviceId))
+        && request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.providerId;
+    }
+    function validStorageUrl(url) {
+      return url == null || url.matches('https://(firebasestorage|storage)\\.googleapis\\.com/.*');
+    }
+    
+    // Helper para validar lista de imágenes (hasta 4) sea lista de strings
+    function listAllStringsMax4(l) {
+      return l == null || (
+        l is list && l.size() <= 4 &&
+        (l.size() == 0 || l[0] is string) &&
+        (l.size() < 2 || l[1] is string) &&
+        (l.size() < 3 || l[2] is string) &&
+        (l.size() < 4 || l[3] is string)
+      );
+    }
+    
+    // Helper para validar que rating sea entero
+    function isInt(n) { 
+      return n is number && n == int(n); 
+    }
+    
+    // Helper para validar timestamps cercanos al momento actual
+    function nearNow(ts) {
+      return ts is timestamp
+             && (request.time - ts <= duration.value(5, 'minutes'))
+             && (ts - request.time <= duration.value(1, 'minutes'));
+    }
+    
     // === USUARIOS ===
-    // CRUD completo para su propio perfil
     match /users/{userId} {
-      allow read: if request.auth != null && request.auth.uid == userId;
-      allow write: if request.auth != null && 
-                  request.auth.uid == userId &&
-                  // 🖼️ Validar URL de imagen de perfil (Firebase Storage + Google + YouTube)
-                  (!request.resource.data.keys().hasAny(['photoUrl']) || 
-                   request.resource.data.photoUrl == null || 
-                   request.resource.data.photoUrl.matches('https://(firebasestorage\\.googleapis\\.com|lh3\\.googleusercontent\\.com|lh4\\.googleusercontent\\.com|lh5\\.googleusercontent\\.com|lh6\\.googleusercontent\\.com|yt3\\.ggpht\\.com)/.*'));
-      
-      // ✅ ELIMINACIÓN EN CASCADA: Solo el propietario puede eliminar su cuenta
-      // O eliminación en cascada desde el backend (sin autenticación)
-      allow delete: if (request.auth != null && request.auth.uid == userId) ||
-                   request.auth == null;
-    }
-    
-    // === SERVICIOS ===
-    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede explorar servicios
-    // 🔒 GESTIÓN PRIVADA: Solo el propietario puede crear/modificar sus servicios
-    match /services/{serviceId} {
-      allow read: if true; // 📖 Lectura pública para navegación
-      
-      // ✅ CREAR SERVICIO: Validaciones robustas para nuevos servicios
-      allow create: if request.auth != null && 
-                   request.auth.uid == request.resource.data.providerId && // 🔐 Solo usuarios autenticados
-                   // 📋 Validar campos obligatorios
-                   request.resource.data.keys().hasAll(['title', 'description', 'category', 'price', 'providerId']) &&
-                   request.resource.data.title is string && request.resource.data.title.size() > 5 &&
-                   request.resource.data.description is string && request.resource.data.description.size() > 10 &&
-                   request.resource.data.category is string && request.resource.data.category.size() > 0 &&
-                   request.resource.data.price is number && request.resource.data.price >= 0 &&
-                   // 🖼️ Validar que las URLs de imágenes sean de Firebase Storage (si existen)
-                   // Permitir crear servicios inicialmente sin imágenes para nuestro nuevo flujo
-                   (!request.resource.data.keys().hasAny(['mainImage']) || 
-                    request.resource.data.mainImage == null || 
-                    request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
-                   (!request.resource.data.keys().hasAny(['images']) || 
-                    request.resource.data.images == null ||
-                    (request.resource.data.images is list && 
-                     request.resource.data.images.size() <= 4));
-      
-      // ✅ ACTUALIZAR SERVICIO: Solo el propietario
-      //    Los agregados de reseñas los actualiza Cloud Functions
-      allow update: if request.auth != null &&
-                    request.auth.uid == resource.data.providerId &&
-                    // 🖼️ Validar URLs de imágenes en actualizaciones (si se modifican)
-                    (!request.resource.data.keys().hasAny(['mainImage']) || 
-                     request.resource.data.mainImage == null || 
-                     request.resource.data.mainImage.matches('https://firebasestorage.googleapis.com/.*')) &&
-                    (!request.resource.data.keys().hasAny(['images']) || 
-                     request.resource.data.images == null ||
-                     (request.resource.data.images is list && 
-                      request.resource.data.images.size() <= 4));
+      allow read: if isOwnerId(userId);
 
-      // ✅ ELIMINAR SERVICIO: Solo el propietario (sin validaciones de contenido)
-      // O eliminación en cascada desde el backend (sin autenticación)  
-      allow delete: if (request.auth != null && request.auth.uid == resource.data.providerId) ||
-                   request.auth == null;
-      
-      // === RESEÑAS DE SERVICIOS (SUBCOLLECCIÓN) ===
-      // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede leer reseñas de servicios
-      // 🔒 GESTIÓN PERSONAL: Solo el autor puede modificar sus reseñas
+      // Crear documento de perfil con id == uid y whitelisting completo
+      allow create: if isOwnerId(userId) 
+        && request.resource.id == request.auth.uid
+        && request.resource.data.keys().hasOnly(['displayName','bio','phone','photoUrl','createdAt','updatedAt'])
+        && (!request.resource.data.keys().hasAny(['photoUrl']) || request.resource.data.photoUrl == null
+            || request.resource.data.photoUrl.matches('https://(firebasestorage|storage)\\.googleapis\\.com/.*|https://(lh3|lh4|lh5|lh6)\\.googleusercontent\\.com/.*|https://yt3\\.ggpht\\.com/.*'))
+        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+
+      // Restringe qué campos pueden cambiarse
+      allow update: if isOwnerId(userId)
+        && (!request.resource.data.keys().hasAny(['photoUrl']) || request.resource.data.photoUrl == null
+            || request.resource.data.photoUrl.matches('https://(firebasestorage|storage)\\.googleapis\\.com/.*|https://(lh3|lh4|lh5|lh6)\\.googleusercontent\\.com/.*|https://yt3\\.ggpht\\.com/.*'))
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['displayName','bio','phone','photoUrl','updatedAt'])
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || (
+             request.resource.data.updatedAt is timestamp
+             && request.resource.data.updatedAt >= resource.data.updatedAt
+             && nearNow(request.resource.data.updatedAt)
+           ));
+
+      allow delete: if isOwnerId(userId);
+    }
+
+    // === SERVICIOS ===
+    match /services/{serviceId} {
+      allow read: if true;
+
+      // Crear servicio con whitelisting completo y validaciones mejoradas
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.providerId
+        && request.resource.data.keys().hasAll(['title','description','category','price','providerId'])
+        && request.resource.data.keys().hasOnly(['title','description','category','price','providerId','mainImage','images','createdAt','updatedAt'])
+        && request.resource.data.title is string && request.resource.data.title.size() > 5 && request.resource.data.title.size() <= 120
+        && request.resource.data.description is string && request.resource.data.description.size() > 10 && request.resource.data.description.size() <= 5000
+        && request.resource.data.category is string && request.resource.data.category.size() > 0
+        && request.resource.data.price is number && request.resource.data.price >= 0
+        && (!request.resource.data.keys().hasAny(['mainImage']) || validStorageUrl(request.resource.data.mainImage))
+        && listAllStringsMax4(request.resource.data.images)
+        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+
+      // Actualizar servicio con validaciones mejoradas
+      allow update: if isSignedIn()
+        && request.auth.uid == resource.data.providerId
+        && request.resource.data.providerId == resource.data.providerId
+        && (!request.resource.data.keys().hasAny(['mainImage']) || validStorageUrl(request.resource.data.mainImage))
+        && (!request.resource.data.keys().hasAny(['price']) || (request.resource.data.price is number && request.resource.data.price >= 0))
+        && (!request.resource.data.keys().hasAny(['images']) || listAllStringsMax4(request.resource.data.images))
+        && (!request.resource.data.keys().hasAny(['title']) || (request.resource.data.title is string && request.resource.data.title.size() > 5 && request.resource.data.title.size() <= 120))
+        && (!request.resource.data.keys().hasAny(['description']) || (request.resource.data.description is string && request.resource.data.description.size() > 10 && request.resource.data.description.size() <= 5000))
+        && (!request.resource.data.keys().hasAny(['category']) || (request.resource.data.category is string && request.resource.data.category.size() > 0))
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['title','description','category','price','mainImage','images','updatedAt'])
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || (
+             request.resource.data.updatedAt is timestamp
+             && request.resource.data.updatedAt >= resource.data.updatedAt
+             && nearNow(request.resource.data.updatedAt)
+           ));
+
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.providerId;
+
+      // === RESEÑAS ===
       match /reviews/{reviewId} {
-        allow read: if true; // 📖 Lectura pública para ver reseñas
-        allow create: if request.auth != null && 
-                     request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                     // 📋 Validar campos obligatorios (comentario ya no es obligatorio)
-                     request.resource.data.keys().hasAll(['serviceId', 'userId', 'rating']) &&
-                     request.resource.data.rating is number && 
-                     request.resource.data.rating >= 1 && 
-                     request.resource.data.rating <= 5 &&
-                     // 📋 Si viene comentario, validar que sea string (sin límites de longitud)
-                     (!request.resource.data.keys().hasAny(['comment']) || request.resource.data.comment is string) &&
-                     // 📋 Validar que el serviceId coincida con el documento padre
-                     request.resource.data.serviceId == serviceId &&
-                     // 🚫 No permitir auto-reseñas (no reseñar tus propios servicios)
-                     request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId &&
-                     // 🚫 No permitir múltiples reseñas del mismo usuario para el mismo servicio
-                     !exists(/databases/$(database)/documents/services/$(serviceId)/reviews/$(request.auth.uid));
-        // ✅ ELIMINACIÓN: Usuario puede eliminar sus reseñas  
-        // O eliminación en cascada desde el backend (sin autenticación)
-        allow update, delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
-                             request.auth == null; // Permitir eliminación desde backend sin auth
+        allow read: if true;
+
+        // Fuerza un solo review por usuario: id del doc == uid
+        allow create: if isSignedIn()
+          && request.auth.uid == request.resource.data.userId
+          && request.resource.id == request.auth.uid
+          && request.resource.data.keys().hasAll(['serviceId','userId','rating'])
+          && request.resource.data.serviceId == serviceId
+          && isInt(request.resource.data.rating)
+          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+          && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
+          && request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId
+          && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
+          && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+
+        // Actualizar reseña con whitelisting y re-validación + inmutables
+        allow update: if isSignedIn()
+          && request.auth.uid == resource.data.userId
+          && request.resource.data.serviceId == resource.data.serviceId
+          && request.resource.data.userId == resource.data.userId
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt'])
+          && isInt(request.resource.data.rating)
+          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+          && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
+          && (!request.resource.data.keys().hasAny(['updatedAt']) || (
+               request.resource.data.updatedAt is timestamp
+               && request.resource.data.updatedAt >= resource.data.updatedAt
+               && nearNow(request.resource.data.updatedAt)
+             ));
+
+        allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
       }
-      
-      // === IMÁGENES DE SERVICIOS ===
-      // Metadatos de imágenes (las imágenes reales van en Storage)
+
+      // Metadatos de imágenes de servicios
       match /images/{imageId} {
-        allow read: if true; // 📖 Cualquiera puede ver metadatos de imágenes
-        allow write: if request.auth != null && 
-                    request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.providerId; // 🔐 Solo el propietario del servicio
+        allow read: if true;
+        allow write: if isServiceOwner(serviceId);
       }
     }
-    
+
     // === FAVORITOS ===
-    // ✅ GESTIÓN PERSONAL: Cada usuario gestiona sus propios favoritos
+    // Usando id canónico ${uid}_${serviceId} para prevenir duplicados
     match /favorites/{favoriteId} {
-      // Para lectura usamos query-based rules para permitir .where('userId', '==', uid)
-      allow read: if request.auth != null && 
-                 (resource == null || request.auth.uid == resource.data.userId);
-      
-      allow write: if request.auth != null && 
-                  request.auth.uid == resource.data.userId; // 🔐 Solo el propietario de los favoritos
-      
-      allow create: if request.auth != null && 
-                   request.auth.uid == request.resource.data.userId && // 🔐 Solo usuarios autenticados
-                   // 📋 Validar campos obligatorios
-                   request.resource.data.keys().hasAll(['userId', 'serviceId']) &&
-                   // 📋 Validar que el servicio existe
-                   exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId));
-      
-      // ✅ ELIMINACIÓN: Usuario puede eliminar sus favoritos 
-      // O eliminación en cascada desde el backend (sin autenticación)
-      allow delete: if (request.auth != null && request.auth.uid == resource.data.userId) ||
-                   request.auth == null; // Permitir eliminación desde backend sin auth
+      // Lectura individual
+      allow get: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow list: if isSignedIn()
+        && request.query.where('userId', '==', request.auth.uid);
+
+      // Crear con id canónico validado para prevenir duplicados
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.id == (request.auth.uid + '_' + request.resource.data.serviceId)
+        && request.resource.data.keys().hasOnly(['userId','serviceId','createdAt'])
+        && exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId))
+        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt));
+
+      // Solo dueño puede actualizar/eliminar
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
-    
-    // NOTA: Las reseñas se almacenan como subcolecciones dentro de cada servicio
-    // Ver reglas de reseñas en la sección de servicios (líneas 67-88)
     
     // === CATEGORÍAS DE SERVICIOS ===
-    // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede ver categorías
-    // 🔒 GESTIÓN ADMIN: Solo administradores pueden modificar
     match /categories/{categoryId} {
-      allow read: if true; // 📖 Lectura pública para navegación
-      allow write: if false; // 🔐 Solo administradores (desde backend/consola)
+      allow read: if true;
+      allow write: if false; // Solo administradores
     }
     
-
-    
     // === CONFIGURACIÓN GLOBAL ===
-    // Configuración pública de la aplicación
     match /app_config/{configId} {
-      allow read: if true; // 📖 Configuración pública (términos, contacto, etc.)
-      allow write: if false; // 🔐 Solo administradores desde backend
+      allow read: if true;
+      allow write: if false; // Solo administradores
     }
     
     // === UBICACIONES ===
-    // Cache de ubicaciones para mejorar rendimiento
     match /locations/{locationId} {
-      allow read: if true; // 📖 Lectura pública para búsquedas geográficas
-      allow write: if false; // 🔐 Solo el sistema puede gestionar ubicaciones
+      allow read: if true;
+      allow write: if false; // Solo el sistema
     }
     
     // === REPORTES ===
-    // Sistema de reportes para servicios/usuarios problemáticos
     match /reports/{reportId} {
       allow create: if request.auth != null && 
-                   request.auth.uid == request.resource.data.reporterId; // 🔐 Solo usuarios autenticados pueden reportar
-      allow read, update, delete: if false; // 🔐 Solo administradores desde backend
+                   request.auth.uid == request.resource.data.reporterId;
+      allow read, update, delete: if false; // Solo administradores
     }
     
-    // 🚫 Denegar acceso a todo lo demás por defecto
+    // Denegar acceso a todo lo demás por defecto
     match /{document=**} {
       allow read, write: if false;
     }

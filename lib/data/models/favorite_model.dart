@@ -6,6 +6,7 @@ class FavoriteModel extends FavoriteEntity {
     required super.userId,
     required super.serviceId,
     required super.createdAt,
+    super.updatedAt,
   });
 
   factory FavoriteModel.fromJson(Map<String, dynamic> json) {
@@ -14,15 +15,20 @@ class FavoriteModel extends FavoriteEntity {
       userId: json['userId'] ?? '',
       serviceId: json['serviceId'] ?? '',
       createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
+      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
     );
   }
 
   Map<String, dynamic> toJson() {
-    return {
+    final map = {
       'userId': userId,
       'serviceId': serviceId,
       'createdAt': createdAt.toIso8601String(),
     };
+    if (updatedAt != null) {
+      map['updatedAt'] = updatedAt!.toIso8601String();
+    }
+    return map;
   }
 
   factory FavoriteModel.fromEntity(FavoriteEntity entity) {
@@ -31,6 +37,7 @@ class FavoriteModel extends FavoriteEntity {
       userId: entity.userId,
       serviceId: entity.serviceId,
       createdAt: entity.createdAt,
+      updatedAt: entity.updatedAt,
     );
   }
 
@@ -44,6 +51,7 @@ class FavoriteModel extends FavoriteEntity {
       userId: userId,
       serviceId: serviceId,
       createdAt: now,
+      updatedAt: null, // No se necesita en creación
     );
   }
 
@@ -52,12 +60,14 @@ class FavoriteModel extends FavoriteEntity {
     String? userId,
     String? serviceId,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return FavoriteModel(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       serviceId: serviceId ?? this.serviceId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

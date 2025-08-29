@@ -22,28 +22,31 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
     required String serviceId,
   }) async {
     try {
+      // Usar id canónico para prevenir duplicados automáticamente
+      final favoriteId = '${userId}_$serviceId';
+      
       // Verificar si ya existe
-      final existingQuery = await _firestore
+      final existingDoc = await _firestore
           .collection('favorites')
-          .where('userId', isEqualTo: userId)
-          .where('serviceId', isEqualTo: serviceId)
+          .doc(favoriteId)
           .get();
 
-      if (existingQuery.docs.isNotEmpty) {
-        return existingQuery.docs.first.id;
+      if (existingDoc.exists) {
+        return favoriteId;
       }
 
-      // Crear nuevo favorito
+      // Crear nuevo favorito con id canónico
       final favorite = FavoriteModel.createNew(
         userId: userId,
         serviceId: serviceId,
       );
 
-      final docRef = await _firestore
+      await _firestore
           .collection('favorites')
-          .add(favorite.toJson());
+          .doc(favoriteId)
+          .set(favorite.toJson());
 
-      return docRef.id;
+      return favoriteId;
     } catch (e) {
       throw Exception('Error al agregar a favoritos: $e');
     }
@@ -55,15 +58,13 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
     required String serviceId,
   }) async {
     try {
-      final query = await _firestore
+      // Usar id canónico para eliminación directa
+      final favoriteId = '${userId}_$serviceId';
+      
+      await _firestore
           .collection('favorites')
-          .where('userId', isEqualTo: userId)
-          .where('serviceId', isEqualTo: serviceId)
-          .get();
-
-      for (final doc in query.docs) {
-        await doc.reference.delete();
-      }
+          .doc(favoriteId)
+          .delete();
     } catch (e) {
       throw Exception('Error al quitar de favoritos: $e');
     }
@@ -75,13 +76,15 @@ class FavoriteRepositoryImpl implements FavoriteRepository {
     required String serviceId,
   }) async {
     try {
-      final query = await _firestore
+      // Usar id canónico para verificación directa
+      final favoriteId = '${userId}_$serviceId';
+      
+      final doc = await _firestore
           .collection('favorites')
-          .where('userId', isEqualTo: userId)
-          .where('serviceId', isEqualTo: serviceId)
+          .doc(favoriteId)
           .get();
 
-      return query.docs.isNotEmpty;
+      return doc.exists;
     } catch (e) {
       return false;
     }

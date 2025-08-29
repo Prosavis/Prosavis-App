@@ -5,12 +5,14 @@ class FavoriteEntity extends Equatable {
   final String userId;
   final String serviceId;
   final DateTime createdAt;
+  final DateTime? updatedAt;
 
   const FavoriteEntity({
     required this.id,
     required this.userId,
     required this.serviceId,
     required this.createdAt,
+    this.updatedAt,
   });
 
   @override
@@ -19,6 +21,7 @@ class FavoriteEntity extends Equatable {
         userId,
         serviceId,
         createdAt,
+        updatedAt,
       ];
 
   FavoriteEntity copyWith({
@@ -26,12 +29,14 @@ class FavoriteEntity extends Equatable {
     String? userId,
     String? serviceId,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return FavoriteEntity(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       serviceId: serviceId ?? this.serviceId,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

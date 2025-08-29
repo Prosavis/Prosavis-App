@@ -785,7 +785,7 @@ class FirebaseService {
     try {
       final user = _auth.currentUser;
       if (user == null) {
-        throw AuthException(
+        throw const AuthException(
           code: 'no-current-user',
           message: 'No hay un usuario autenticado actualmente',
         );

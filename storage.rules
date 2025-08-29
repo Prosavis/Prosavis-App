@@ -6,53 +6,64 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     
-    // === IMÁGENES DE PERFIL ===
-    // 🔒 Solo el propietario puede gestionar sus fotos de perfil
-    match /profile_images/{fileName} {
-      // Permitir lectura de imágenes de perfil para mostrar en la app
-      allow read: if true;
-      
-      // ✅ SUBIDA: Solo usuarios autenticados pueden subir sus propias imágenes
-      allow create, update: if request.auth != null && 
-                           fileName.matches('.*' + request.auth.uid + '.*') &&
-                           request.resource.size < 5 * 1024 * 1024 && // Máximo 5MB
-                           request.resource.contentType.matches('image/.*'); // Solo imágenes
-                           
-      // ✅ ELIMINACIÓN: Usuario puede eliminar sus imágenes
-      // O eliminación en cascada desde el backend (sin autenticación)
-      allow delete: if (request.auth != null && fileName.matches('.*' + request.auth.uid + '.*')) ||
-                   request.auth == null; // Permitir eliminación desde backend sin auth
+    // === FUNCIONES HELPER ===
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    function isServiceOwnerById(serviceId) {
+      return isSignedIn() 
+        && firestore.exists(/databases/(default)/documents/services/$(serviceId))
+        && request.auth.uid == firestore.get(/databases/(default)/documents/services/$(serviceId)).data.providerId;
     }
     
-    // === IMÁGENES DE SERVICIOS ===
-    // 🔒 Solo usuarios autenticados pueden gestionar las imágenes de servicios
-    match /service_images/{fileName} {
-      // Permitir lectura pública de imágenes de servicios para navegación
+    // === IMÁGENES DE PERFIL ===
+    match /profile_images/{fileName} {
       allow read: if true;
-      
-      // ✅ SUBIDA/ACTUALIZACIÓN: Solo usuarios autenticados pueden subir imágenes de servicios
-      allow create, update: if request.auth != null && 
-                           request.resource != null &&
-                           request.resource.size < 10 * 1024 * 1024 && // Máximo 10MB para servicios
-                           request.resource.contentType != null &&
-                           request.resource.contentType.matches('image/.*') && // Solo imágenes
-                           // Validar formatos permitidos (JPEG, PNG, WebP)
-                           (request.resource.contentType == 'image/jpeg' ||
-                            request.resource.contentType == 'image/png' ||
-                            request.resource.contentType == 'image/webp' ||
-                            request.resource.contentType == 'image/jpg');
-      
-      // ✅ ELIMINACIÓN: Cualquier proceso puede eliminar imágenes de servicios
-      // (Usuario autenticado o eliminación en cascada desde el backend)
-      allow delete: if true;
+
+      allow create, update: if isSignedIn()
+        && fileName.matches('.*' + request.auth.uid + '.*')
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('image/.*');
+
+      // Solo dueño (sin anónimo)
+      allow delete: if isSignedIn() && fileName.matches('.*' + request.auth.uid + '.*');
+    }
+
+    // === IMÁGENES DE SERVICIOS ===
+    // ✅ (sin borrado abierto)
+    // Parche inmediato sin cambiar rutas: exige que el archivo lleve metadato serviceId y valida contra Firestore.
+    match /service_images/{fileName} {
+      allow read: if true;
+
+      // Requiere metadata.serviceId y propiedad del servicio
+      allow create, update: if isSignedIn()
+        && request.resource != null
+        && request.resource.contentType != null
+        && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)')
+        && request.resource.size < 10 * 1024 * 1024
+        && request.resource.metadata.serviceId != null
+        && isServiceOwnerById(request.resource.metadata.serviceId);
+
+      // Borrado solo por dueño del servicio (lee serviceId desde metadata existente)
+      allow delete: if isSignedIn()
+        && resource.metadata.serviceId != null
+        && isServiceOwnerById(resource.metadata.serviceId);
     }
     
     // === DOCUMENTOS Y CERTIFICADOS ===
-    // Para futuras funcionalidades de verificación
+    // Evita SVG (XSS) en documents
     match /documents/{userId}/{fileName} {
-      allow read, write: if request.auth != null && 
-                        request.auth.uid == userId &&
-                        request.resource.size < 2 * 1024 * 1024; // Máximo 2MB para documentos
+      allow read, write: if isSignedIn()
+        && request.auth.uid == userId
+        && request.resource.size < 2 * 1024 * 1024
+        && (
+          request.resource.contentType.matches('application/pdf')
+          || (
+            request.resource.contentType.matches('image/.*')
+            && !request.resource.contentType.matches('image/svg\\+xml')
+          )
+        );
     }
     
     // 🚫 Denegar acceso a todo lo demás por defecto
