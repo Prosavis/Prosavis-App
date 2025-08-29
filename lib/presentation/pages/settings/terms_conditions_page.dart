@@ -120,7 +120,7 @@ class _TermsConditionsPageState extends State<TermsConditionsPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Última actualización: 1 de enero de 2024',
+                    'Última actualización: 30 de agosto de 2025',
                     style: GoogleFonts.inter(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -181,10 +181,12 @@ class _TermsConditionsPageState extends State<TermsConditionsPage>
 
             _buildSection(
               '6. Pagos y Facturación',
-              '• Los pagos se procesan a través de sistemas seguros\n'
-              '• ${AppConstants.appName} puede cobrar comisiones por el uso de la plataforma\n'
-              '• Los reembolsos están sujetos a nuestra política de reembolsos\n'
-              '• Todos los precios incluyen impuestos aplicables',
+              '• ${AppConstants.appName} actúa únicamente como intermediario digital entre clientes y proveedores\n'
+              '• Todos los pagos, transacciones, facturación y reembolsos son responsabilidad directa entre el cliente y el proveedor de servicios\n'
+              '• ${AppConstants.appName} no procesa, administra ni es responsable de ningún tipo de transacción económica\n'
+              '• ${AppConstants.appName} se exonera completamente de cualquier responsabilidad relacionada con pagos, disputas económicas, reembolsos o problemas de facturación\n'
+              '• Los precios, métodos de pago y políticas de reembolso son establecidos exclusivamente por cada proveedor\n'
+              '• Cualquier disputa económica debe resolverse directamente entre el cliente y el proveedor, sin intervención de ${AppConstants.appName}',
             ),
 
             _buildSection(
@@ -436,7 +438,7 @@ Para ver los términos completos, descarga nuestra aplicación.
               ),
               pw.SizedBox(height: 20),
               pw.Paragraph(
-                text: 'Última actualización: 1 de enero de 2024',
+                text: 'Última actualización: 30 de agosto de 2025',
                 style: const pw.TextStyle(fontSize: 12),
               ),
               pw.SizedBox(height: 20),
@@ -462,7 +464,21 @@ Para ver los términos completos, descarga nuestra aplicación.
               _buildPDFSection('5. Servicios y Proveedores',
                 '• ${AppConstants.appName} no presta directamente los servicios listados\n• Los proveedores son contratistas independientes\n• No garantizamos la calidad de los servicios prestados\n• Los usuarios deben evaluar directamente a los proveedores\n• Las disputas se resuelven directamente entre usuarios y proveedores'),
               
-              // Agregar más secciones según sea necesario
+              _buildPDFSection('6. Pagos y Facturación',
+                '• ${AppConstants.appName} actúa únicamente como intermediario digital entre clientes y proveedores\n• Todos los pagos, transacciones, facturación y reembolsos son responsabilidad directa entre el cliente y el proveedor de servicios\n• ${AppConstants.appName} no procesa, administra ni es responsable de ningún tipo de transacción económica\n• ${AppConstants.appName} se exonera completamente de cualquier responsabilidad relacionada con pagos, disputas económicas, reembolsos o problemas de facturación\n• Los precios, métodos de pago y políticas de reembolso son establecidos exclusivamente por cada proveedor\n• Cualquier disputa económica debe resolverse directamente entre el cliente y el proveedor, sin intervención de ${AppConstants.appName}'),
+              
+              _buildPDFSection('7. Privacidad y Datos',
+                'Su privacidad es importante para nosotros. El manejo de sus datos personales se rige por nuestra Política de Privacidad, que forma parte integral de estos términos.'),
+              
+              _buildPDFSection('8. Limitación de Responsabilidad',
+                '${AppConstants.appName} no será responsable por:\n• Daños directos o indirectos derivados del uso de la plataforma\n• Pérdidas económicas por servicios no prestados o deficientes\n• Interrupciones del servicio por mantenimiento o fallas técnicas\n• Acciones de terceros (proveedores o usuarios)'),
+              
+              _buildPDFSection('9. Modificaciones',
+                'Nos reservamos el derecho de modificar estos términos en cualquier momento. Los cambios entrarán en vigor inmediatamente después de su publicación en la aplicación.'),
+              
+              _buildPDFSection('10. Terminación',
+                'Podemos suspender o terminar su cuenta si:\n• Viola estos términos y condiciones\n• Usa la plataforma de manera fraudulenta\n• Su cuenta permanece inactiva por períodos prolongados'),
+              
               _buildPDFSection('11. Ley Aplicable',
                 'Estos términos se rigen por las leyes de la República de Colombia. Cualquier disputa será resuelta en los tribunales competentes de Colombia.'),
               

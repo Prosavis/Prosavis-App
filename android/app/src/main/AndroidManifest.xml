@@ -78,5 +78,73 @@
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        
+        <!-- WhatsApp queries para permitir la detección e interacción con WhatsApp -->
+        <package android:name="com.whatsapp" />
+        <package android:name="com.whatsapp.w4b" />
+        
+        <!-- Instagram queries -->
+        <package android:name="com.instagram.android" />
+        
+        <!-- TikTok queries -->
+        <package android:name="com.ss.android.ugc.trill" />
+        <package android:name="com.zhiliaoapp.musically" />
+        
+        <!-- X (Twitter) queries -->
+        <package android:name="com.twitter.android" />
+        
+        <!-- Para abrir enlaces de WhatsApp -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="wa.me" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="api.whatsapp.com" />
+        </intent>
+        
+        <!-- Para abrir enlaces de Instagram -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="instagram.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="www.instagram.com" />
+        </intent>
+        
+        <!-- Para abrir enlaces de TikTok -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="tiktok.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="www.tiktok.com" />
+        </intent>
+        
+        <!-- Para abrir enlaces de X (Twitter) -->
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="x.com" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https"
+                  android:host="twitter.com" />
+        </intent>
+        
+        <!-- Para comunicación directa con WhatsApp -->
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="smsto" />
+        </intent>
     </queries>
 </manifest>

@@ -18,6 +18,7 @@ import '../../blocs/home/home_state.dart';
 
 import '../../widgets/common/service_card.dart';
 import '../../widgets/common/auth_required_dialog.dart';
+import '../../widgets/dialogs/location_permission_dialog.dart';
 import '../../widgets/common/press_scale.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
@@ -240,6 +241,15 @@ class _HomePageState extends State<HomePage>
     );
   }
 
+  /// Muestra el dialog de configuración de ubicación
+  void _showLocationDialog() async {
+    final result = await LocationPermissionDialog.show(context);
+    if (result == true && mounted) {
+      // Si se configuró la ubicación correctamente, refrescar
+      _autoDetectLocation();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
@@ -348,8 +358,7 @@ class _HomePageState extends State<HomePage>
                     scale: _locationHighlightAnimation.value,
                     child: GestureDetector(
                       onTap: () {
-                        // La gestión de direcciones ya no está disponible
-                        // Solo se muestra la ubicación GPS para cálculos de distancia
+                        _showLocationDialog();
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -449,7 +458,7 @@ class _HomePageState extends State<HomePage>
                     scale: _locationHighlightAnimation.value,
                     child: GestureDetector(
                       onTap: () {
-                        _showAuthRequiredDialog('gestionar direcciones');
+                        _showLocationDialog();
                       },
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

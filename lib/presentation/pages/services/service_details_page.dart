@@ -1778,26 +1778,57 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
     final uri = Uri.parse(whatsappUrl);
     
     try {
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      // Intentar abrir WhatsApp con múltiples métodos
+      final canLaunch = await canLaunchUrl(uri);
+      
+      if (canLaunch) {
+        final success = await launchUrl(
+          uri, 
+          mode: LaunchMode.externalApplication,
+        );
+        
+        if (!success && mounted) {
+          _showWhatsAppError('No se pudo abrir WhatsApp. Intenta instalarlo desde Google Play Store.');
+        }
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('No se pudo abrir WhatsApp. Asegúrate de tenerlo instalado.'),
-            ),
-          );
+        // Intentar con esquema alternativo para WhatsApp
+        final whatsappUri = Uri.parse('whatsapp://send?phone=$formattedNumber&text=$message');
+        final canLaunchWhatsapp = await canLaunchUrl(whatsappUri);
+        
+        if (canLaunchWhatsapp) {
+          final success = await launchUrl(whatsappUri, mode: LaunchMode.externalApplication);
+          if (!success && mounted) {
+            _showWhatsAppError('No se pudo abrir WhatsApp. Verifica que esté instalado.');
+          }
+        } else {
+          if (mounted) {
+            _showWhatsAppError(
+              'WhatsApp no está disponible. Por favor:\n'
+              '1. Verifica que WhatsApp esté instalado\n'
+              '2. Reinicia la aplicación\n'
+              '3. Si el problema persiste, reinstala WhatsApp'
+            );
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al intentar abrir WhatsApp.'),
-          ),
-        );
+        _showWhatsAppError('Error al intentar abrir WhatsApp: ${e.toString()}');
       }
     }
+  }
+  
+  void _showWhatsAppError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 4),
+        action: SnackBarAction(
+          label: 'Reintentar',
+          onPressed: _contactProvider,
+        ),
+      ),
+    );
   }
 
   void _callPhone(String phone) async {
@@ -1823,41 +1854,162 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   String _normalizeHandle(String raw) {
     var handle = raw.trim();
     if (handle.startsWith('http')) return handle;
-    if (handle.startsWith('@')) handle = handle.substring(1);
+    
+    // Remover todos los símbolos @ (al principio, al final, o en medio)
+    handle = handle.replaceAll('@', '');
+    
+    // Remover espacios extras después de limpiar
+    handle = handle.trim();
+    
     return handle;
   }
 
   Future<void> _openInstagram() async {
     final raw = _currentService!.instagram!;
     final handle = _normalizeHandle(raw);
-    final url = handle.startsWith('http') ? handle : 'https://instagram.com/$handle';
-    final uri = Uri.parse(url);
-    if (!mounted) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final webUrl = handle.startsWith('http') ? handle : 'https://instagram.com/$handle';
+    
+    try {
+      // Intentar con aplicación nativa de Instagram primero
+      final nativeUri = Uri.parse('instagram://user?username=$handle');
+      final canLaunchNative = await canLaunchUrl(nativeUri);
+      
+      if (canLaunchNative) {
+        final success = await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+        if (!success && mounted) {
+          _showSocialMediaError('Instagram', 'No se pudo abrir la aplicación de Instagram.');
+        }
+      } else {
+        // Fallback a versión web
+        final webUri = Uri.parse(webUrl);
+        final canLaunchWeb = await canLaunchUrl(webUri);
+        
+        if (canLaunchWeb) {
+          final success = await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          if (!success && mounted) {
+            _showSocialMediaError('Instagram', 'No se pudo abrir Instagram en el navegador.');
+          }
+        } else {
+          if (mounted) {
+            _showSocialMediaError(
+              'Instagram', 
+              'Instagram no está disponible. Por favor verifica que esté instalado o intenta desde el navegador.'
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSocialMediaError('Instagram', 'Error al intentar abrir Instagram: ${e.toString()}');
+      }
     }
   }
 
   Future<void> _openX() async {
     final raw = _currentService!.xProfile!;
     final handle = _normalizeHandle(raw);
-    final url = handle.startsWith('http') ? handle : 'https://x.com/$handle';
-    final uri = Uri.parse(url);
-    if (!mounted) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final webUrl = handle.startsWith('http') ? handle : 'https://x.com/$handle';
+    
+    try {
+      // Intentar con aplicación nativa de X/Twitter primero
+      final nativeUri = Uri.parse('twitter://user?screen_name=$handle');
+      final canLaunchNative = await canLaunchUrl(nativeUri);
+      
+      if (canLaunchNative) {
+        final success = await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+        if (!success && mounted) {
+          _showSocialMediaError('X', 'No se pudo abrir la aplicación de X.');
+        }
+      } else {
+        // Fallback a versión web
+        final webUri = Uri.parse(webUrl);
+        final canLaunchWeb = await canLaunchUrl(webUri);
+        
+        if (canLaunchWeb) {
+          final success = await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          if (!success && mounted) {
+            _showSocialMediaError('X', 'No se pudo abrir X en el navegador.');
+          }
+        } else {
+          if (mounted) {
+            _showSocialMediaError(
+              'X', 
+              'X no está disponible. Por favor verifica que esté instalado o intenta desde el navegador.'
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSocialMediaError('X', 'Error al intentar abrir X: ${e.toString()}');
+      }
     }
   }
 
   Future<void> _openTikTok() async {
     final raw = _currentService!.tiktok!;
     final handle = _normalizeHandle(raw);
-    final clean = handle.startsWith('http') ? handle : 'https://www.tiktok.com/@$handle';
-    final uri = Uri.parse(clean);
-    if (!mounted) return;
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    final webUrl = handle.startsWith('http') ? handle : 'https://www.tiktok.com/@$handle';
+    
+    try {
+      // Intentar con aplicación nativa de TikTok primero
+      final nativeUri = Uri.parse('tiktok://user?username=$handle');
+      final canLaunchNative = await canLaunchUrl(nativeUri);
+      
+      if (canLaunchNative) {
+        final success = await launchUrl(nativeUri, mode: LaunchMode.externalApplication);
+        if (!success && mounted) {
+          _showSocialMediaError('TikTok', 'No se pudo abrir la aplicación de TikTok.');
+        }
+      } else {
+        // Fallback a versión web
+        final webUri = Uri.parse(webUrl);
+        final canLaunchWeb = await canLaunchUrl(webUri);
+        
+        if (canLaunchWeb) {
+          final success = await launchUrl(webUri, mode: LaunchMode.externalApplication);
+          if (!success && mounted) {
+            _showSocialMediaError('TikTok', 'No se pudo abrir TikTok en el navegador.');
+          }
+        } else {
+          if (mounted) {
+            _showSocialMediaError(
+              'TikTok', 
+              'TikTok no está disponible. Por favor verifica que esté instalado o intenta desde el navegador.'
+            );
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSocialMediaError('TikTok', 'Error al intentar abrir TikTok: ${e.toString()}');
+      }
     }
+  }
+  
+  void _showSocialMediaError(String platform, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$platform: $message'),
+        duration: const Duration(seconds: 3),
+        action: SnackBarAction(
+          label: 'Reintentar',
+          onPressed: () {
+            switch (platform) {
+              case 'Instagram':
+                _openInstagram();
+                break;
+              case 'X':
+                _openX();
+                break;
+              case 'TikTok':
+                _openTikTok();
+                break;
+            }
+          },
+        ),
+      ),
+    );
   }
 
 

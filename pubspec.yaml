@@ -94,5 +94,6 @@ flutter:
 # Configuración para generar iconos de la app
 flutter_launcher_icons:
   android: "ic_launcher"
-  image_path: "assets/images/logo-color.png"
+  ios: true
+  image_path: "assets/images/logo-no-background.png"
   min_sdk_android: 21

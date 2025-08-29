@@ -32,6 +32,7 @@ import 'presentation/pages/settings/language_settings_page.dart';
 import 'presentation/pages/settings/edit_profile_page.dart';
 import 'presentation/pages/address/map_picker_page.dart';
 import 'presentation/pages/settings/terms_conditions_page.dart';
+import 'presentation/pages/settings/privacy_policy_page.dart';
 import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
 import 'presentation/pages/notifications/notifications_page.dart';
@@ -208,6 +209,10 @@ final _router = GoRouter(
     GoRoute(
       path: '/settings/terms',
       pageBuilder: (context, state) => _fadeThroughPage(child: const TermsConditionsPage()),
+    ),
+    GoRoute(
+      path: '/settings/privacy',
+      pageBuilder: (context, state) => _fadeThroughPage(child: const PrivacyPolicyPage()),
     ),
     GoRoute(
       path: '/search',
