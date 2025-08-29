@@ -79,21 +79,22 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/
-    - assets/icons/
+    - assets/branding/logos/
+    - assets/icons/services/
+    - assets/icons/social/
     - assets/animations/
     - assets/fonts/
-    - assets/sounds/
+    - assets/audio/transitions/
 
   fonts:
     - family: Archivo
       fonts:
-        - asset: assets/fonts/Archivo Black.ttf
+        - asset: assets/fonts/archivo-black.ttf
           weight: 900
 
 # Configuración para generar iconos de la app
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/images/logo-no-background.png"
+  image_path: "assets/branding/logos/logo-no-background.png"
   min_sdk_android: 21

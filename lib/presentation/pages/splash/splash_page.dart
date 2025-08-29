@@ -181,7 +181,7 @@ class _SplashPageState extends State<SplashPage>
       width: 280,
       height: 280,
       child: Image.asset(
-        'assets/images/logo-no-background.png',
+        'assets/branding/logos/logo-no-background.png',
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
       ),
