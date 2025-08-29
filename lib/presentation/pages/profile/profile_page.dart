@@ -16,6 +16,8 @@ import '../../blocs/profile/profile_bloc.dart';
 import '../../blocs/profile/profile_event.dart';
 import '../../blocs/profile/profile_state.dart';
 import '../../widgets/common/image_picker_bottom_sheet.dart';
+import '../../widgets/common/delete_account_dialog.dart';
+import '../../widgets/common/auth_error_dialog.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -68,8 +70,22 @@ class _ProfilePageState extends State<ProfilePage>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthError) {
+            AuthErrorDialog.show(
+              context,
+              errorCode: state.errorCode,
+              customMessage: state.message,
+              isSignUp: state.isSignUp,
+            );
+          } else if (state is AuthUnauthenticated) {
+            // Después de eliminar cuenta, navegar al login
+            context.go('/auth/login');
+          }
+        },
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
           return SafeArea(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -83,6 +99,7 @@ class _ProfilePageState extends State<ProfilePage>
             ),
           );
         },
+        ),
       ),
     );
   }
@@ -285,6 +302,18 @@ class _ProfilePageState extends State<ProfilePage>
                 title: 'Cerrar Sesión',
                 subtitle: 'Salir de tu cuenta',
                 onTap: () => _showLogoutDialog(),
+                showArrow: false,
+                isDestructive: true,
+              ),
+
+              const SizedBox(height: 12),
+              
+              // Borrar Cuenta
+              _buildOptionTile(
+                icon: Symbols.delete_forever,
+                title: 'Borrar Cuenta',
+                subtitle: 'Eliminar permanentemente tu cuenta',
+                onTap: () => _showDeleteAccountDialog(authState),
                 showArrow: false,
                 isDestructive: true,
               ),
@@ -673,5 +702,17 @@ class _ProfilePageState extends State<ProfilePage>
     );
   }
 
-
+  void _showDeleteAccountDialog(AuthState authState) {
+    if (authState is AuthAuthenticated) {
+      DeleteAccountDialog.show(
+        context,
+        onConfirm: () {
+          // Disparar el evento para eliminar la cuenta
+          context.read<AuthBloc>().add(
+            AuthDeleteAccountRequested(userId: authState.user.id),
+          );
+        },
+      );
+    }
+  }
 }

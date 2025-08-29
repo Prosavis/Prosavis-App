@@ -325,8 +325,10 @@ class _HomePageState extends State<HomePage>
               },
               icon: const Icon(
                 Symbols.support_agent,
-                color: AppTheme.textSecondary,
+                color: AppTheme.accentColor,
+                size: 28,
               ),
+              tooltip: 'Soporte',
             ),
           ],
         ),
@@ -425,10 +427,12 @@ class _HomePageState extends State<HomePage>
               onPressed: () {
                 context.push('/support');
               },
-              icon: Icon(
+              icon: const Icon(
                 Symbols.support_agent,
-                color: AppTheme.getTextSecondary(context),
+                color: AppTheme.accentColor,
+                size: 28,
               ),
+              tooltip: 'Soporte',
             ),
           ],
         ),

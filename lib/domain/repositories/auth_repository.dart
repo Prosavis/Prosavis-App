@@ -10,6 +10,7 @@ abstract class AuthRepository {
   Future<UserEntity?> verifyPhoneCode(String verificationId, String smsCode, {String? name});
   Future<void> sendPasswordResetEmail(String email);
   Future<void> signOut();
+  Future<void> deleteAccount(String userId);
   Stream<UserEntity?> get authStateChanges;
   
   // === MÉTODOS DE LIMPIEZA Y DIAGNÓSTICO ===

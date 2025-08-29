@@ -11,6 +11,7 @@ import 'package:prosavis/domain/usecases/auth/sign_up_with_email_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_phone_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/verify_phone_code_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/password_reset_usecase.dart';
+import 'package:prosavis/domain/usecases/auth/delete_account_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/enroll_mfa_usecase.dart';
 import 'package:prosavis/domain/usecases/auth/sign_in_with_mfa_usecase.dart';
 import 'package:prosavis/domain/repositories/service_repository.dart';
@@ -92,6 +93,7 @@ Future<void> init() async {
     sl.registerLazySingleton<SignInWithPhoneUseCase>(() => SignInWithPhoneUseCase(sl<AuthRepository>()));
     sl.registerLazySingleton<VerifyPhoneCodeUseCase>(() => VerifyPhoneCodeUseCase(sl<AuthRepository>()));
     sl.registerLazySingleton<PasswordResetUseCase>(() => PasswordResetUseCase(sl<AuthRepository>()));
+    sl.registerLazySingleton<DeleteAccountUseCase>(() => DeleteAccountUseCase(sl<AuthRepository>()));
     sl.registerLazySingleton<EnrollMFAUseCase>(() => EnrollMFAUseCase(sl<AuthRepository>()));
     sl.registerLazySingleton<SignInWithMFAUseCase>(() => SignInWithMFAUseCase(sl<AuthRepository>()));
     
@@ -142,6 +144,7 @@ Future<void> init() async {
       signInWithPhoneUseCase: sl<SignInWithPhoneUseCase>(),
       verifyPhoneCodeUseCase: sl<VerifyPhoneCodeUseCase>(),
       passwordResetUseCase: sl<PasswordResetUseCase>(),
+      deleteAccountUseCase: sl<DeleteAccountUseCase>(),
     ));
     
     sl.registerFactory(() => SearchBloc(sl<SearchServicesUseCase>()));

@@ -8,6 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../widgets/common/auth_error_dialog.dart';
 
 class ForgotPasswordPage extends StatefulWidget {
   const ForgotPasswordPage({super.key});
@@ -75,15 +76,11 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage>
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.message),
-                backgroundColor: AppTheme.errorColor,
-                behavior: SnackBarBehavior.floating,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
+            AuthErrorDialog.show(
+              context,
+              errorCode: state.errorCode,
+              customMessage: state.message,
+              isSignUp: state.isSignUp,
             );
           } else if (state is AuthPasswordResetSent) {
             _showSuccessDialog(state.email);

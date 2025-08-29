@@ -108,15 +108,28 @@ pubspec.lock
 # IDE-specific files
 .idea/
 .vscode/
-# Secrets
+# Secrets y archivos de configuración sensibles
 !/secrets/
 secrets.json
-# Environment files
+*secret*.json
+*Secret*.json
+*credential*.json
+*Credential*.json
+api_keys.json
+config_keys.json
+# Environment files y configuraciones sensibles
 .env
+.env.local
+.env.development
+.env.production
+*.env
+client_secret_*.json
+google-services.json.bak
+GoogleService-Info.plist.bak
 # Android keystores (no versionar claves privadas)
 android/keystore/
 android/keystore/*.jks
-# Other
+# Other y archivos temporales
 *.iml
 *.ipr
 *.iws
@@ -128,9 +141,12 @@ android/keystore/*.jks
 *#
 *.log
 *.DS_Store
-/android/app/google-services.json
+temp_*
+*_temp.*
+*debug*
+firebase-debug.log
 .firebase/
 .firebaserc
-firebase.json
+/android/app/google-services.json
 /ios/Runner/GoogleService-Info.plist
 /lib/firebase_options.dart

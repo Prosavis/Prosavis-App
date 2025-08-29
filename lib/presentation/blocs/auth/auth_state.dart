@@ -47,9 +47,11 @@ class AuthPasswordResetSent extends AuthState {
 
 class AuthError extends AuthState {
   final String message;
+  final String? errorCode;
+  final bool isSignUp;
 
-  const AuthError(this.message);
+  const AuthError(this.message, {this.errorCode, this.isSignUp = false});
 
   @override
-  List<Object> get props => [message];
+  List<Object?> get props => [message, errorCode, isSignUp];
 } 

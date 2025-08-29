@@ -15,8 +15,9 @@ service cloud.firestore {
                    request.resource.data.photoUrl.matches('https://(firebasestorage\\.googleapis\\.com|lh3\\.googleusercontent\\.com|lh4\\.googleusercontent\\.com|lh5\\.googleusercontent\\.com|lh6\\.googleusercontent\\.com|yt3\\.ggpht\\.com)/.*'));
       
       // ✅ ELIMINACIÓN EN CASCADA: Solo el propietario puede eliminar su cuenta
-      // La eliminación en cascada se maneja en el backend
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // O eliminación en cascada desde el backend (sin autenticación)
+      allow delete: if (request.auth != null && request.auth.uid == userId) ||
+                   request.auth == null;
     }
     
     // === SERVICIOS ===
@@ -58,8 +59,9 @@ service cloud.firestore {
                       request.resource.data.images.size() <= 4));
 
       // ✅ ELIMINAR SERVICIO: Solo el propietario (sin validaciones de contenido)
-      allow delete: if request.auth != null && 
-                   request.auth.uid == resource.data.providerId;
+      // O eliminación en cascada desde el backend (sin autenticación)  
+      allow delete: if (request.auth != null && request.auth.uid == resource.data.providerId) ||
+                   request.auth == null;
       
       // === RESEÑAS DE SERVICIOS (SUBCOLLECCIÓN) ===
       // ✅ NAVEGACIÓN PÚBLICA: Cualquiera puede leer reseñas de servicios

@@ -6,6 +6,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 import 'dart:developer' as developer;
 import 'package:prosavis/firebase_options.dart';
 import '../../core/config/app_config.dart';
+import '../../core/exceptions/auth_exceptions.dart';
 
 class FirebaseService {
   static bool _isInitialized = false;
@@ -270,39 +271,11 @@ class FirebaseService {
     } on FirebaseAuthException catch (e) {
       developer.log('⚠️ Error en signInWithEmail: ${e.code} - ${e.message}');
       
-      // Manejo específico de errores de Firebase Auth
-      switch (e.code) {
-        case 'user-not-found':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'No hay ningún usuario registrado con este correo electrónico.',
-          );
-        case 'wrong-password':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'Contraseña incorrecta.',
-          );
-        case 'invalid-email':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El formato del correo electrónico no es válido.',
-          );
-        case 'user-disabled':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'Esta cuenta de usuario ha sido deshabilitada.',
-          );
-        case 'too-many-requests':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'Demasiados intentos fallidos. Intenta de nuevo más tarde.',
-          );
-        default:
-          rethrow;
-      }
+      // Lanzar nuestra AuthException personalizada que mantenga el código de Firebase
+      throw AuthException.fromFirebaseAuthException(e);
     } catch (e) {
       developer.log('⚠️ Error inesperado en signInWithEmail: $e');
-      rethrow;
+      throw AuthException.fromException(e as Exception);
     }
   }
 
@@ -319,34 +292,11 @@ class FirebaseService {
     } on FirebaseAuthException catch (e) {
       developer.log('⚠️ Error en signUpWithEmail: ${e.code} - ${e.message}');
       
-      // Manejo específico de errores
-      switch (e.code) {
-        case 'weak-password':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'La contraseña debe tener al menos 6 caracteres.',
-          );
-        case 'email-already-in-use':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'Ya existe una cuenta registrada con este correo electrónico.',
-          );
-        case 'invalid-email':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El formato del correo electrónico no es válido.',
-          );
-        case 'operation-not-allowed':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El registro con email/contraseña no está habilitado.',
-          );
-        default:
-          rethrow;
-      }
+      // Lanzar nuestra AuthException personalizada que mantenga el código de Firebase
+      throw AuthException.fromFirebaseAuthException(e);
     } catch (e) {
       developer.log('⚠️ Error inesperado en signUpWithEmail: $e');
-      rethrow;
+      throw AuthException.fromException(e as Exception);
     }
   }
 
@@ -429,29 +379,11 @@ class FirebaseService {
     } on FirebaseAuthException catch (e) {
       developer.log('⚠️ Error en verifyPhoneCode: ${e.code} - ${e.message}');
       
-      // Manejo específico de errores
-      switch (e.code) {
-        case 'invalid-verification-code':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El código de verificación es incorrecto.',
-          );
-        case 'invalid-verification-id':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El ID de verificación no es válido.',
-          );
-        case 'session-expired':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El código ha expirado. Solicita uno nuevo.',
-          );
-        default:
-          rethrow;
-      }
+      // Lanzar nuestra AuthException personalizada que mantenga el código de Firebase
+      throw AuthException.fromFirebaseAuthException(e);
     } catch (e) {
       developer.log('⚠️ Error inesperado en verifyPhoneCode: $e');
-      rethrow;
+      throw AuthException.fromException(e as Exception);
     }
   }
 
@@ -463,29 +395,11 @@ class FirebaseService {
     } on FirebaseAuthException catch (e) {
       developer.log('⚠️ Error al enviar email de recuperación: ${e.code} - ${e.message}');
       
-      // Manejo específico de errores
-      switch (e.code) {
-        case 'user-not-found':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'No hay ningún usuario registrado con este correo electrónico.',
-          );
-        case 'invalid-email':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'El formato del correo electrónico no es válido.',
-          );
-        case 'too-many-requests':
-          throw FirebaseAuthException(
-            code: e.code,
-            message: 'Demasiadas solicitudes. Intenta de nuevo más tarde.',
-          );
-        default:
-          rethrow;
-      }
+      // Lanzar nuestra AuthException personalizada que mantenga el código de Firebase
+      throw AuthException.fromFirebaseAuthException(e);
     } catch (e) {
       developer.log('⚠️ Error inesperado al enviar email de recuperación: $e');
-      rethrow;
+      throw AuthException.fromException(e as Exception);
     }
   }
 
@@ -863,6 +777,44 @@ class FirebaseService {
       developer.log('✅ Caché de Google Sign-In limpiado');
     } catch (e) {
       developer.log('⚠️ Error al limpiar caché: $e');
+    }
+  }
+
+  /// Eliminar completamente la cuenta del usuario de Firebase Auth
+  Future<void> deleteUserAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw AuthException(
+          code: 'no-current-user',
+          message: 'No hay un usuario autenticado actualmente',
+        );
+      }
+
+      developer.log('🗑️ Eliminando cuenta de Firebase Auth para: ${user.email}');
+      
+      // Eliminar la cuenta del usuario de Firebase Auth
+      await user.delete();
+      
+      developer.log('✅ Cuenta eliminada exitosamente de Firebase Auth');
+      
+    } on FirebaseAuthException catch (e) {
+      developer.log('⚠️ Error al eliminar cuenta de Firebase Auth: ${e.code} - ${e.message}');
+      
+      // Si requiere re-autenticación reciente, lanzar excepción específica
+      if (e.code == 'requires-recent-login') {
+        throw AuthException(
+          code: e.code,
+          message: 'Por seguridad, necesitas volver a iniciar sesión antes de eliminar tu cuenta.',
+          originalCode: e.code,
+        );
+      }
+      
+      // Lanzar nuestra AuthException personalizada
+      throw AuthException.fromFirebaseAuthException(e);
+    } catch (e) {
+      developer.log('⚠️ Error inesperado al eliminar cuenta: $e');
+      throw AuthException.fromException(e as Exception);
     }
   }
 }

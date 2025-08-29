@@ -2,7 +2,7 @@
 // ignore_for_file: lines_longer_than_80_chars, avoid_classes_with_only_static_members
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -16,28 +16,17 @@ import 'package:flutter/foundation.dart'
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       case TargetPlatform.linux:
         throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
+          'DefaultFirebaseOptions have not been configured for desktop platforms - '
+          'this app only supports Android and iOS.',
         );
       default:
         throw UnsupportedError(
@@ -46,33 +35,22 @@ class DefaultFirebaseOptions {
     }
   }
 
-  // TODO: Reemplaza estos valores con los reales de tu proyecto Firebase
-  // Para obtener la configuración real, ejecuta: flutterfire configure
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
-    appId: '1:967024953650:web:abcdef123456', // Reemplaza con tu App ID real
-    messagingSenderId: '967024953650',
-    projectId: 'prosavis', // Reemplaza con tu Project ID real
-    authDomain: 'prosavis.firebaseapp.com', // Reemplaza con tu Auth Domain real
-    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k', // Reemplaza con tu API Key real
-    appId: '1:967024953650:android:1fe7d2346bfbf313af2f2b', // Reemplaza con tu App ID real
+    apiKey: 'AIzaSyCoUwRumHjbiFH0dDTj162kgXDaTUfQb2k',
+    appId: '1:967024953650:android:c943affc7697bfceaf2f2b',
     messagingSenderId: '967024953650',
-    projectId: 'prosavis', // Reemplaza con tu Project ID real
-    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
+    projectId: 'prosavis',
+    storageBucket: 'prosavis.firebasestorage.app',
     authDomain: 'prosavis.firebaseapp.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBPpEb_XZIdZTPhJbJTffv0bNb-gmaUVpo', // Reemplaza con tu API Key real
-    appId: '1:967024953650:ios:c0927334cc143facaf2f2b', // Reemplaza con tu App ID real
+    apiKey: 'AIzaSyBPpEb_XZIdZTPhJbJTffv0bNb-gmaUVpo',
+    appId: '1:967024953650:ios:c0927334cc143facaf2f2b',
     messagingSenderId: '967024953650',
-    projectId: 'prosavis', // Reemplaza con tu Project ID real
-    storageBucket: 'prosavis.firebasestorage.app', // Reemplaza con tu Storage Bucket real
+    projectId: 'prosavis',
+    storageBucket: 'prosavis.firebasestorage.app',
     authDomain: 'prosavis.firebaseapp.com',
-    iosBundleId: 'com.example.myapp', // Reemplaza con tu Bundle ID real
+    iosBundleId: 'com.prosavis.app',
   );
 }

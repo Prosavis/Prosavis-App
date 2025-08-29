@@ -396,4 +396,25 @@ class AuthRepositoryImpl implements AuthRepository {
   bool hasMultiFactorEnabled() {
     return _firebaseService.hasMultiFactorEnabled();
   }
+
+  @override
+  Future<void> deleteAccount(String userId) async {
+    try {
+      developer.log('🗑️ Iniciando proceso de eliminación de cuenta...');
+      
+      // PASO 1: Eliminar todos los datos del usuario en Firestore
+      await _firestoreService.deleteUserAccount(userId);
+      developer.log('✅ Datos de Firestore eliminados correctamente');
+      
+      // PASO 2: Eliminar la cuenta de Firebase Auth
+      await _firebaseService.deleteUserAccount();
+      developer.log('✅ Cuenta de Firebase Auth eliminada');
+      
+      developer.log('🎉 Cuenta eliminada completamente - proceso finalizado');
+      
+    } catch (e) {
+      developer.log('💥 Error durante eliminación de cuenta: $e');
+      rethrow;
+    }
+  }
 }

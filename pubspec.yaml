@@ -70,9 +70,6 @@ dependencies:
 
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.1
 
@@ -96,5 +93,11 @@ flutter:
 flutter_launcher_icons:
   android: "ic_launcher"
   ios: true
-  image_path: "assets/branding/logos/logo-no-background.png"
+  # Usar el logo deseado convertido a PNG
+  image_path: "assets/branding/logos/logo-icon-clean.png"
   min_sdk_android: 21
+  # Configuración para iconos adaptativos en Android
+  adaptive_icon_background: "#002446"
+  adaptive_icon_foreground: "assets/branding/logos/logo-icon-clean.png"
+  # Remover canal alfa para iOS App Store
+  remove_alpha_ios: true

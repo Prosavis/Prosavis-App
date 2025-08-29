@@ -55,11 +55,13 @@ import 'core/services/haptics_service.dart';
 void main() async {
   // Optimización: Defer first frame para inicialización más suave
   WidgetsFlutterBinding.ensureInitialized();
-  // Cargar variables de entorno (API Keys, flags, etc.)
+  // Cargar variables de entorno si existe (para desarrollo local)
+  // El archivo .env no debe estar en producción
   try {
     await dotenv.load(fileName: '.env');
+    if (AppConfig.enableDetailedLogs) developer.log('📁 Variables de entorno cargadas desde .env');
   } catch (_) {
-    // continuar sin .env
+    if (AppConfig.enableDetailedLogs) developer.log('⚠️ No se encontró archivo .env (normal en producción)');
   }
   
   bool dependenciesInitialized = false;

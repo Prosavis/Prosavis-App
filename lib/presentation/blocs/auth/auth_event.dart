@@ -91,4 +91,13 @@ class AuthUserUpdated extends AuthEvent {
 
   @override
   List<Object> get props => [user];
+}
+
+class AuthDeleteAccountRequested extends AuthEvent {
+  final String userId;
+
+  const AuthDeleteAccountRequested({required this.userId});
+
+  @override
+  List<Object> get props => [userId];
 } 

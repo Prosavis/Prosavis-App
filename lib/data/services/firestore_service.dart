@@ -995,4 +995,82 @@ class FirestoreService {
       };
     }
   }
+
+  // === ELIMINACIÓN DE CUENTA DE USUARIO ===
+
+  /// Eliminar completamente la cuenta de un usuario y todos sus datos relacionados
+  Future<void> deleteUserAccount(String userId) async {
+    try {
+      developer.log('🗑️ Iniciando eliminación completa de cuenta para usuario: $userId');
+      
+      // PASO 1: Obtener todos los servicios del usuario para eliminarlos
+      final userServicesSnapshot = await firestore
+          .collection('services')
+          .where('providerId', isEqualTo: userId)
+          .get();
+      
+      developer.log('📋 Encontrados ${userServicesSnapshot.docs.length} servicios para eliminar');
+      
+      // Eliminar cada servicio del usuario (incluyendo imágenes y reseñas)
+      for (final serviceDoc in userServicesSnapshot.docs) {
+        try {
+          await deleteService(serviceDoc.id);
+          developer.log('✅ Servicio ${serviceDoc.id} eliminado correctamente');
+        } catch (e) {
+          developer.log('⚠️ Error al eliminar servicio ${serviceDoc.id}: $e');
+          // Continuar con los demás servicios aunque uno falle
+        }
+      }
+      
+      // PASO 2: Eliminar todos los favoritos del usuario
+      final favoritesSnapshot = await firestore
+          .collection('favorites')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      developer.log('⭐ Encontrados ${favoritesSnapshot.docs.length} favoritos para eliminar');
+      
+      final favoritesBatch = firestore.batch();
+      for (final favoriteDoc in favoritesSnapshot.docs) {
+        favoritesBatch.delete(favoriteDoc.reference);
+      }
+      
+      if (favoritesSnapshot.docs.isNotEmpty) {
+        await favoritesBatch.commit();
+        developer.log('✅ Favoritos del usuario eliminados');
+      }
+      
+      // PASO 3: Anonimizar reseñas del usuario (en lugar de eliminarlas)
+      final userReviewsSnapshot = await firestore
+          .collection('reviews')
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      developer.log('🌟 Encontradas ${userReviewsSnapshot.docs.length} reseñas para anonimizar');
+      
+      if (userReviewsSnapshot.docs.isNotEmpty) {
+        final reviewsBatch = firestore.batch();
+        for (final reviewDoc in userReviewsSnapshot.docs) {
+          reviewsBatch.update(reviewDoc.reference, {
+            'userName': 'Usuario eliminado',
+            'userPhotoUrl': null,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        
+        await reviewsBatch.commit();
+        developer.log('✅ Reseñas del usuario anonimizadas');
+      }
+      
+      // PASO 4: Eliminar el documento del usuario de Firestore
+      await firestore.collection('users').doc(userId).delete();
+      developer.log('✅ Documento de usuario eliminado de Firestore');
+      
+      developer.log('🎉 Eliminación completa de cuenta finalizada exitosamente');
+      
+    } catch (e) {
+      developer.log('💥 Error crítico durante eliminación de cuenta: $e');
+      rethrow;
+    }
+  }
 }

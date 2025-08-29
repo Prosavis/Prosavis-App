@@ -8,7 +8,9 @@ import '../../../domain/usecases/auth/sign_up_with_email_usecase.dart';
 import '../../../domain/usecases/auth/sign_in_with_phone_usecase.dart';
 import '../../../domain/usecases/auth/verify_phone_code_usecase.dart';
 import '../../../domain/usecases/auth/password_reset_usecase.dart';
+import '../../../domain/usecases/auth/delete_account_usecase.dart';
 import '../../../core/usecases/usecase.dart';
+import '../../../core/exceptions/auth_exceptions.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../../core/config/app_config.dart';
@@ -21,6 +23,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final SignInWithPhoneUseCase _signInWithPhoneUseCase;
   final VerifyPhoneCodeUseCase _verifyPhoneCodeUseCase;
   final PasswordResetUseCase _passwordResetUseCase;
+  final DeleteAccountUseCase _deleteAccountUseCase;
   StreamSubscription? _authStateSubscription;
 
   AuthBloc({
@@ -31,6 +34,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required SignInWithPhoneUseCase signInWithPhoneUseCase,
     required VerifyPhoneCodeUseCase verifyPhoneCodeUseCase,
     required PasswordResetUseCase passwordResetUseCase,
+    required DeleteAccountUseCase deleteAccountUseCase,
   })  : _authRepository = authRepository,
         _signInWithGoogleUseCase = signInWithGoogleUseCase,
         _signInWithEmailUseCase = signInWithEmailUseCase,
@@ -38,6 +42,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         _signInWithPhoneUseCase = signInWithPhoneUseCase,
         _verifyPhoneCodeUseCase = verifyPhoneCodeUseCase,
         _passwordResetUseCase = passwordResetUseCase,
+        _deleteAccountUseCase = deleteAccountUseCase,
         super(AuthInitial()) {
     
     on<AuthStarted>(_onAuthStarted);
@@ -48,6 +53,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthVerifyPhoneCodeRequested>(_onAuthVerifyPhoneCodeRequested);
     on<AuthPasswordResetRequested>(_onAuthPasswordResetRequested);
     on<AuthSignOutRequested>(_onAuthSignOutRequested);
+    on<AuthDeleteAccountRequested>(_onAuthDeleteAccountRequested);
     on<AuthUserChanged>(_onAuthUserChanged);
     on<AuthUserUpdated>(_onAuthUserUpdated);
   }
@@ -134,8 +140,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(const AuthError('Credenciales incorrectas. Verifica tu email y contraseña.'));
       }
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
     } catch (e) {
-      emit(AuthError('Error al iniciar sesión: $e'));
+      emit(AuthError('Error inesperado al iniciar sesión: $e'));
     }
   }
 
@@ -159,8 +167,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(const AuthError('Error al crear la cuenta. Intenta nuevamente.'));
       }
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: true));
     } catch (e) {
-      emit(AuthError('Error al registrarse: $e'));
+      emit(AuthError('Error inesperado al registrarse: $e'));
     }
   }
 
@@ -179,8 +189,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         verificationId: verificationId,
         phoneNumber: event.phoneNumber,
       ));
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
     } catch (e) {
-      emit(AuthError('Error al enviar código SMS: $e'));
+      emit(AuthError('Error inesperado al enviar código SMS: $e'));
     }
   }
 
@@ -204,8 +216,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       } else {
         emit(const AuthError('Código SMS incorrecto. Verifica e intenta nuevamente.'));
       }
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
     } catch (e) {
-      emit(AuthError('Error al verificar código: $e'));
+      emit(AuthError('Error inesperado al verificar código: $e'));
     }
   }
 
@@ -221,8 +235,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       
       emit(AuthPasswordResetSent(email: event.email));
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
     } catch (e) {
-      emit(AuthError('Error al enviar email de recuperación: $e'));
+      emit(AuthError('Error inesperado al enviar email de recuperación: $e'));
     }
   }
 
@@ -281,6 +297,29 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // En caso de error, mantener la sesión por seguridad (favorecer al usuario)
       developer.log('   Manteniendo sesión por precaución...');
       emit(AuthAuthenticated(currentUser));
+    }
+  }
+
+  Future<void> _onAuthDeleteAccountRequested(
+    AuthDeleteAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    try {
+      emit(AuthLoading());
+      
+      await _deleteAccountUseCase(
+        DeleteAccountParams(userId: event.userId),
+      );
+      
+      // Después de eliminar la cuenta, el usuario debe estar desautenticado
+      emit(AuthUnauthenticated());
+      
+      developer.log('✅ Cuenta eliminada exitosamente');
+      
+    } on AuthException catch (e) {
+      emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
+    } catch (e) {
+      emit(AuthError('Error inesperado al eliminar cuenta: $e'));
     }
   }
 
