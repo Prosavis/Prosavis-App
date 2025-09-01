@@ -81,7 +81,7 @@ class _ProfilePageState extends State<ProfilePage>
             );
           } else if (state is AuthUnauthenticated) {
             // Después de eliminar cuenta, navegar al login
-            context.go('/auth/login');
+            context.go('/login');
           }
         },
         child: BlocBuilder<AuthBloc, AuthState>(

@@ -120,14 +120,6 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
             _hasLoadedOnce = true;
           });
         }
-      } else {
-        if (mounted) {
-          setState(() {
-            _errorMessage = 'Usuario no autenticado';
-            _isLoading = false;
-            _hasLoadedOnce = true;
-          });
-        }
       }
     } catch (e) {
       if (mounted) {
@@ -170,16 +162,6 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
     
-    // Solo recargar si es la primera vez o si específicamente se necesita
-    if (!_hasLoadedOnce) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _loadUserServices();
-          _hasLoadedOnce = true;
-        }
-      });
-    }
-    
     return Scaffold(
       backgroundColor: AppTheme.getBackgroundColor(context),
       appBar: AppBar(
@@ -193,19 +175,51 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
         elevation: 0,
         automaticallyImplyLeading: false,
         actions: [
-          IconButton(
-            icon: const Icon(Symbols.add),
-            onPressed: _validateProfileAndCreateService,
-            tooltip: 'Crear nuevo servicio',
+          BlocBuilder<AuthBloc, AuthState>(
+            builder: (context, authState) {
+              if (authState is AuthAuthenticated) {
+                return IconButton(
+                  icon: const Icon(Symbols.add),
+                  onPressed: _validateProfileAndCreateService,
+                  tooltip: 'Crear nuevo servicio',
+                );
+              }
+              return const SizedBox.shrink();
+            },
           ),
         ],
       ),
-      body: StretchingOverscrollIndicator(
-        axisDirection: AxisDirection.down,
-        child: RefreshIndicator(
-          onRefresh: _loadUserServices,
-          child: _buildBody(),
-        ),
+      body: BlocBuilder<AuthBloc, AuthState>(
+        builder: (context, authState) {
+          if (authState is AuthAuthenticated) {
+            return _buildAuthenticatedContent();
+          } else {
+            return const LoginRequiredWidget(
+              title: 'Inicia sesión para gestionar tus servicios',
+              subtitle: 'Necesitas tener una cuenta para crear y administrar tus servicios profesionales.',
+            );
+          }
+        },
+      ),
+    );
+  }
+
+  Widget _buildAuthenticatedContent() {
+    // Solo recargar si es la primera vez o si específicamente se necesita
+    if (!_hasLoadedOnce) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _loadUserServices();
+          _hasLoadedOnce = true;
+        }
+      });
+    }
+    
+    return StretchingOverscrollIndicator(
+      axisDirection: AxisDirection.down,
+      child: RefreshIndicator(
+        onRefresh: _loadUserServices,
+        child: _buildBody(),
       ),
     );
   }
