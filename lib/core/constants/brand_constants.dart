@@ -179,19 +179,19 @@ class BrandConstants {
 
   // ========== ASSETS DE LOGO PROSAVIS ==========
   
-  /// Logo principal - Siempre sin fondo (PNG)
-  static const String logoColorSvg = 'assets/branding/logos/logo-no-background.svg';
+  /// Logo principal - Ícono limpio (PNG)
+  static const String logoColorSvg = 'assets/branding/logos/logo-icon-clean.svg';
   
-  /// Rutas de los logos PNG - Todas unificadas a sin fondo
-  static const String logoColor = 'assets/branding/logos/logo-color.png';
-  static const String logoGrayscale = 'assets/branding/logos/logo-grayscale.png';
-  static const String logoGrayscaleInverted = 'assets/branding/logos/logo-grayscale-inverted.png';
-  static const String logoNoBackground = 'assets/branding/logos/logo-no-background.png';
+  /// Rutas de los logos PNG - Todas unificadas al ícono limpio
+  static const String logoColor = 'assets/branding/logos/logo-icon-clean.png';
+  static const String logoGrayscale = 'assets/branding/logos/logo-icon-clean.png';
+  static const String logoGrayscaleInverted = 'assets/branding/logos/logo-icon-clean.png';
+  static const String logoNoBackground = 'assets/branding/logos/logo-icon-clean.png';
   
-  /// Rutas de los logos SVG - Todas unificadas a sin fondo (PNG)
-  static const String logoGrayscaleSvg = 'assets/branding/logos/logo-grayscale.svg';
-  static const String logoGrayscaleInvertedSvg = 'assets/branding/logos/logo-grayscale-inverted.svg';
-  static const String logoNoBackgroundSvg = 'assets/branding/logos/logo-no-background.svg';
+  /// Rutas de los logos SVG - Todas unificadas al ícono limpio
+  static const String logoGrayscaleSvg = 'assets/branding/logos/logo-icon-clean.svg';
+  static const String logoGrayscaleInvertedSvg = 'assets/branding/logos/logo-icon-clean.svg';
+  static const String logoNoBackgroundSvg = 'assets/branding/logos/logo-icon-clean.svg';
 
   // ========== ESPACIADO ==========
   
@@ -259,9 +259,9 @@ class BrandConstants {
 
   // ========== UTILIDADES ==========
   
-  /// Obtiene el logo adecuado según el tema (siempre sin fondo PNG)
+  /// Obtiene el logo adecuado según el tema (siempre ícono limpio PNG)
   static String getLogoForTheme(Brightness brightness) {
-    return logoNoBackground; // Siempre usar logo sin fondo
+    return logoNoBackground; // Siempre usar ícono limpio
   }
   
   /// Obtiene el color de texto adecuado según el fondo

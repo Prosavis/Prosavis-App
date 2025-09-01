@@ -193,8 +193,21 @@ class LocationUtils {
           address = composeAddressFromPlacemark(placemarks.first);
         }
       } catch (e) {
-        // Si falla el geocoding, continuar sin dirección
-        address = null;
+        // Si falla el geocoding, intentar crear una dirección aproximada
+        try {
+          // Intentar geocoding reverso con timeout más corto
+          final List<Placemark> fallbackPlacemarks = await placemarkFromCoordinates(
+            position.latitude,
+            position.longitude,
+          ).timeout(const Duration(seconds: 5));
+          
+          if (fallbackPlacemarks.isNotEmpty) {
+            address = composeAddressFromPlacemark(fallbackPlacemarks.first);
+          }
+        } catch (e2) {
+          // Crear dirección aproximada usando coordenadas conocidas de Colombia
+          address = _createApproximateAddress(position.latitude, position.longitude);
+        }
       }
 
       return {
@@ -229,6 +242,49 @@ class LocationUtils {
     } catch (e) {
       return false;
     }
+  }
+
+  /// Crea una dirección aproximada basada en coordenadas conocidas de Colombia
+  static String _createApproximateAddress(double latitude, double longitude) {
+    // Coordenadas aproximadas de principales ciudades de Colombia
+    const List<Map<String, dynamic>> colombianCities = [
+      {'name': 'Bogotá, Cundinamarca', 'lat': 4.7110, 'lng': -74.0721},
+      {'name': 'Medellín, Antioquia', 'lat': 6.2442, 'lng': -75.5812},
+      {'name': 'Cali, Valle del Cauca', 'lat': 3.4516, 'lng': -76.5320},
+      {'name': 'Barranquilla, Atlántico', 'lat': 10.9685, 'lng': -74.7813},
+      {'name': 'Cartagena, Bolívar', 'lat': 10.3910, 'lng': -75.4794},
+      {'name': 'Bucaramanga, Santander', 'lat': 7.1253, 'lng': -73.1198},
+      {'name': 'Pereira, Risaralda', 'lat': 4.8133, 'lng': -75.6961},
+      {'name': 'Manizales, Caldas', 'lat': 5.0703, 'lng': -75.5138},
+      {'name': 'Ibagué, Tolima', 'lat': 4.4389, 'lng': -75.2322},
+      {'name': 'Pasto, Nariño', 'lat': 1.2136, 'lng': -77.2811},
+    ];
+
+    // Encontrar la ciudad más cercana
+    String closestCity = 'Colombia';
+    double closestDistance = double.infinity;
+    
+    for (final city in colombianCities) {
+      final distance = calculateDistance(
+        latitude,
+        longitude,
+        city['lat'] as double,
+        city['lng'] as double,
+      );
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestCity = city['name'] as String;
+      }
+    }
+    
+    // Si está muy cerca de una ciudad conocida (menos de 50km), usar esa ciudad
+    if (closestDistance < 50) {
+      return closestCity;
+    }
+    
+    // Si no, crear dirección genérica pero útil
+    return 'Cerca de $closestCity, Colombia';
   }
 
   /// Limpia el cache de ubicación forzando una nueva detección

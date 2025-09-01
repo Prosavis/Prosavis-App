@@ -22,11 +22,32 @@ class FirestoreService {
     if (_firestore == null) {
       try {
         _firestore = FirebaseFirestore.instance;
+        
+        // Configurar para mejor funcionamiento sin conectividad
+        _configureFirestoreForOffline();
+        
         // Evitar log ruidoso de inicialización en cada instancia
       } catch (e) {
         developer.log('⚠️ Error al inicializar Firestore: $e');
         rethrow;
       }
+    }
+  }
+
+  /// Configurar Firestore para funcionar mejor sin conectividad
+  static void _configureFirestoreForOffline() {
+    try {
+      // Configurar opciones para mejor manejo de conectividad
+      // En versiones recientes de Firestore, la persistencia se habilita automáticamente
+      _firestore!.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+      );
+      
+      developer.log('✅ Firestore configurado con persistencia offline');
+    } catch (e) {
+      // Ignorar errores de configuración offline (ya puede estar habilitada)
+      developer.log('ℹ️ Configuración offline de Firestore: $e');
     }
   }
 

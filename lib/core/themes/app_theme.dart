@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/font_manager.dart';
 import 'package:animations/animations.dart';
 
 class AppTheme {
@@ -193,7 +194,7 @@ class AppTheme {
         onSurface: textPrimary,
       ),
       scaffoldBackgroundColor: backgroundColor,
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: FontManager.fontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
@@ -210,7 +211,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: textPrimary,
@@ -238,7 +239,7 @@ class AppTheme {
             borderRadius: BorderRadius.circular(12),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          textStyle: GoogleFonts.inter(
+          textStyle: FontManager.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -249,7 +250,7 @@ class AppTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: primaryColor,
-          textStyle: GoogleFonts.inter(
+          textStyle: FontManager.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -300,52 +301,52 @@ class AppTheme {
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        headlineLarge: GoogleFonts.inter(
+        headlineLarge: FontManager.inter(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: textPrimary,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: FontManager.inter(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: textPrimary,
         ),
-        headlineSmall: GoogleFonts.inter(
+        headlineSmall: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: textPrimary,
         ),
-        titleLarge: GoogleFonts.inter(
+        titleLarge: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w500,
           color: textPrimary,
         ),
-        titleMedium: GoogleFonts.inter(
+        titleMedium: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.w500,
           color: textPrimary,
         ),
-        titleSmall: GoogleFonts.inter(
+        titleSmall: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
           color: textPrimary,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: textPrimary,
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: textSecondary,
         ),
-        bodySmall: GoogleFonts.inter(
+        bodySmall: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: textTertiary,
         ),
-        labelMedium: GoogleFonts.inter(
+        labelMedium: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: textPrimary,
@@ -370,7 +371,7 @@ class AppTheme {
         onSecondary: Colors.white,
       ),
       scaffoldBackgroundColor: const Color(0xFF0F172A),
-      fontFamily: GoogleFonts.inter().fontFamily,
+      fontFamily: FontManager.fontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
@@ -387,7 +388,7 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white, // Texto blanco en modo oscuro
@@ -414,7 +415,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: FontManager.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
@@ -438,52 +439,52 @@ class AppTheme {
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineLarge: GoogleFonts.inter(
+        headlineLarge: FontManager.inter(
           fontSize: 22,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineMedium: GoogleFonts.inter(
+        headlineMedium: FontManager.inter(
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        headlineSmall: GoogleFonts.inter(
+        headlineSmall: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.bold,
           color: Colors.white,
         ),
-        titleLarge: GoogleFonts.inter(
+        titleLarge: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        titleMedium: GoogleFonts.inter(
+        titleMedium: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        titleSmall: GoogleFonts.inter(
+        titleSmall: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.w600,
           color: Colors.white,
         ),
-        bodyLarge: GoogleFonts.inter(
+        bodyLarge: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.normal,
           color: const Color(0xFFE2E8F0), // Gris claro para mejor contraste
         ),
-        bodyMedium: GoogleFonts.inter(
+        bodyMedium: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.normal,
           color: const Color(0xFFCBD5E1), // Gris medio para texto secundario
         ),
-        bodySmall: GoogleFonts.inter(
+        bodySmall: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.normal,
           color: const Color(0xFF94A3B8), // Gris más suave para texto terciario
         ),
-        labelMedium: GoogleFonts.inter(
+        labelMedium: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
           color: Colors.white,

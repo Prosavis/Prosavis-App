@@ -46,7 +46,7 @@ import 'presentation/pages/services/service_edit_page.dart';
 import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
-import 'package:google_fonts/google_fonts.dart';
+import 'core/utils/font_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
@@ -100,15 +100,15 @@ void main() async {
 /// Optimización: Precargar activos críticos para mejorar rendimiento inicial
 Future<void> _preloadCriticalAssets() async {
   // Optimización: Ejecutar en un aislamiento para no bloquear el hilo principal
-  await Future.microtask(() {
-    // Forzar la resolución de la tipografía más usada para evitar jank inicial.
+  await Future.microtask(() async {
+    // Usar FontManager para precarga con fallback automático
     // No realizamos precache de imágenes aquí porque no disponemos de un
     // BuildContext válido en esta fase de inicio.
     try {
-      GoogleFonts.inter();
+      await FontManager.preloadGoogleFonts();
     } catch (e) {
-      // Si falla la carga de fuentes, continuar sin ella
-      developer.log('No se pudo precargar GoogleFonts: $e');
+      // Si falla la carga de fuentes, FontManager manejará el fallback automáticamente
+      developer.log('FontManager manejó la precarga con fallbacks: $e');
     }
   });
 }

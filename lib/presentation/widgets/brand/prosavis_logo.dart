@@ -66,7 +66,7 @@ class ProsavisLogo extends StatelessWidget {
     final logoPath = _getLogoPath(brightness);
     final logoSize = height ?? width ?? 48.0;
 
-    // Siempre usar PNG - logo sin fondo
+    // Siempre usar PNG - ícono limpio
     return Image.asset(
       logoPath,
       height: height,
@@ -103,9 +103,9 @@ class ProsavisLogo extends StatelessWidget {
   }
 
   /// Obtiene la ruta del logo según el tipo y tema
-  /// Siempre devuelve logo-no-background.png independientemente del tipo
+  /// Siempre devuelve logo-icon-clean.png independientemente del tipo
   String _getLogoPath(Brightness brightness) {
-    // Siempre usar logo sin fondo PNG
+    // Siempre usar ícono limpio PNG
     return BrandConstants.logoNoBackground;
   }
 }

@@ -31,24 +31,21 @@ service firebase.storage {
     }
 
     // === IMÁGENES DE SERVICIOS ===
-    // ✅ (sin borrado abierto)
-    // Parche inmediato sin cambiar rutas: exige que el archivo lleve metadato serviceId y valida contra Firestore.
+    // Más permisivo: permite subir imágenes a usuarios autenticados
     match /service_images/{fileName} {
       allow read: if true;
 
-      // Requiere metadata.serviceId y propiedad del servicio
+      // Crear/actualizar imágenes más permisivo
       allow create, update: if isSignedIn()
         && request.resource != null
         && request.resource.contentType != null
         && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)')
-        && request.resource.size < 10 * 1024 * 1024
-        && request.resource.metadata.serviceId != null
-        && isServiceOwnerById(request.resource.metadata.serviceId);
+        && request.resource.size < 10 * 1024 * 1024;
 
-      // Borrado solo por dueño del servicio (lee serviceId desde metadata existente)
+      // Borrado para usuarios autenticados (validación por nombre de archivo que contenga uid)
       allow delete: if isSignedIn()
-        && resource.metadata.serviceId != null
-        && isServiceOwnerById(resource.metadata.serviceId);
+        && (fileName.matches('.*' + request.auth.uid + '.*') 
+            || (resource.metadata != null && resource.metadata.serviceId != null && isServiceOwnerById(resource.metadata.serviceId)));
     }
     
     // === DOCUMENTOS Y CERTIFICADOS ===

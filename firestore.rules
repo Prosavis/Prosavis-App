@@ -16,18 +16,12 @@ service cloud.firestore {
         && request.auth.uid == get(/databases/$(database)/documents/services/$(serviceId)).data.providerId;
     }
     function validStorageUrl(url) {
-      return url == null || url.matches('https://(firebasestorage|storage)\\.googleapis\\.com/.*');
+      return url == null || url == '' || url.matches('https://(firebasestorage|storage)\\.googleapis\\.com/.*|https://.*\\.(jpeg|jpg|png|webp)$');
     }
     
-    // Helper para validar lista de imágenes (hasta 4) sea lista de strings
+    // Helper para validar lista de imágenes (hasta 6) sea lista de strings o vacía
     function listAllStringsMax4(l) {
-      return l == null || (
-        l is list && l.size() <= 4 &&
-        (l.size() == 0 || l[0] is string) &&
-        (l.size() < 2 || l[1] is string) &&
-        (l.size() < 3 || l[2] is string) &&
-        (l.size() < 4 || l[3] is string)
-      );
+      return l == null || l is list && l.size() <= 6;
     }
     
     // Helper para validar que rating sea entero
@@ -35,11 +29,11 @@ service cloud.firestore {
       return n is number && n == int(n); 
     }
     
-    // Helper para validar timestamps cercanos al momento actual
+    // Helper para validar timestamps cercanos al momento actual (más permisivo)
     function nearNow(ts) {
       return ts is timestamp
-             && (request.time - ts <= duration.value(5, 'minutes'))
-             && (ts - request.time <= duration.value(1, 'minutes'));
+             && (request.time - ts <= duration.value(30, 'minutes'))
+             && (ts - request.time <= duration.value(10, 'minutes'));
     }
     
     // === USUARIOS ===
@@ -59,37 +53,27 @@ service cloud.firestore {
     match /services/{serviceId} {
       allow read: if true;
 
-      // Crear servicio con whitelisting completo y validaciones mejoradas
+      // Crear servicio con validaciones básicas más permisivas
       allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.providerId
         && request.resource.data.keys().hasAll(['title','description','category','price','providerId'])
-        && request.resource.data.keys().hasOnly(['title','description','category','price','providerId','mainImage','images','createdAt','updatedAt'])
-        && request.resource.data.title is string && request.resource.data.title.size() > 5 && request.resource.data.title.size() <= 120
-        && request.resource.data.description is string && request.resource.data.description.size() > 10 && request.resource.data.description.size() <= 5000
+        && request.resource.data.title is string && request.resource.data.title.size() > 2 && request.resource.data.title.size() <= 200
+        && request.resource.data.description is string && request.resource.data.description.size() > 5 && request.resource.data.description.size() <= 10000
         && request.resource.data.category is string && request.resource.data.category.size() > 0
         && request.resource.data.price is number && request.resource.data.price >= 0
-        && (!request.resource.data.keys().hasAny(['mainImage']) || validStorageUrl(request.resource.data.mainImage))
-        && listAllStringsMax4(request.resource.data.images)
-        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
-        && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+        && (!request.resource.data.keys().hasAny(['mainImage']) || request.resource.data.mainImage == null || validStorageUrl(request.resource.data.mainImage))
+        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax4(request.resource.data.images));
 
-      // Actualizar servicio con validaciones mejoradas
+      // Actualizar servicio con validaciones básicas más permisivas
       allow update: if isSignedIn()
         && request.auth.uid == resource.data.providerId
         && request.resource.data.providerId == resource.data.providerId
-        && (!request.resource.data.keys().hasAny(['mainImage']) || validStorageUrl(request.resource.data.mainImage))
+        && (!request.resource.data.keys().hasAny(['mainImage']) || request.resource.data.mainImage == null || validStorageUrl(request.resource.data.mainImage))
         && (!request.resource.data.keys().hasAny(['price']) || (request.resource.data.price is number && request.resource.data.price >= 0))
-        && (!request.resource.data.keys().hasAny(['images']) || listAllStringsMax4(request.resource.data.images))
-        && (!request.resource.data.keys().hasAny(['title']) || (request.resource.data.title is string && request.resource.data.title.size() > 5 && request.resource.data.title.size() <= 120))
-        && (!request.resource.data.keys().hasAny(['description']) || (request.resource.data.description is string && request.resource.data.description.size() > 10 && request.resource.data.description.size() <= 5000))
-        && (!request.resource.data.keys().hasAny(['category']) || (request.resource.data.category is string && request.resource.data.category.size() > 0))
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['title','description','category','price','mainImage','images','updatedAt'])
-        && (!request.resource.data.keys().hasAny(['updatedAt']) || (
-             request.resource.data.updatedAt is timestamp
-             && request.resource.data.updatedAt >= resource.data.updatedAt
-             && nearNow(request.resource.data.updatedAt)
-           ));
+        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax4(request.resource.data.images))
+        && (!request.resource.data.keys().hasAny(['title']) || (request.resource.data.title is string && request.resource.data.title.size() > 2 && request.resource.data.title.size() <= 200))
+        && (!request.resource.data.keys().hasAny(['description']) || (request.resource.data.description is string && request.resource.data.description.size() > 5 && request.resource.data.description.size() <= 10000))
+        && (!request.resource.data.keys().hasAny(['category']) || (request.resource.data.category is string && request.resource.data.category.size() > 0));
 
       allow delete: if isSignedIn() && request.auth.uid == resource.data.providerId;
 

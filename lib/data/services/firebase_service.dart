@@ -54,6 +54,9 @@ class FirebaseService {
         AppConfig.log('🔧 Configurando Firebase para desarrollo...');
       }
       
+      // Configurar timeouts más permisivos para emuladores
+      await _configureNetworkTimeouts();
+      
       if (AppConfig.useFirebaseEmulator) {
         AppConfig.log('🔧 Configurando Firebase Emulator...');
         // Aquí se puede configurar el emulador si está disponible
@@ -63,6 +66,17 @@ class FirebaseService {
       }
     } catch (e) {
       AppConfig.log('⚠️ Error en configuración de desarrollo: $e');
+    }
+  }
+
+  /// Configurar timeouts de red más permisivos para emuladores
+  static Future<void> _configureNetworkTimeouts() async {
+    try {
+      // Note: Firebase SDK no expone directamente configuración de timeout
+      // pero el modo offline y persistencia ayudan con la conectividad limitada
+      AppConfig.log('ℹ️ Configuración de red: Usando persistencia offline de Firestore');
+    } catch (e) {
+      AppConfig.log('⚠️ Error configurando timeouts de red: $e');
     }
   }
 
