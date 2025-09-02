@@ -847,7 +847,7 @@ class FirebaseService {
     final hasUser = user != null;
     
     if (hasUser) {
-      developer.log('👤 Usuario activo detectado: ${user!.uid} (${user.email ?? "sin email"})');
+      developer.log('👤 Usuario activo detectado: ${user.uid} (${user.email ?? "sin email"})');
     } else {
       developer.log('✅ No hay usuario activo');
     }

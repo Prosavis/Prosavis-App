@@ -1021,29 +1021,61 @@ class FirestoreService {
 
   /// Eliminar completamente la cuenta de un usuario y todos sus datos relacionados
   Future<void> deleteUserAccount(String userId) async {
+    final List<String> erroresOcurridos = [];
+    int totalEliminados = 0;
+    
     try {
-      developer.log('🗑️ Iniciando eliminación completa de cuenta para usuario: $userId');
+      developer.log('🗑️ === INICIANDO ELIMINACIÓN COMPLETA DE CUENTA ===');
+      developer.log('🔍 Usuario ID: $userId');
       
-      // PASO 1: Obtener todos los servicios del usuario para eliminarlos
+      // === PASO 0: Verificar que el usuario existe ===
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        developer.log('⚠️ Usuario $userId no existe en Firestore');
+        return;
+      }
+      
+      final userData = userDoc.data()!;
+      final userName = userData['name'] ?? 'Usuario sin nombre';
+      final userEmail = userData['email'] ?? 'Sin email';
+      developer.log('👤 Eliminando cuenta de: $userName ($userEmail)');
+      
+      // === PASO 1: Eliminar imagen de perfil del usuario ===
+      final String? photoUrl = userData['photoUrl'] as String?;
+      if (photoUrl != null && photoUrl.isNotEmpty && photoUrl.contains('firebasestorage')) {
+        try {
+          final ref = FirebaseStorage.instance.refFromURL(photoUrl);
+          await ref.delete();
+          developer.log('✅ Imagen de perfil eliminada de Storage');
+          totalEliminados++;
+        } catch (imageError) {
+          final error = 'Error al eliminar imagen de perfil: $imageError';
+          developer.log('⚠️ $error');
+          erroresOcurridos.add(error);
+        }
+      }
+      
+      // === PASO 2: Eliminar todos los servicios del usuario ===
       final userServicesSnapshot = await firestore
           .collection('services')
           .where('providerId', isEqualTo: userId)
           .get();
       
-      developer.log('📋 Encontrados ${userServicesSnapshot.docs.length} servicios para eliminar');
+      developer.log('🔍 Encontrados ${userServicesSnapshot.docs.length} servicios para eliminar');
       
-      // Eliminar cada servicio del usuario (incluyendo imágenes y reseñas)
       for (final serviceDoc in userServicesSnapshot.docs) {
         try {
           await deleteService(serviceDoc.id);
-          developer.log('✅ Servicio ${serviceDoc.id} eliminado correctamente');
+          developer.log('✅ Servicio "${serviceDoc.data()['title'] ?? serviceDoc.id}" eliminado');
+          totalEliminados++;
         } catch (e) {
-          developer.log('⚠️ Error al eliminar servicio ${serviceDoc.id}: $e');
-          // Continuar con los demás servicios aunque uno falle
+          final error = 'Error al eliminar servicio ${serviceDoc.id}: $e';
+          developer.log('⚠️ $error');
+          erroresOcurridos.add(error);
         }
       }
       
-      // PASO 2: Eliminar todos los favoritos del usuario
+      // === PASO 3: Eliminar TODOS los favoritos del usuario ===
       final favoritesSnapshot = await firestore
           .collection('favorites')
           .where('userId', isEqualTo: userId)
@@ -1051,17 +1083,23 @@ class FirestoreService {
       
       developer.log('⭐ Encontrados ${favoritesSnapshot.docs.length} favoritos para eliminar');
       
-      final favoritesBatch = firestore.batch();
-      for (final favoriteDoc in favoritesSnapshot.docs) {
-        favoritesBatch.delete(favoriteDoc.reference);
-      }
-      
       if (favoritesSnapshot.docs.isNotEmpty) {
-        await favoritesBatch.commit();
-        developer.log('✅ Favoritos del usuario eliminados');
+        try {
+          final favoritesBatch = firestore.batch();
+          for (final favoriteDoc in favoritesSnapshot.docs) {
+            favoritesBatch.delete(favoriteDoc.reference);
+          }
+          await favoritesBatch.commit();
+          developer.log('✅ ${favoritesSnapshot.docs.length} favoritos eliminados');
+          totalEliminados += favoritesSnapshot.docs.length;
+        } catch (e) {
+          final error = 'Error al eliminar favoritos: $e';
+          developer.log('⚠️ $error');
+          erroresOcurridos.add(error);
+        }
       }
       
-      // PASO 3: Anonimizar reseñas del usuario (en lugar de eliminarlas)
+      // === PASO 4: Anonimizar reseñas del usuario (en lugar de eliminarlas para preservar integridad) ===
       try {
         final userReviewsSnapshot = await firestore
             .collection('reviews')
@@ -1079,19 +1117,21 @@ class FirestoreService {
               'updatedAt': FieldValue.serverTimestamp(),
             });
           }
-          
           await reviewsBatch.commit();
-          developer.log('✅ Reseñas del usuario anonimizadas');
+          developer.log('✅ ${userReviewsSnapshot.docs.length} reseñas anonimizadas');
+          totalEliminados += userReviewsSnapshot.docs.length;
         }
       } catch (e) {
-        developer.log('⚠️ Error al anonimizar reseñas del usuario: $e');
-        // Continuar sin detener el proceso
+        final error = 'Error al anonimizar reseñas: $e';
+        developer.log('⚠️ $error');
+        erroresOcurridos.add(error);
       }
       
-      // PASO 3.5: Buscar y anonimizar reseñas anidadas en servicios
+      // === PASO 5: Buscar y anonimizar reseñas anidadas en servicios ===
       try {
-        // Buscar reseñas en colecciones anidadas de servicios
+        developer.log('🔍 Buscando reseñas anidadas en servicios...');
         final allServicesSnapshot = await firestore.collection('services').get();
+        int reseniasAnidasTotal = 0;
         
         for (final serviceDoc in allServicesSnapshot.docs) {
           try {
@@ -1111,28 +1151,221 @@ class FirestoreService {
                   'updatedAt': FieldValue.serverTimestamp(),
                 });
               }
-              
               await nestedBatch.commit();
-              developer.log('✅ Reseñas anidadas anonimizadas en servicio ${serviceDoc.id}');
+              reseniasAnidasTotal += nestedReviewsSnapshot.docs.length;
             }
           } catch (e) {
-            developer.log('⚠️ Error al procesar reseñas anidadas del servicio ${serviceDoc.id}: $e');
-            // Continuar con otros servicios
+            final error = 'Error al procesar reseñas anidadas del servicio ${serviceDoc.id}: $e';
+            developer.log('⚠️ $error');
+            erroresOcurridos.add(error);
           }
         }
+        
+        if (reseniasAnidasTotal > 0) {
+          developer.log('✅ $reseniasAnidasTotal reseñas anidadas anonimizadas');
+          totalEliminados += reseniasAnidasTotal;
+        }
       } catch (e) {
-        developer.log('⚠️ Error al buscar reseñas anidadas: $e');
-        // Continuar sin detener el proceso
+        final error = 'Error al buscar reseñas anidadas: $e';
+        developer.log('⚠️ $error');
+        erroresOcurridos.add(error);
       }
       
-      // PASO 4: Eliminar el documento del usuario de Firestore
-      await firestore.collection('users').doc(userId).delete();
-      developer.log('✅ Documento de usuario eliminado de Firestore');
+      // === PASO 6: Eliminar documento del usuario de Firestore ===
+      try {
+        await firestore.collection('users').doc(userId).delete();
+        developer.log('✅ Documento de usuario eliminado completamente de Firestore');
+        totalEliminados++;
+      } catch (e) {
+        final error = 'Error CRÍTICO al eliminar documento de usuario: $e';
+        developer.log('❌ $error');
+        erroresOcurridos.add(error);
+        // Este error es crítico, por lo que lo lanzamos
+        rethrow;
+      }
       
-      developer.log('🎉 Eliminación completa de cuenta finalizada exitosamente');
+      // === RESUMEN FINAL ===
+      developer.log('🎉 === ELIMINACIÓN DE CUENTA COMPLETADA ===');
+      developer.log('📊 Total de elementos procesados: $totalEliminados');
+      developer.log('⚠️ Errores ocurridos: ${erroresOcurridos.length}');
+      
+      if (erroresOcurridos.isNotEmpty) {
+        developer.log('📋 Lista de errores:');
+        for (int i = 0; i < erroresOcurridos.length; i++) {
+          developer.log('   ${i + 1}. ${erroresOcurridos[i]}');
+        }
+        developer.log('⚠️ Cuenta eliminada CON ADVERTENCIAS - algunos datos auxiliares pueden haber quedado');
+      } else {
+        developer.log('✅ Cuenta eliminada COMPLETAMENTE sin errores');
+      }
       
     } catch (e) {
-      developer.log('💥 Error crítico durante eliminación de cuenta: $e');
+      developer.log('💥 ERROR CRÍTICO durante eliminación de cuenta: $e');
+      developer.log('❌ Falló la eliminación completa - puede que queden datos residuales');
+      
+      if (erroresOcurridos.isNotEmpty) {
+        developer.log('📋 Errores acumulados antes del fallo crítico:');
+        for (int i = 0; i < erroresOcurridos.length; i++) {
+          developer.log('   ${i + 1}. ${erroresOcurridos[i]}');
+        }
+      }
+      
+      rethrow;
+    }
+  }
+
+  /// Verificar si un usuario fue completamente eliminado de Firestore
+  Future<Map<String, dynamic>> verifyUserDeletion(String userId) async {
+    try {
+      developer.log('🔍 Verificando eliminación completa del usuario: $userId');
+      
+      final result = <String, dynamic>{
+        'userDeleted': false,
+        'servicesRemaining': 0,
+        'favoritesRemaining': 0,
+        'reviewsRemaining': 0,
+        'nestedReviewsRemaining': 0,
+        'errors': <String>[],
+      };
+      
+      // Verificar documento de usuario
+      final userDoc = await firestore.collection('users').doc(userId).get();
+      result['userDeleted'] = !userDoc.exists;
+      
+      // Verificar servicios
+      final servicesQuery = await firestore
+          .collection('services')
+          .where('providerId', isEqualTo: userId)
+          .get();
+      result['servicesRemaining'] = servicesQuery.docs.length;
+      
+      // Verificar favoritos
+      final favoritesQuery = await firestore
+          .collection('favorites')
+          .where('userId', isEqualTo: userId)
+          .get();
+      result['favoritesRemaining'] = favoritesQuery.docs.length;
+      
+      // Verificar reseñas globales
+      final reviewsQuery = await firestore
+          .collection('reviews')
+          .where('userId', isEqualTo: userId)
+          .get();
+      result['reviewsRemaining'] = reviewsQuery.docs.length;
+      
+      // Verificar reseñas anidadas
+      int nestedReviewsCount = 0;
+      try {
+        final allServicesSnapshot = await firestore.collection('services').get();
+        for (final serviceDoc in allServicesSnapshot.docs) {
+          final nestedReviewsSnapshot = await serviceDoc.reference
+              .collection('reviews')
+              .where('userId', isEqualTo: userId)
+              .get();
+          nestedReviewsCount += nestedReviewsSnapshot.docs.length;
+        }
+      } catch (e) {
+        result['errors'].add('Error al verificar reseñas anidadas: $e');
+      }
+      result['nestedReviewsRemaining'] = nestedReviewsCount;
+      
+      final isCompletelyDeleted = result['userDeleted'] && 
+                                 result['servicesRemaining'] == 0 && 
+                                 result['favoritesRemaining'] == 0 && 
+                                 result['reviewsRemaining'] == 0 && 
+                                 result['nestedReviewsRemaining'] == 0;
+      
+      developer.log(isCompletelyDeleted 
+          ? '✅ Usuario completamente eliminado'
+          : '⚠️ Usuario NO completamente eliminado: $result');
+      
+      return result;
+      
+    } catch (e) {
+      developer.log('❌ Error al verificar eliminación: $e');
+      return {
+        'userDeleted': false,
+        'servicesRemaining': -1,
+        'favoritesRemaining': -1,
+        'reviewsRemaining': -1,
+        'nestedReviewsRemaining': -1,
+        'errors': ['Error al verificar eliminación: $e'],
+      };
+    }
+  }
+
+  /// Limpiar datos residuales de un usuario que debería haber sido eliminado
+  Future<void> cleanupUserResidualData(String userId) async {
+    try {
+      developer.log('🧹 Iniciando limpieza de datos residuales para usuario: $userId');
+      
+      final verification = await verifyUserDeletion(userId);
+      
+      if (verification['userDeleted'] && 
+          verification['servicesRemaining'] == 0 && 
+          verification['favoritesRemaining'] == 0 && 
+          verification['reviewsRemaining'] == 0 && 
+          verification['nestedReviewsRemaining'] == 0) {
+        developer.log('✅ No hay datos residuales que limpiar');
+        return;
+      }
+      
+      developer.log('🗑️ Limpiando datos residuales encontrados...');
+      
+      // Limpiar servicios residuales
+      if (verification['servicesRemaining'] > 0) {
+        final servicesQuery = await firestore
+            .collection('services')
+            .where('providerId', isEqualTo: userId)
+            .get();
+        for (final serviceDoc in servicesQuery.docs) {
+          await deleteService(serviceDoc.id);
+        }
+        developer.log('✅ ${verification['servicesRemaining']} servicios residuales eliminados');
+      }
+      
+      // Limpiar favoritos residuales
+      if (verification['favoritesRemaining'] > 0) {
+        final favoritesQuery = await firestore
+            .collection('favorites')
+            .where('userId', isEqualTo: userId)
+            .get();
+        final batch = firestore.batch();
+        for (final favoriteDoc in favoritesQuery.docs) {
+          batch.delete(favoriteDoc.reference);
+        }
+        await batch.commit();
+        developer.log('✅ ${verification['favoritesRemaining']} favoritos residuales eliminados');
+      }
+      
+      // Anonimizar reseñas residuales
+      if (verification['reviewsRemaining'] > 0) {
+        final reviewsQuery = await firestore
+            .collection('reviews')
+            .where('userId', isEqualTo: userId)
+            .get();
+        final batch = firestore.batch();
+        for (final reviewDoc in reviewsQuery.docs) {
+          batch.update(reviewDoc.reference, {
+            'userName': 'Usuario eliminado',
+            'userPhotoUrl': null,
+            'updatedAt': FieldValue.serverTimestamp(),
+          });
+        }
+        await batch.commit();
+        developer.log('✅ ${verification['reviewsRemaining']} reseñas residuales anonimizadas');
+      }
+      
+      // Eliminar documento de usuario si aún existe
+      if (!verification['userDeleted']) {
+        await firestore.collection('users').doc(userId).delete();
+        developer.log('✅ Documento de usuario residual eliminado');
+      }
+      
+      developer.log('🎉 Limpieza de datos residuales completada');
+      
+    } catch (e) {
+      developer.log('❌ Error durante limpieza de datos residuales: $e');
       rethrow;
     }
   }

@@ -276,6 +276,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
             child: ElevatedButton(
               onPressed: () {
                 _animationController.reverse().then((_) {
+                  Navigator.of(context).pop();
                   widget.onContinue();
                 });
               },
@@ -312,6 +313,7 @@ class _TutorialOverlayState extends State<TutorialOverlay>
             TextButton(
               onPressed: () {
                 _animationController.reverse().then((_) {
+                  Navigator.of(context).pop();
                   widget.onSkip!();
                 });
               },

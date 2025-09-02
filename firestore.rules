@@ -120,16 +120,45 @@ service cloud.firestore {
       }
     }
 
+    // === RESEÑAS GLOBALES (colección top-level) ===
+    match /reviews/{reviewId} {
+      allow read: if true;
+      
+      // Crear reseña global
+      allow create: if isSignedIn()
+        && request.auth.uid == request.resource.data.userId
+        && request.resource.data.keys().hasAll(['serviceId','userId','rating'])
+        && isInt(request.resource.data.rating)
+        && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+        && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
+        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
+        && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+
+      // Actualizar reseña global (incluyendo anonimización para borrado de cuenta)
+      allow update: if (
+        // Usuario autenticado puede actualizar su propia reseña
+        (isSignedIn() && request.auth.uid == resource.data.userId
+         && request.resource.data.serviceId == resource.data.serviceId
+         && request.resource.data.userId == resource.data.userId
+         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
+         && isInt(request.resource.data.rating)
+         && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
+         && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
+         && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt)))
+        // O anonimización del sistema para borrado de cuenta (permitir sin autenticación)
+        || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userName','userPhotoUrl','updatedAt'])
+            && request.resource.data.userName == 'Usuario eliminado'
+            && request.resource.data.userPhotoUrl == null)
+      );
+
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
     // === FAVORITOS ===
     // Usando id canónico ${uid}_${serviceId} para prevenir duplicados
     match /favorites/{favoriteId} {
-      // Lectura (temporal: más permisiva para compatibilidad)
-      allow read: if isSignedIn() && (
-        // Get directo si el documento pertenece al usuario
-        favoriteId.matches('.*' + request.auth.uid + '.*') 
-        // O si es un list query (mantener restricción where para mejor seguridad)
-        || (request.method == 'list' && request.query != null)
-      );
+      // Lectura simplificada: permitir a usuarios autenticados
+      allow read: if isSignedIn();
 
       // Crear con id canónico validado para prevenir duplicados
       allow create: if isSignedIn()
