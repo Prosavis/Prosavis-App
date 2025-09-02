@@ -91,7 +91,7 @@ class ErrorHandlerService {
   ) {
     for (final validator in validators) {
       final error = validator(value);
-      if (error != null) {
+      if (error.isNotEmpty) {
         LoggingService.logInfo(
           'Error de validación: $error',
           category: 'Validation',

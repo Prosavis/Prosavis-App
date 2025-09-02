@@ -314,11 +314,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       // Después de eliminar la cuenta, el usuario debe estar desautenticado
       emit(AuthUnauthenticated());
       
-      developer.log('✅ Cuenta eliminada exitosamente');
+      developer.log('✅ Cuenta eliminada exitosamente - Estado: No autenticado');
+      
+      // Verificar que realmente no hay usuario autenticado
+      await Future.delayed(const Duration(milliseconds: 500));
+      final currentUser = await _authRepository.getCurrentUser();
+      if (currentUser != null) {
+        developer.log('⚠️ ADVERTENCIA: Aún hay usuario autenticado tras borrado: ${currentUser.id}');
+        // Forzar logout adicional si es necesario
+        try {
+          await _authRepository.signOut();
+          emit(AuthUnauthenticated());
+          developer.log('🧹 Logout adicional ejecutado exitosamente');
+        } catch (e) {
+          developer.log('⚠️ Error en logout adicional: $e');
+        }
+      } else {
+        developer.log('✅ Confirmado: No hay usuario autenticado');
+      }
       
     } on AuthException catch (e) {
+      developer.log('❌ Error de autenticación al eliminar cuenta: ${e.message}');
       emit(AuthError(e.message, errorCode: e.code, isSignUp: false));
     } catch (e) {
+      developer.log('❌ Error inesperado al eliminar cuenta: $e');
       emit(AuthError('Error inesperado al eliminar cuenta: $e'));
     }
   }

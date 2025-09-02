@@ -99,7 +99,7 @@ service cloud.firestore {
           && request.auth.uid == resource.data.userId
           && request.resource.data.serviceId == resource.data.serviceId
           && request.resource.data.userId == resource.data.userId
-          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt'])
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
           && isInt(request.resource.data.rating)
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
           && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
@@ -109,6 +109,7 @@ service cloud.firestore {
                && nearNow(request.resource.data.updatedAt)
              ));
 
+        // Permitir borrado de reseñas propias O anonimización (para borrado de cuenta)
         allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
       }
 

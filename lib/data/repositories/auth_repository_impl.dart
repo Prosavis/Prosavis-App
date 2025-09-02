@@ -403,17 +403,46 @@ class AuthRepositoryImpl implements AuthRepository {
       developer.log('🗑️ Iniciando proceso de eliminación de cuenta...');
       
       // PASO 1: Eliminar todos los datos del usuario en Firestore
-      await _firestoreService.deleteUserAccount(userId);
-      developer.log('✅ Datos de Firestore eliminados correctamente');
+      try {
+        await _firestoreService.deleteUserAccount(userId);
+        developer.log('✅ Datos de Firestore eliminados correctamente');
+      } catch (e) {
+        developer.log('⚠️ Error al eliminar datos de Firestore: $e');
+        // Continuar con el borrado de Auth aunque falle Firestore parcialmente
+      }
       
       // PASO 2: Eliminar la cuenta de Firebase Auth
-      await _firebaseService.deleteUserAccount();
-      developer.log('✅ Cuenta de Firebase Auth eliminada');
+      try {
+        await _firebaseService.deleteUserAccount();
+        developer.log('✅ Cuenta de Firebase Auth eliminada');
+      } catch (e) {
+        developer.log('⚠️ Error al eliminar cuenta de Firebase Auth: $e');
+        // Si falla el borrado de Auth, hacer logout forzado
+        await _firebaseService.forceCompleteSignOut();
+        developer.log('🧹 Logout forzado realizado tras error en borrado de Auth');
+      }
       
-      developer.log('🎉 Cuenta eliminada completamente - proceso finalizado');
+      // PASO 3: Asegurar logout completo independientemente del resultado anterior
+      try {
+        await _firebaseService.forceCompleteSignOut();
+        developer.log('🧹 Logout completo ejecutado exitosamente');
+      } catch (e) {
+        developer.log('⚠️ Error en logout final: $e');
+      }
+      
+      developer.log('🎉 Proceso de eliminación de cuenta finalizado');
       
     } catch (e) {
-      developer.log('💥 Error durante eliminación de cuenta: $e');
+      developer.log('💥 Error crítico durante eliminación de cuenta: $e');
+      
+      // En caso de error crítico, intentar logout forzado como medida de seguridad
+      try {
+        await _firebaseService.forceCompleteSignOut();
+        developer.log('🧹 Logout de emergencia ejecutado');
+      } catch (logoutError) {
+        developer.log('❌ Error en logout de emergencia: $logoutError');
+      }
+      
       rethrow;
     }
   }

@@ -1062,25 +1062,67 @@ class FirestoreService {
       }
       
       // PASO 3: Anonimizar reseñas del usuario (en lugar de eliminarlas)
-      final userReviewsSnapshot = await firestore
-          .collection('reviews')
-          .where('userId', isEqualTo: userId)
-          .get();
-      
-      developer.log('🌟 Encontradas ${userReviewsSnapshot.docs.length} reseñas para anonimizar');
-      
-      if (userReviewsSnapshot.docs.isNotEmpty) {
-        final reviewsBatch = firestore.batch();
-        for (final reviewDoc in userReviewsSnapshot.docs) {
-          reviewsBatch.update(reviewDoc.reference, {
-            'userName': 'Usuario eliminado',
-            'userPhotoUrl': null,
-            'updatedAt': FieldValue.serverTimestamp(),
-          });
-        }
+      try {
+        final userReviewsSnapshot = await firestore
+            .collection('reviews')
+            .where('userId', isEqualTo: userId)
+            .get();
         
-        await reviewsBatch.commit();
-        developer.log('✅ Reseñas del usuario anonimizadas');
+        developer.log('🌟 Encontradas ${userReviewsSnapshot.docs.length} reseñas para anonimizar');
+        
+        if (userReviewsSnapshot.docs.isNotEmpty) {
+          final reviewsBatch = firestore.batch();
+          for (final reviewDoc in userReviewsSnapshot.docs) {
+            reviewsBatch.update(reviewDoc.reference, {
+              'userName': 'Usuario eliminado',
+              'userPhotoUrl': null,
+              'updatedAt': FieldValue.serverTimestamp(),
+            });
+          }
+          
+          await reviewsBatch.commit();
+          developer.log('✅ Reseñas del usuario anonimizadas');
+        }
+      } catch (e) {
+        developer.log('⚠️ Error al anonimizar reseñas del usuario: $e');
+        // Continuar sin detener el proceso
+      }
+      
+      // PASO 3.5: Buscar y anonimizar reseñas anidadas en servicios
+      try {
+        // Buscar reseñas en colecciones anidadas de servicios
+        final allServicesSnapshot = await firestore.collection('services').get();
+        
+        for (final serviceDoc in allServicesSnapshot.docs) {
+          try {
+            final nestedReviewsSnapshot = await serviceDoc.reference
+                .collection('reviews')
+                .where('userId', isEqualTo: userId)
+                .get();
+            
+            if (nestedReviewsSnapshot.docs.isNotEmpty) {
+              developer.log('🌟 Encontradas ${nestedReviewsSnapshot.docs.length} reseñas anidadas en servicio ${serviceDoc.id}');
+              
+              final nestedBatch = firestore.batch();
+              for (final reviewDoc in nestedReviewsSnapshot.docs) {
+                nestedBatch.update(reviewDoc.reference, {
+                  'userName': 'Usuario eliminado',
+                  'userPhotoUrl': null,
+                  'updatedAt': FieldValue.serverTimestamp(),
+                });
+              }
+              
+              await nestedBatch.commit();
+              developer.log('✅ Reseñas anidadas anonimizadas en servicio ${serviceDoc.id}');
+            }
+          } catch (e) {
+            developer.log('⚠️ Error al procesar reseñas anidadas del servicio ${serviceDoc.id}: $e');
+            // Continuar con otros servicios
+          }
+        }
+      } catch (e) {
+        developer.log('⚠️ Error al buscar reseñas anidadas: $e');
+        // Continuar sin detener el proceso
       }
       
       // PASO 4: Eliminar el documento del usuario de Firestore

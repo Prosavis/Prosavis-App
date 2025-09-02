@@ -812,6 +812,15 @@ class FirebaseService {
       
       developer.log('✅ Cuenta eliminada exitosamente de Firebase Auth');
       
+      // Verificar que la cuenta realmente se eliminó
+      await Future.delayed(const Duration(milliseconds: 200));
+      final currentUser = _auth.currentUser;
+      if (currentUser != null) {
+        developer.log('⚠️ ADVERTENCIA: Aún existe un usuario después del delete(): ${currentUser.uid}');
+      } else {
+        developer.log('✅ Confirmado: No hay usuario después del delete()');
+      }
+      
     } on FirebaseAuthException catch (e) {
       developer.log('⚠️ Error al eliminar cuenta de Firebase Auth: ${e.code} - ${e.message}');
       
@@ -830,6 +839,20 @@ class FirebaseService {
       developer.log('⚠️ Error inesperado al eliminar cuenta: $e');
       throw AuthException.fromException(e as Exception);
     }
+  }
+
+  /// Verificar si hay un usuario autenticado actualmente
+  bool hasActiveUser() {
+    final user = _auth.currentUser;
+    final hasUser = user != null;
+    
+    if (hasUser) {
+      developer.log('👤 Usuario activo detectado: ${user!.uid} (${user.email ?? "sin email"})');
+    } else {
+      developer.log('✅ No hay usuario activo');
+    }
+    
+    return hasUser;
   }
 }
 
