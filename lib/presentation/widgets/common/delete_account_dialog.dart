@@ -139,7 +139,7 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Para confirmar, escribe "ELIMINAR" en mayúsculas:',
+                  'Para confirmar, escribe "eliminar":',
                   style: GoogleFonts.inter(
                     fontSize: 13,
                     color: AppTheme.getTextSecondary(context),
@@ -151,11 +151,12 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
                   controller: _confirmationController,
                   onChanged: (value) {
                     setState(() {
-                      _isConfirmed = value.trim() == 'ELIMINAR';
+                      final trimmedValue = value.trim().toLowerCase();
+                      _isConfirmed = trimmedValue == 'eliminar';
                     });
                   },
                   decoration: InputDecoration(
-                    hintText: 'Escribe ELIMINAR aquí',
+                    hintText: 'Escribe eliminar aquí',
                     hintStyle: GoogleFonts.inter(
                       color: AppTheme.getTextSecondary(context),
                     ),

@@ -50,6 +50,7 @@ class _SupportPageState extends State<SupportPage>
     }
   }
 
+  // ignore: unused_element
   Future<void> _launchEmail() async {
     const email = 'soporte@prosavis.com';
     const subject = 'Solicitud de Soporte - Prosavis';
@@ -60,6 +61,7 @@ class _SupportPageState extends State<SupportPage>
     }
   }
 
+  // ignore: unused_element
   Future<void> _launchPhone() async {
     const phoneNumber = 'tel:+573001234567';
     final uri = Uri.parse(phoneNumber);
@@ -168,29 +170,31 @@ class _SupportPageState extends State<SupportPage>
                     color: const Color(0xFF25D366),
                   ),
                   
-                  const SizedBox(height: 16),
+                  // const SizedBox(height: 16),
                   
+
                   // Email
-                  _buildContactOption(
-                    icon: Symbols.mail,
-                    title: 'Correo Electrónico',
-                    subtitle: 'soporte@prosavis.com',
-                    description: 'Envíanos un email detallado',
-                    onTap: _launchEmail,
-                    color: AppTheme.primaryColor,
-                  ),
+                  // _buildContactOption(
+                  //   icon: Symbols.mail,
+                  //   title: 'Correo Electrónico',
+                  //   subtitle: 'soporte@prosavis.com',
+                  //   description: 'Envíanos un email detallado',
+                  //   onTap: _launchEmail,
+                  //   color: AppTheme.primaryColor,
+                  // ),
                   
-                  const SizedBox(height: 16),
+                  // const SizedBox(height: 16),
                   
+
                   // Teléfono
-                  _buildContactOption(
-                    icon: Symbols.phone,
-                    title: 'Llamada Telefónica',
-                    subtitle: '+57 300 123 4567',
-                    description: 'Horario: Lun - Vie, 8:00 AM - 6:00 PM',
-                    onTap: _launchPhone,
-                    color: Colors.green,
-                  ),
+                  // _buildContactOption(
+                  //   icon: Symbols.phone,
+                  //   title: 'Llamada Telefónica',
+                  //   subtitle: '+57 300 123 4567',
+                  //   description: 'Horario: Lun - Vie, 8:00 AM - 6:00 PM',
+                  //   onTap: _launchPhone,
+                  //   color: Colors.green,
+                  // ),
                   
                   const SizedBox(height: 32),
                   

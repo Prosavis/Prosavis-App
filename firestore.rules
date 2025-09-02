@@ -20,7 +20,7 @@ service cloud.firestore {
     }
     
     // Helper para validar lista de imágenes (hasta 6) sea lista de strings o vacía
-    function listAllStringsMax4(l) {
+    function listAllStringsMax6(l) {
       return l == null || l is list && l.size() <= 6;
     }
     
@@ -62,7 +62,7 @@ service cloud.firestore {
         && request.resource.data.category is string && request.resource.data.category.size() > 0
         && request.resource.data.price is number && request.resource.data.price >= 0
         && (!request.resource.data.keys().hasAny(['mainImage']) || request.resource.data.mainImage == null || validStorageUrl(request.resource.data.mainImage))
-        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax4(request.resource.data.images));
+        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax6(request.resource.data.images));
 
       // Actualizar servicio con validaciones básicas más permisivas
       allow update: if isSignedIn()
@@ -70,7 +70,7 @@ service cloud.firestore {
         && request.resource.data.providerId == resource.data.providerId
         && (!request.resource.data.keys().hasAny(['mainImage']) || request.resource.data.mainImage == null || validStorageUrl(request.resource.data.mainImage))
         && (!request.resource.data.keys().hasAny(['price']) || (request.resource.data.price is number && request.resource.data.price >= 0))
-        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax4(request.resource.data.images))
+        && (!request.resource.data.keys().hasAny(['images']) || request.resource.data.images == null || listAllStringsMax6(request.resource.data.images))
         && (!request.resource.data.keys().hasAny(['title']) || (request.resource.data.title is string && request.resource.data.title.size() > 2 && request.resource.data.title.size() <= 200))
         && (!request.resource.data.keys().hasAny(['description']) || (request.resource.data.description is string && request.resource.data.description.size() > 5 && request.resource.data.description.size() <= 10000))
         && (!request.resource.data.keys().hasAny(['category']) || (request.resource.data.category is string && request.resource.data.category.size() > 0));

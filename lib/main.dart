@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:animations/animations.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
+import 'dart:async';
+import 'dart:ui';
 import 'dart:developer' as developer;
 import 'core/config/app_config.dart';
+import 'firebase_options.dart';
 
 import 'core/themes/app_theme.dart';
 import 'core/constants/app_constants.dart';
@@ -39,10 +44,10 @@ import 'presentation/pages/search/search_page.dart';
 import 'presentation/pages/categories/categories_page.dart';
 import 'presentation/pages/support/support_page.dart';
 import 'presentation/pages/profile/profile_page.dart';
-import 'presentation/pages/services/service_creation_page.dart';
+import 'presentation/pages/services/service_creation_wizard_page.dart';
+import 'presentation/pages/services/service_edit_wizard_page.dart';
 import 'presentation/pages/services/my_services_page.dart';
 import 'presentation/pages/services/service_details_page.dart';
-import 'presentation/pages/services/service_edit_page.dart';
 import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
@@ -53,48 +58,129 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'core/services/haptics_service.dart';
 
 void main() async {
-  // Optimización: Defer first frame para inicialización más suave
-  WidgetsFlutterBinding.ensureInitialized();
-  // Cargar variables de entorno si existe (para desarrollo local)
-  // El archivo .env no debe estar en producción
-  try {
-    await dotenv.load(fileName: '.env');
-    if (AppConfig.enableDetailedLogs) developer.log('📁 Variables de entorno cargadas desde .env');
-  } catch (_) {
-    if (AppConfig.enableDetailedLogs) developer.log('⚠️ No se encontró archivo .env (normal en producción)');
-  }
-  
-  bool dependenciesInitialized = false;
-  
-  try {
-    if (AppConfig.enableDetailedLogs) developer.log('🚀 Iniciando aplicación Prosavis...');
+  // Inicialización segura con manejo de errores
+  runZonedGuarded<Future<void>>(() async {
+    // Optimización: Defer first frame para inicialización más suave
+    WidgetsFlutterBinding.ensureInitialized();
     
-    // Configurar optimizaciones de rendimiento
-    PerformanceConfig.configurePerformance();
+    // Inicializar Firebase PRIMERO
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
     
-    // Optimización: Inicialización en paralelo cuando sea posible
-    await Future.wait([
-      // Inicializar sistema de inyección de dependencias
-      di.init(),
-      // Precargar activos críticos si los hay
-      _preloadCriticalAssets(),
-    ]);
+    // Configurar Crashlytics
+    await _initializeCrashlytics();
     
-    dependenciesInitialized = true;
-    
-    // Diagnosticar configuración de Firebase para debugging
-    if (AppConfig.enableDetailedLogs) {
-      FirebaseService.diagnoseFirebaseConfiguration();
-      developer.log('✅ Aplicación iniciada con Firebase configurado');
+    // Cargar variables de entorno si existe (para desarrollo local)
+    try {
+      await dotenv.load(fileName: '.env');
+      if (AppConfig.enableDetailedLogs) developer.log('📁 Variables de entorno cargadas desde .env');
+    } catch (_) {
+      if (AppConfig.enableDetailedLogs) developer.log('⚠️ No se encontró archivo .env (normal en producción)');
     }
     
+    bool dependenciesInitialized = false;
+    
+    try {
+      if (AppConfig.enableDetailedLogs) developer.log('🚀 Iniciando aplicación Prosavis...');
+      
+      // Configurar optimizaciones de rendimiento
+      PerformanceConfig.configurePerformance();
+      
+      // Optimización: Inicialización en paralelo cuando sea posible
+      await Future.wait([
+        // Inicializar sistema de inyección de dependencias
+        di.init(),
+        // Precargar activos críticos si los hay
+        _preloadCriticalAssets(),
+      ]);
+      
+      dependenciesInitialized = true;
+      
+      // Diagnosticar configuración de Firebase para debugging
+      if (AppConfig.enableDetailedLogs) {
+        FirebaseService.diagnoseFirebaseConfiguration();
+        developer.log('✅ Aplicación iniciada con Firebase y Crashlytics configurados');
+      }
+      
+    } catch (e, stackTrace) {
+      developer.log('❌ Error crítico en inicialización: $e');
+      developer.log('Stack trace: $stackTrace');
+      
+      // Reportar error a Crashlytics
+      FirebaseCrashlytics.instance.recordError(
+        e,
+        stackTrace,
+        fatal: true,
+        information: ['Error crítico durante la inicialización de la aplicación'],
+      );
+      
+      dependenciesInitialized = false;
+    }
+    
+    runApp(MyApp(dependenciesReady: dependenciesInitialized));
+  }, (error, stack) {
+    // Capturar errores no manejados y enviarlos a Crashlytics
+    developer.log('❌ Error no manejado capturado: $error');
+    FirebaseCrashlytics.instance.recordError(
+      error,
+      stack,
+      fatal: true,
+      information: ['Error no manejado en la zona raíz de la aplicación'],
+    );
+  });
+}
+
+/// Inicializa Firebase Crashlytics con configuración optimizada para desarrollo y producción
+Future<void> _initializeCrashlytics() async {
+  try {
+    // Configurar Crashlytics según el entorno
+    if (AppConfig.isDevelopment) {
+      // En desarrollo, deshabilitar la recolección automática para testing
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(false);
+      developer.log('🔧 Crashlytics configurado para desarrollo (recolección deshabilitada)');
+    } else {
+      // En producción, habilitar recolección automática
+      await FirebaseCrashlytics.instance.setCrashlyticsCollectionEnabled(true);
+      developer.log('📊 Crashlytics configurado para producción (recolección habilitada)');
+    }
+    
+    // Configurar manejo de errores de Flutter
+    FlutterError.onError = (FlutterErrorDetails details) {
+      developer.log('🐛 Error de Flutter capturado: ${details.exception}');
+      
+      if (AppConfig.isDevelopment) {
+        // En desarrollo, mostrar el error en consola
+        FlutterError.presentError(details);
+      } else {
+        // En producción, enviar a Crashlytics
+        FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      }
+    };
+    
+    // Configurar manejo de errores de plataforma (iOS/Android)
+    PlatformDispatcher.instance.onError = (error, stack) {
+      developer.log('⚡ Error de plataforma capturado: $error');
+      
+      if (!AppConfig.isDevelopment) {
+        FirebaseCrashlytics.instance.recordError(
+          error,
+          stack,
+          fatal: true,
+          information: ['Error capturado desde PlatformDispatcher'],
+        );
+      }
+      
+      return true;
+    };
+    
+    developer.log('✅ Crashlytics inicializado correctamente');
+    
   } catch (e, stackTrace) {
-    developer.log('❌ Error crítico en inicialización: $e');
+    developer.log('❌ Error al inicializar Crashlytics: $e');
     developer.log('Stack trace: $stackTrace');
-    dependenciesInitialized = false;
+    // No podemos usar Crashlytics aquí porque falló la inicialización
   }
-  
-  runApp(MyApp(dependenciesReady: dependenciesInitialized));
 }
 
 /// Optimización: Precargar activos críticos para mejorar rendimiento inicial
@@ -227,7 +313,7 @@ final _router = GoRouter(
     GoRoute(
       path: '/create-service',
       pageBuilder: (context, state) => _sharedAxisPage(
-        child: ServiceCreationPage(
+        child: ServiceCreationWizardPage(
           createServiceUseCase: di.sl<CreateServiceUseCase>(),
         ),
         type: SharedAxisTransitionType.scaled,
@@ -251,7 +337,7 @@ final _router = GoRouter(
     GoRoute(
       path: '/services/create',
       pageBuilder: (context, state) => _sharedAxisPage(
-        child: ServiceCreationPage(
+        child: ServiceCreationWizardPage(
           createServiceUseCase: di.sl<CreateServiceUseCase>(),
         ),
         type: SharedAxisTransitionType.scaled,
@@ -276,8 +362,8 @@ final _router = GoRouter(
       pageBuilder: (context, state) {
         final serviceId = state.pathParameters['serviceId']!;
         return _sharedAxisPage(
-          child: ServiceEditPage(serviceId: serviceId),
-          type: SharedAxisTransitionType.horizontal,
+          child: ServiceEditWizardPage(serviceId: serviceId),
+          type: SharedAxisTransitionType.scaled,
         );
       },
     ),

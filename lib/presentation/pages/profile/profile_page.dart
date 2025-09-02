@@ -305,18 +305,6 @@ class _ProfilePageState extends State<ProfilePage>
                 showArrow: false,
                 isDestructive: true,
               ),
-
-              const SizedBox(height: 12),
-              
-              // Borrar Cuenta
-              _buildOptionTile(
-                icon: Symbols.delete_forever,
-                title: 'Borrar Cuenta',
-                subtitle: 'Eliminar permanentemente tu cuenta',
-                onTap: () => _showDeleteAccountDialog(authState),
-                showArrow: false,
-                isDestructive: true,
-              ),
             ],
             
             const SizedBox(height: 32),
@@ -369,6 +357,20 @@ class _ProfilePageState extends State<ProfilePage>
               onTap: () => context.push('/settings/terms'),
               showArrow: true,
             ),
+            
+            // Agregar la opción de borrar cuenta en la sección "Acerca de" si el usuario está autenticado
+            if (authState is AuthAuthenticated) ...[
+              const SizedBox(height: 12),
+              
+              _buildOptionTile(
+                icon: Symbols.delete_forever,
+                title: 'Borrar Cuenta',
+                subtitle: 'Eliminar permanentemente tu cuenta',
+                onTap: () => _showDeleteAccountDialog(authState),
+                showArrow: false,
+                isDestructive: true,
+              ),
+            ],
             
             const SizedBox(height: 48),
           ],
