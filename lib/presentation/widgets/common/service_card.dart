@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
+import '../../../core/constants/app_tokens.dart';
 import '../../../domain/entities/service_entity.dart';
 import 'optimized_image.dart';
 import 'service_image_placeholder.dart';
@@ -26,6 +27,9 @@ class ServiceCard extends StatelessWidget {
   // Controla si la tarjeta vertical ocupa todo el ancho disponible
   // (útil para la pantalla de Mis servicios)
   final bool fullWidth;
+  // Controla si el background de la tarjeta debe ser transparente
+  // (útil para tarjetas dentro de SectionCard con gradiente)
+  final bool transparentBackground;
 
   const ServiceCard({
     super.key,
@@ -41,6 +45,7 @@ class ServiceCard extends StatelessWidget {
     this.isFavorite = false,
     this.onFavoriteToggle,
     this.fullWidth = false,
+    this.transparentBackground = false,
   });
 
   /// Altura recomendada para listas horizontales de tarjetas verticales.
@@ -71,31 +76,43 @@ class ServiceCard extends StatelessWidget {
   }
 
   Widget _buildVerticalCard(BuildContext context) {
+    final cardContent = Container(
+      decoration: BoxDecoration(
+        color: transparentBackground 
+            ? Colors.transparent 
+            : AppTheme.getSurfaceColor(context),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: transparentBackground ? null : [
+          BoxShadow(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.black.withValues(alpha: 0.3)
+                : Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: fullWidth ? MainAxisSize.min : MainAxisSize.max,
+        children: [
+          _buildImageSection(context),
+          fullWidth 
+              ? _buildContentSection(context)
+              : Expanded(child: _buildContentSection(context)),
+        ],
+      ),
+    );
+
     return GestureDetector(
       onTap: onTap ?? () => context.push('/services/${service.id}'),
-      child: Container(
-        width: fullWidth ? double.infinity : 180,
-        decoration: BoxDecoration(
-          color: AppTheme.getSurfaceColor(context),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.black.withValues(alpha: 0.3)
-                  : Colors.black.withValues(alpha: 0.08),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+      child: fullWidth 
+          ? cardContent
+          : SizedBox(
+              width: 180,
+              height: 220,
+              child: cardContent,
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildImageSection(context),
-            _buildContentSection(context),
-          ],
-        ),
-      ),
     );
   }
 
@@ -105,9 +122,11 @@ class ServiceCard extends StatelessWidget {
       child: Container(
         height: 120,
         decoration: BoxDecoration(
-          color: AppTheme.getSurfaceColor(context),
+          color: transparentBackground 
+              ? Colors.transparent 
+              : AppTheme.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [
+          boxShadow: transparentBackground ? null : [
             BoxShadow(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.black.withValues(alpha: 0.3)
@@ -236,39 +255,46 @@ class ServiceCard extends StatelessWidget {
 
   Widget _buildContentSection(BuildContext context, {bool isHorizontal = false}) {
     return Padding(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: isHorizontal 
-            ? MainAxisAlignment.spaceBetween 
-            : MainAxisAlignment.start,
-        children: [
+        mainAxisAlignment: MainAxisAlignment.start,
+        mainAxisSize: fullWidth ? MainAxisSize.min : MainAxisSize.max,
+        children: fullWidth ? [
+          // Para fullWidth usamos un layout simple y compacto
           // Título
           Text(
             service.title,
             style: GoogleFonts.inter(
               fontSize: 14,
               fontWeight: FontWeight.w600,
-              color: AppTheme.getTextPrimary(context),
+              color: transparentBackground 
+                  ? (Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white 
+                      : AppTokens.textPrimary) // Blanco en modo oscuro con gradiente
+                  : AppTheme.getTextPrimary(context),
             ),
-            maxLines: isHorizontal ? 2 : 2,
+            maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           
           // Proveedor
           Text(
             service.providerName,
             style: GoogleFonts.inter(
               fontSize: 12,
-              color: AppTheme.getTextSecondary(context),
+              color: transparentBackground 
+                  ? (Theme.of(context).brightness == Brightness.dark 
+                      ? Colors.white70 
+                      : AppTokens.textSecondary) // Blanco semi-transparente en modo oscuro
+                  : AppTheme.getTextSecondary(context),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
           
-          if (!isHorizontal) const SizedBox(height: 8),
-          if (isHorizontal) const Spacer(),
+          const SizedBox(height: 6),
           
           // Rating y distancia
           Row(
@@ -284,27 +310,125 @@ class ServiceCard extends StatelessWidget {
                 style: GoogleFonts.inter(
                   fontSize: 12,
                   fontWeight: FontWeight.w500,
-                  color: AppTheme.getTextSecondary(context),
+                  color: transparentBackground 
+                      ? (Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : AppTokens.textSecondary) // Blanco semi-transparente en modo oscuro
+                      : AppTheme.getTextSecondary(context),
                 ),
               ),
               // Distancia (si se puede calcular)
-              _DistanceBadge(service: service),
+              _DistanceBadge(service: service, transparentBackground: transparentBackground),
             ],
           ),
           
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           
           // Precio
-          Row(
+          Text(
+            _formatPrice(),
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: transparentBackground 
+                  ? (Theme.of(context).brightness == Brightness.dark 
+                      ? AppTokens.primary 
+                      : AppTokens.primaryDark) // Naranja brillante en modo oscuro
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : AppTheme.primaryColor),
+            ),
+          ),
+        ] : [
+          // Para tarjetas con altura fija usamos spaceBetween
+          // Información superior
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Título
+              Text(
+                service.title,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: transparentBackground 
+                      ? (Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white 
+                          : AppTokens.textPrimary) // Blanco en modo oscuro con gradiente
+                      : AppTheme.getTextPrimary(context),
+                ),
+                maxLines: isHorizontal ? 2 : 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              
+              // Proveedor
+              Text(
+                service.providerName,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: transparentBackground 
+                      ? (Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : AppTokens.textSecondary) // Blanco semi-transparente en modo oscuro
+                      : AppTheme.getTextSecondary(context),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+          
+          // Spacer para distribuir el espacio vertical (solo para tarjetas con altura fija)
+          if (!fullWidth && !isHorizontal) const Spacer(),
+          
+          // Información inferior
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Rating y distancia
+              Row(
+                children: [
+                  const Icon(
+                    Symbols.star,
+                    size: 14,
+                    color: Colors.amber,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    service.rating.toStringAsFixed(1),
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                      color: transparentBackground 
+                          ? (Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white70 
+                          : AppTokens.textSecondary) // Blanco semi-transparente en modo oscuro
+                          : AppTheme.getTextSecondary(context),
+                    ),
+                  ),
+                  // Distancia (si se puede calcular)
+                  _DistanceBadge(service: service, transparentBackground: transparentBackground),
+                ],
+              ),
+              
+              const SizedBox(height: 2),
+              
+              // Precio
               Text(
                 _formatPrice(),
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.bold,
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : AppTheme.primaryColor,
+                  color: transparentBackground 
+                      ? (Theme.of(context).brightness == Brightness.dark 
+                          ? AppTokens.primary 
+                          : AppTokens.primaryDark) // Naranja brillante en modo oscuro
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : AppTheme.primaryColor),
                 ),
               ),
             ],
@@ -408,8 +532,12 @@ class LoginRequiredWidget extends StatelessWidget {
 
 class _DistanceBadge extends StatelessWidget {
   final ServiceEntity service;
+  final bool transparentBackground;
 
-  const _DistanceBadge({required this.service});
+  const _DistanceBadge({
+    required this.service, 
+    this.transparentBackground = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -435,7 +563,11 @@ class _DistanceBadge extends StatelessWidget {
               '·',
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: AppTheme.getTextTertiary(context),
+                color: transparentBackground 
+                    ? (Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white60 
+                        : AppTokens.textTertiary) // Blanco suave en modo oscuro
+                    : AppTheme.getTextTertiary(context),
               ),
             ),
             const SizedBox(width: 4),
@@ -443,7 +575,9 @@ class _DistanceBadge extends StatelessWidget {
               distanceText,
               style: GoogleFonts.inter(
                 fontSize: 12,
-                color: AppTheme.getTextSecondary(context),
+                color: transparentBackground 
+                    ? const Color(0xFF455A64) // Gris medio para gradientes claros
+                    : AppTheme.getTextSecondary(context),
                 fontWeight: FontWeight.w500,
               ),
             ),

@@ -59,32 +59,7 @@ class _SearchPageState extends State<SearchPage>
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Stack(
-            children: [
-              // Degradado naranja sutil como en Home, extendido hasta un poco debajo del buscador
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 240,
-                child: IgnorePointer(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          AppTheme.accentColor.withValues(alpha: 0.14),
-                          AppTheme.accentColor.withValues(alpha: 0.06),
-                          AppTheme.accentColor.withValues(alpha: 0.0),
-                        ],
-                        stops: const [0.0, 0.6, 1.0],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              BlocBuilder<SearchBloc, SearchState>(
+          child: BlocBuilder<SearchBloc, SearchState>(
                 builder: (context, state) {
                   return StretchingOverscrollIndicator(
                     axisDirection: AxisDirection.down,
@@ -104,8 +79,6 @@ class _SearchPageState extends State<SearchPage>
                   );
                 },
               ),
-            ],
-          ),
         ),
       ),
     );
@@ -355,13 +328,6 @@ class _SearchPageState extends State<SearchPage>
             border: Border.all(
               color: AppTheme.primaryColor.withValues(alpha: 0.28),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: AppTheme.accentColor.withValues(alpha: 0.08),
-                blurRadius: 12,
-                offset: const Offset(0, 6),
-              ),
-            ],
           ),
           child: Text(
             category,

@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
 import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:material_symbols_icons/symbols.dart';
@@ -89,7 +91,8 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   bool _imageDeleted = false; // Bandera para rastrear si se eliminó la imagen principal
   List<String> _selectedImages = [];
   final List<File> _newImages = [];
-  List<String> _selectedTags = [];
+  final List<String> _imagesToDelete = []; // Imágenes a eliminar del storage
+
   List<String> _selectedSkills = [];
   final List<String> _customSkills = [];
   List<String> _availableDays = [];
@@ -332,7 +335,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       _mainImageUrl = service.mainImage;
       _imageDeleted = false; // Resetear bandera al cargar servicio
       _selectedImages = List.from(service.images);
-      _selectedTags = List.from(service.tags);
+      // Tags se mantienen del servicio original sin edición
       _selectedSkills = List.from(service.features);
       _availableDays = List.from(service.availableDays);
       _addressController.text = service.address ?? '';
@@ -368,9 +371,10 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       }
 
       // Cargar experiencia y habilidades
-      final experienceFeature = service.features
-          .where((feature) => feature.startsWith('exp:') || feature.toLowerCase().contains('experiencia'))
-          .firstOrNull;
+      final experienceFeature = service.features.cast<String?>().firstWhere(
+        (feature) => feature != null && (feature.startsWith('exp:') || feature.toLowerCase().contains('experiencia')),
+        orElse: () => null,
+      );
       if (experienceFeature != null) {
         _experienceController.text = experienceFeature.replaceFirst('exp:', '').replaceFirst('Experiencia:', '').trim();
       }
@@ -388,9 +392,10 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
           .toList());
 
       // Cargar modalidad de servicio
-      final modalityFeature = service.features
-          .where((feature) => feature.startsWith('Modalidad:'))
-          .firstOrNull;
+      final modalityFeature = service.features.cast<String?>().firstWhere(
+        (feature) => feature != null && feature.startsWith('Modalidad:'),
+        orElse: () => null,
+      );
       if (modalityFeature != null) {
         final modalityText = modalityFeature.replaceFirst('Modalidad:', '').trim();
         if (modalityText.contains('domicilio')) {
@@ -701,6 +706,9 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   void _animateToStep(int stepIndex) {
     if (stepIndex < 0 || stepIndex >= _steps.length) return;
     
+    final isMovingForward = stepIndex > _currentStepIndex;
+    final direction = isMovingForward ? 1.0 : -1.0;
+    
     setState(() {
       _currentStepIndex = stepIndex;
     });
@@ -712,6 +720,15 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     if (_fadeController.isAnimating) {
       _fadeController.stop();
     }
+    
+    // Recrear animación con dirección dinámica
+    _slideAnimation = Tween<Offset>(
+      begin: Offset(direction, 0.0),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _slideController,
+      curve: Curves.easeInOut,
+    ));
     
     _slideController.reset();
     _fadeController.reset();
@@ -786,6 +803,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   // Constructores de pasos (implementar los mismos que en creation pero adaptados para edición)
   Widget _buildCategoryStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -860,6 +878,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildBasicInfoStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -945,6 +964,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildPricingStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1028,7 +1048,8 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                         borderSide: const BorderSide(color: AppTheme.primaryColor, width: 2),
                       ),
                     ),
-                    keyboardType: TextInputType.number,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]'))],
                     onChanged: (value) => setState(() {}),
                   ),
                 if (_priceType == 'negotiable')
@@ -1067,6 +1088,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildMainImageStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1176,6 +1198,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildExperienceStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1299,6 +1322,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildContactStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1432,6 +1456,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildAvailabilityStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1518,6 +1543,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildSkillsStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1788,6 +1814,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildLocationStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2035,6 +2062,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   Widget _buildSummaryStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2266,7 +2294,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   // Métodos auxiliares para generar resúmenes
   String _getContactSummary() {
-    List<String> contactInfo = [];
+    final List<String> contactInfo = [];
     
     if (_whatsappController.text.trim().isNotEmpty) {
       contactInfo.add('WhatsApp: ${_whatsappController.text.trim()}');
@@ -2293,7 +2321,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   }
 
   String _getSkillsSummary() {
-    List<String> allSkills = [];
+    final List<String> allSkills = [];
     allSkills.addAll(_selectedSkills);
     allSkills.addAll(_customSkills);
     
@@ -2303,7 +2331,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   }
 
   String _getAdditionalImagesSummary() {
-    int totalImages = _selectedImages.length + _newImages.length;
+    final int totalImages = _selectedImages.length + _newImages.length;
     
     if (totalImages == 0) {
       return 'No se agregaron imágenes adicionales';
@@ -2317,39 +2345,25 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   }
 
   String _getLocationSummary() {
-    List<String> locationInfo = [];
-    
-    String serviceTypeText = '';
-    switch (_selectedServiceType) {
-      case 'home_service':
-        serviceTypeText = 'Servicio a domicilio';
-        break;
-      case 'workshop':
-        serviceTypeText = 'En mi taller/local';
-        break;
-      case 'remote':
-        serviceTypeText = 'Servicio remoto';
-        break;
-      default:
-        serviceTypeText = 'Tipo no especificado';
-    }
-    locationInfo.add(serviceTypeText);
+    final parts = <String>[];
+    parts.add(_getServiceTypeText()); // Usar método consistente
     
     if (_addressController.text.trim().isNotEmpty) {
-      locationInfo.add('Dirección: ${_addressController.text.trim()}');
+      parts.add('Dirección: ${_addressController.text.trim()}');
     }
     
     if (_lat != null && _lng != null) {
-      locationInfo.add('Ubicación GPS definida');
+      parts.add('Ubicación GPS definida');
     }
     
-    return locationInfo.join(' • ');
+    return parts.join(' • ');
   }
 
 
 
   Widget _buildAdditionalImagesStep(ServiceEditWizardPageState state) {
     return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2384,20 +2398,20 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                 // Botón para añadir imágenes
                 Center(
                   child: GestureDetector(
-                    onTap: _newImages.length >= 6 ? null : _selectAdditionalImages,
+                    onTap: (_selectedImages.length + _newImages.length) >= 6 ? null : _selectAdditionalImages,
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: _newImages.length >= 6 
+                          color: (_selectedImages.length + _newImages.length) >= 6 
                               ? AppTheme.getTextSecondary(context) 
                               : AppTheme.primaryColor,
                           style: BorderStyle.solid,
                           width: 2,
                         ),
                         borderRadius: BorderRadius.circular(12),
-                        color: _newImages.length >= 6 
+                        color: (_selectedImages.length + _newImages.length) >= 6 
                             ? AppTheme.getTextSecondary(context).withValues(alpha: 0.05)
                             : AppTheme.primaryColor.withValues(alpha: 0.05),
                       ),
@@ -2407,24 +2421,24 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           Icon(
                             Symbols.add_photo_alternate,
                             size: 40,
-                            color: _newImages.length >= 6 
+                            color: (_selectedImages.length + _newImages.length) >= 6 
                                 ? AppTheme.getTextSecondary(context) 
                                 : AppTheme.primaryColor,
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            _newImages.length >= 6 ? 'Límite alcanzado' : 'Añadir imágenes',
+                            (_selectedImages.length + _newImages.length) >= 6 ? 'Límite alcanzado' : 'Añadir imágenes',
                             style: GoogleFonts.inter(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              color: _newImages.length >= 6 
+                              color: (_selectedImages.length + _newImages.length) >= 6 
                                   ? AppTheme.getTextSecondary(context) 
                                   : AppTheme.primaryColor,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
-                            _newImages.length >= 6 
+                            (_selectedImages.length + _newImages.length) >= 6 
                                 ? 'Máximo 6 imágenes permitidas'
                                 : 'Toca para seleccionar imágenes (máx. 6)',
                             style: GoogleFonts.inter(
@@ -2435,11 +2449,11 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '${_newImages.length}/6 imágenes',
+                            '${_selectedImages.length + _newImages.length}/6 imágenes total',
                             style: GoogleFonts.inter(
                               fontSize: 14,
                               fontWeight: FontWeight.w500,
-                              color: _newImages.length >= 6 
+                              color: (_selectedImages.length + _newImages.length) >= 6 
                                   ? Colors.orange 
                                   : AppTheme.primaryColor,
                             ),
@@ -2582,6 +2596,8 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                             child: GestureDetector(
                               onTap: () {
                                 setState(() {
+                                  // Agregar a la lista de imágenes a eliminar
+                                  _imagesToDelete.add(_selectedImages[index]);
                                   _selectedImages.removeAt(index);
                                 });
                               },
@@ -2659,18 +2675,20 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
   void _selectAdditionalImages() async {
     try {
-      // Verificar límite antes de abrir el selector
-      if (_newImages.length >= 6) {
+      // Verificar límite TOTAL antes de abrir el selector
+      const maxImages = 6;
+      final currentTotal = _selectedImages.length + _newImages.length;
+      if (currentTotal >= maxImages) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Has alcanzado el límite de 6 imágenes'),
+          SnackBar(
+            content: Text('Máximo $maxImages imágenes permitidas. Tienes $currentTotal.'),
             backgroundColor: Colors.orange,
           ),
         );
         return;
       }
 
-      await HapticsService.onNavigation();
+      HapticsService.onNavigation();
       
       if (!mounted) return;
       
@@ -2681,8 +2699,10 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
         builder: (context) => ImagePickerBottomSheet(
           onImageSelected: (File image) {
             setState(() {
-              // Solo agregar si no se ha alcanzado el límite
-              if (_newImages.length < 6) {
+              // Solo agregar si no se ha alcanzado el límite total
+              const maxImages = 6;
+              final currentTotal = _selectedImages.length + _newImages.length;
+              if (currentTotal < maxImages) {
                 _newImages.add(image);
               }
             });
@@ -2761,6 +2781,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
               child: TextField(
                 controller: _whatsappController,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 maxLength: 10, // Solo 10 dígitos para Colombia
                 decoration: InputDecoration(
                   hintText: '300 123 4567',
@@ -2861,6 +2882,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
               child: TextField(
                 controller: controller,
                 keyboardType: TextInputType.phone,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 maxLength: 10, // Solo 10 dígitos para Colombia (móvil) o hasta 7 para fijo
                 decoration: InputDecoration(
                   hintText: hint,
@@ -3130,6 +3152,22 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     }
   }
 
+  // Métodos auxiliares para validación y normalización
+  String _digitsOnly(String s) => s.replaceAll(RegExp(r'\D'), '');
+  
+  String? _normalizeColombianPhone(String s) {
+    final digits = _digitsOnly(s);
+    return digits.length == 10 ? '+57$digits' : null;
+  }
+  
+  double _safeParsePrice(String text) {
+    if (_priceType == 'negotiable') return 0.0;
+    
+    final cleanText = text.trim().replaceAll(',', '.');
+    final parsed = double.tryParse(cleanText);
+    return parsed ?? 0.0;
+  }
+
   // Método para actualizar el servicio
   Future<void> _updateService() async {
     if (!mounted || _service == null) return;
@@ -3137,6 +3175,40 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     setState(() {
       _isUpdating = true;
     });
+    
+    // Guards de validación
+    if (_selectedCategory == null || _selectedCategory!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Selecciona una categoría')),
+      );
+      setState(() => _isUpdating = false);
+      return;
+    }
+    
+    if (_priceType != 'negotiable' &&
+        double.tryParse(_priceController.text.trim().replaceAll(',', '.')) == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ingresa un precio válido')),
+      );
+      setState(() => _isUpdating = false);
+      return;
+    }
+    
+    if (_titleController.text.trim().length < 5) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El título debe tener al menos 5 caracteres')),
+      );
+      setState(() => _isUpdating = false);
+      return;
+    }
+    
+    if (_descriptionController.text.trim().length < 20) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La descripción debe tener al menos 20 caracteres')),
+      );
+      setState(() => _isUpdating = false);
+      return;
+    }
     
     try {
       final authState = context.read<AuthBloc>().state;
@@ -3147,40 +3219,47 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       final imageStorageService = sl<ImageStorageService>();
       String? mainImageUrl = _mainImageUrl;
       
-      // Manejar imagen principal
+      // Manejar imagen principal - SUBIR PRIMERO, BORRAR DESPUÉS
       if (_imageDeleted) {
-        // Si se eliminó la imagen, eliminarla del storage y establecer como null
-        if (_service!.mainImage != null && _service!.mainImage!.isNotEmpty) {
+        // Solo eliminar la anterior si realmente queremos dejarla en null
+        if (_service!.mainImage?.isNotEmpty == true) {
           try {
             await imageStorageService.deleteServiceImage(_service!.mainImage!);
           } catch (e) {
-            // Log el error pero continúa (la imagen puede ya no existir)
             developer.log('⚠️ Error al eliminar imagen anterior: $e');
           }
         }
         mainImageUrl = null;
       } else if (_mainImageFile != null) {
-        // Si hay una nueva imagen, subirla y eliminar la anterior si existe
-        if (_service!.mainImage != null && _service!.mainImage!.isNotEmpty) {
+        // 1) Subir nueva imagen primero
+        final uploadedUrl = await imageStorageService.uploadServiceImage(
+          widget.serviceId,
+          _mainImageFile!,
+        );
+        if (uploadedUrl == null) {
+          throw Exception('Error al subir la imagen principal');
+        }
+        
+        // 2) Borrar anterior solo si la subida fue exitosa (best-effort)
+        if (_service!.mainImage?.isNotEmpty == true) {
           try {
             await imageStorageService.deleteServiceImage(_service!.mainImage!);
           } catch (e) {
-            // Log el error pero continúa
             developer.log('⚠️ Error al eliminar imagen anterior: $e');
           }
         }
         
-        mainImageUrl = await imageStorageService.uploadServiceImage(
-          widget.serviceId,
-          _mainImageFile!,
-        );
-        
-        if (mainImageUrl == null) {
-          throw Exception('Error al subir la imagen principal');
-        }
+        mainImageUrl = uploadedUrl;
       }
       // Si no se eliminó ni hay nueva imagen, mantener la URL actual
 
+      // Validar límite total de imágenes antes de subir
+      const maxImages = 6;
+      final currentTotal = _selectedImages.length + _newImages.length;
+      if (currentTotal > maxImages) {
+        throw Exception('Máximo $maxImages imágenes permitidas. Tienes $currentTotal.');
+      }
+      
       // Subir nuevas imágenes adicionales si las hay
       final List<String> allImages = List.from(_selectedImages);
       if (_newImages.isNotEmpty) {
@@ -3195,47 +3274,40 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
         }
       }
 
-      // Combinar habilidades con experiencia si está presente
-      final List<String> finalFeatures = List.from(_selectedSkills);
-      finalFeatures.addAll(_customSkills);
-      
-      if (_selectedExperienceLevel != null) {
-        finalFeatures.add('Nivel: $_selectedExperienceLevel');
-      }
-      
-      if (_experienceController.text.trim().isNotEmpty) {
-        final experienceText = _experienceController.text.trim();
-        final formattedExperience = experienceText.startsWith('exp:') 
-            ? experienceText 
-            : 'Experiencia: $experienceText';
-        finalFeatures.add(formattedExperience);
-      }
+      // Combinar habilidades con experiencia - evitar duplicados usando Set
+      final finalFeatures = <String>{
+        ..._selectedSkills,
+        ..._customSkills,
+        if (_selectedExperienceLevel != null) 'Nivel: $_selectedExperienceLevel',
+        if (_experienceController.text.trim().isNotEmpty)
+          (_experienceController.text.trim().startsWith('exp:')
+              ? _experienceController.text.trim()
+              : 'Experiencia: ${_experienceController.text.trim()}'),
+        'Modalidad: ${_getServiceTypeText()}',
+      }.toList();
 
-      // Agregar modalidad de servicio
-      final modalityText = _getServiceTypeText();
-      if (modalityText != 'No especificado') {
-        finalFeatures.add('Modalidad: $modalityText');
-      }
-
+      // Normalizar teléfonos usando los métodos auxiliares
+      final whatsapp = _normalizeColombianPhone(_whatsappController.text);
+      final phone1 = _normalizeColombianPhone(_phone1Controller.text);
+      final phone2 = _normalizeColombianPhone(_phone2Controller.text);
+      
       // Actualizar el servicio
       final updatedService = _service!.copyWith(
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
-        price: _priceType == 'negotiable' ? 0.0 : double.parse(_priceController.text.trim()),
+        price: _safeParsePrice(_priceController.text.trim()),
         category: _selectedCategory!,
         priceType: _priceType,
         mainImage: mainImageUrl,
         images: allImages,
-        tags: _selectedTags,
+        tags: _service!.tags, // Mantener tags originales (no se editan)
         features: finalFeatures,
         availableDays: _availableDays,
         address: _addressController.text.trim().isNotEmpty ? _addressController.text.trim() : null,
-        whatsappNumber: _whatsappController.text.trim().isNotEmpty 
-            ? '+57${_whatsappController.text.trim()}' 
-            : null,
+        whatsappNumber: whatsapp,
         callPhones: [
-          if (_phone1Controller.text.trim().isNotEmpty) '+57${_phone1Controller.text.trim()}',
-          if (_phone2Controller.text.trim().isNotEmpty) '+57${_phone2Controller.text.trim()}',
+          if (phone1 != null) phone1,
+          if (phone2 != null) phone2,
         ],
         instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
         xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,
@@ -3253,20 +3325,14 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
 
       if (!mounted) return;
 
-      // Mostrar mensaje de éxito
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('¡Servicio actualizado exitosamente!'),
-          backgroundColor: Colors.green,
-          action: SnackBarAction(
-            label: 'Ver',
-            textColor: Colors.white,
-            onPressed: () {
-              context.go('/services/${widget.serviceId}');
-            },
-          ),
-        ),
-      );
+      // Eliminar imágenes marcadas para borrado DESPUÉS de guardar (best-effort)
+      for (final imageUrl in _imagesToDelete) {
+        try {
+          await imageStorageService.deleteServiceImage(imageUrl);
+        } catch (e) {
+          developer.log('⚠️ Error al eliminar imagen: $e');
+        }
+      }
 
       // Actualizar la lista de servicios
       ServiceRefreshNotifier().notifyServicesChanged();
@@ -3274,8 +3340,10 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       // Feedback háptico de éxito
       HapticsService.onSuccess();
       
-      // Volver a la página anterior
-      context.pop();
+      // Navegar directamente al detalle del servicio (evita problema de SnackBar + pop)
+      if (mounted) {
+        context.pushReplacement('/services/${widget.serviceId}');
+      }
       
     } catch (e) {
       if (!mounted) return;

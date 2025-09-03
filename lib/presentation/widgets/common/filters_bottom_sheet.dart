@@ -321,8 +321,15 @@ class _FiltersBottomSheetState extends State<FiltersBottomSheet>
   }
 
   Widget _buildActionButtons() {
+    final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
+    
     return Container(
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: EdgeInsets.fromLTRB(
+        AppConstants.paddingMedium,
+        AppConstants.paddingMedium,
+        AppConstants.paddingMedium,
+        AppConstants.paddingMedium + bottomPadding,
+      ),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(color: AppTheme.getBorderColor(context)),

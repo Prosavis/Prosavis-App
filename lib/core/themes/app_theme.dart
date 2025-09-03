@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../utils/font_manager.dart';
+import '../constants/app_tokens.dart';
 import 'package:animations/animations.dart';
 
 class AppTheme {
@@ -181,19 +182,22 @@ class AppTheme {
   }
 
   static ThemeData get lightTheme {
+    // Crear ColorScheme con los tokens y sin tinte de superficies
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AppTokens.primary,
+      brightness: Brightness.light,
+      primary: AppTokens.primary,
+      secondary: AppTokens.secondary,
+      error: AppTokens.error,
+      surface: AppTokens.surface,
+      onSurface: AppTokens.textPrimary,
+    );
+    
     return ThemeData(
       useMaterial3: true,
       visualDensity: VisualDensity.standard,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.light,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        error: errorColor,
-        surface: surfaceColor,
-        onSurface: textPrimary,
-      ),
-      scaffoldBackgroundColor: backgroundColor,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: AppTokens.surface,
       fontFamily: FontManager.fontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -214,25 +218,45 @@ class AppTheme {
         titleTextStyle: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
-        iconTheme: const IconThemeData(color: textPrimary),
+        iconTheme: const IconThemeData(color: AppTokens.textPrimary),
       ),
       
-      // Card Theme
-      cardTheme: CardThemeData(
+      // Card Theme - SIN tinte de Material 3
+      cardTheme: const CardThemeData(
+        color: AppTokens.surface,
+        surfaceTintColor: Colors.transparent, // <-- CLAVE: elimina el tinte
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        color: surfaceColor,
+        shadowColor: Colors.black,
+      ),
+      
+      // BottomSheet Theme - SIN tinte
+      bottomSheetTheme: const BottomSheetThemeData(
+        surfaceTintColor: Colors.transparent, // <-- elimina el tinte
+        backgroundColor: AppTokens.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      
+      // Dialog Theme - SIN tinte  
+      dialogTheme: const DialogThemeData(
+        surfaceTintColor: Colors.transparent, // <-- elimina el tinte
+        backgroundColor: AppTokens.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
       ),
       
       // Elevated Button Theme
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
-          foregroundColor: Colors.white,
+          backgroundColor: AppTokens.primary,
+          foregroundColor: AppTokens.textOnPrimary,
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(
@@ -249,7 +273,7 @@ class AppTheme {
       // Text Button Theme
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: AppTokens.primary,
           textStyle: FontManager.inter(
             fontSize: 16,
             fontWeight: FontWeight.w600,
@@ -260,117 +284,125 @@ class AppTheme {
       // Input Decoration Theme
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: surfaceColor,
+        fillColor: AppTokens.surface,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppTokens.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.grey.shade300),
+          borderSide: const BorderSide(color: AppTokens.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryColor, width: 2),
+          borderSide: const BorderSide(color: AppTokens.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: errorColor),
+          borderSide: const BorderSide(color: AppTokens.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: GoogleFonts.inter(
-          color: textTertiary,
+          color: AppTokens.textTertiary,
           fontSize: 16,
         ),
       ),
       
-      // Text Theme
+      // Text Theme con tokens actualizados
       textTheme: TextTheme(
         displayLarge: GoogleFonts.inter(
           fontSize: 32,
           fontWeight: FontWeight.bold,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         displayMedium: GoogleFonts.inter(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         displaySmall: GoogleFonts.inter(
           fontSize: 24,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         headlineLarge: FontManager.inter(
           fontSize: 22,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         headlineMedium: FontManager.inter(
           fontSize: 20,
           fontWeight: FontWeight.bold,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         headlineSmall: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.bold,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         titleLarge: FontManager.inter(
           fontSize: 18,
           fontWeight: FontWeight.w500,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         titleMedium: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.w500,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         titleSmall: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.w500,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         bodyLarge: FontManager.inter(
           fontSize: 16,
           fontWeight: FontWeight.normal,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
         ),
         bodyMedium: FontManager.inter(
           fontSize: 14,
           fontWeight: FontWeight.normal,
-          color: textSecondary,
+          color: AppTokens.textSecondary,
         ),
         bodySmall: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.normal,
-          color: textTertiary,
+          color: AppTokens.textTertiary,
         ),
         labelMedium: FontManager.inter(
           fontSize: 12,
           fontWeight: FontWeight.w600,
-          color: textPrimary,
+          color: AppTokens.textPrimary,
+        ),
+        labelSmall: FontManager.inter(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: AppTokens.textPrimary,
         ),
       ),
     );
   }
   
   static ThemeData get darkTheme {
+    // ColorScheme para modo oscuro con tokens y sin tinte
+    final scheme = ColorScheme.fromSeed(
+      seedColor: AppTokens.primary,
+      brightness: Brightness.dark,
+      primary: AppTokens.primary,
+      secondary: AppTokens.secondary,
+      error: AppTokens.error,
+      surface: darkSurface,
+      onSurface: darkTextPrimary,
+      onPrimary: Colors.white,
+      onSecondary: Colors.white,
+    );
+    
     return ThemeData(
       useMaterial3: true,
       visualDensity: VisualDensity.standard,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: primaryColor,
-        brightness: Brightness.dark,
-        primary: primaryColor,
-        secondary: secondaryColor,
-        error: errorColor,
-        surface: const Color(0xFF1E293B),
-        onSurface: Colors.white,
-        onPrimary: Colors.white,
-        onSecondary: Colors.white,
-      ),
-      scaffoldBackgroundColor: const Color(0xFF0F172A),
+      colorScheme: scheme,
+      scaffoldBackgroundColor: darkBackground,
       fontFamily: FontManager.fontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -396,13 +428,33 @@ class AppTheme {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       
-      // Card Theme para modo oscuro
-      cardTheme: CardThemeData(
+      // Card Theme para modo oscuro - SIN tinte
+      cardTheme: const CardThemeData(
+        color: darkSurface,
+        surfaceTintColor: Colors.transparent, // <-- elimina el tinte
         elevation: 2,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.all(Radius.circular(20)),
         ),
-        color: const Color(0xFF1E293B),
+        shadowColor: Colors.black,
+      ),
+      
+      // BottomSheet Theme para modo oscuro - SIN tinte
+      bottomSheetTheme: const BottomSheetThemeData(
+        surfaceTintColor: Colors.transparent, // <-- elimina el tinte
+        backgroundColor: darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      
+      // Dialog Theme para modo oscuro - SIN tinte
+      dialogTheme: const DialogThemeData(
+        surfaceTintColor: Colors.transparent, // <-- elimina el tinte
+        backgroundColor: darkSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
       ),
       
       // Elevated Button Theme para modo oscuro

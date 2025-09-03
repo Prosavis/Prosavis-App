@@ -5,6 +5,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:animations/animations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/location_utils.dart';
@@ -1821,9 +1822,320 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   // }
 
   void _shareService() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Función de compartir próximamente')),
+    _showShareDialog();
+  }
+
+  void _showShareDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.getSurfaceColor(context),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Symbols.share,
+                color: AppTheme.primaryColor,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Compartir servicio',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextPrimary(context),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '¿Cómo te gustaría compartir este servicio?',
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: AppTheme.getTextSecondary(context),
+                ),
+              ),
+              const SizedBox(height: 20),
+              // Opciones de compartir
+              _buildShareOption(
+                icon: Symbols.content_copy,
+                title: 'Información completa',
+                subtitle: 'Compartir todos los detalles del servicio',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _shareCompleteInfo();
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildShareOption(
+                icon: Symbols.chat,
+                title: 'WhatsApp directo',
+                subtitle: 'Abrir WhatsApp con mensaje personalizado',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _shareToWhatsApp();
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildShareOption(
+                icon: Symbols.download,
+                title: 'Invitar a descargar app',
+                subtitle: 'Promocionar la aplicación Prosavis',
+                onTap: () {
+                  Navigator.of(context).pop();
+                  _shareAppPromotion();
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.inter(
+                  color: AppTheme.getTextSecondary(context),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
+  }
+
+  Widget _buildShareOption({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppTheme.getBorderColor(context)),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: AppTheme.primaryColor,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.inter(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: GoogleFonts.inter(
+                      fontSize: 12,
+                      color: AppTheme.getTextSecondary(context),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Symbols.arrow_forward_ios,
+              color: AppTheme.getTextTertiary(context),
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareCompleteInfo() async {
+    try {
+      final shareText = _buildCompleteShareText();
+      await Share.share(shareText);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareToWhatsApp() async {
+    try {
+      final phoneNumber = _currentService!.whatsappNumber ?? '';
+      if (phoneNumber.isEmpty) {
+        // Si no hay WhatsApp, compartir por mensaje general
+        final shareText = _buildWhatsAppShareText();
+        await Share.share(shareText);
+        return;
+      }
+
+      // Abrir WhatsApp directamente con mensaje preformateado
+      final formattedNumber = Validators.formatForWhatsApp(phoneNumber);
+      final message = Uri.encodeComponent(_buildWhatsAppShareText());
+      final whatsappUrl = 'https://wa.me/$formattedNumber?text=$message';
+      final uri = Uri.parse(whatsappUrl);
+      
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: compartir el texto
+        await Share.share(_buildWhatsAppShareText());
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir por WhatsApp: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _shareAppPromotion() async {
+    try {
+      final shareText = _buildAppPromotionText();
+      await Share.share(shareText);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  String _buildCompleteShareText() {
+    final service = _currentService!;
+    final rating = service.rating > 0 ? '⭐ ${service.rating.toStringAsFixed(1)} (${service.reviewCount} reseñas)' : 'Sin reseñas aún';
+    final price = service.priceType == 'negotiable' 
+        ? 'Precio negociable' 
+        : '\$${service.price.toStringAsFixed(0)}${service.priceType == 'hourly' ? '/hora' : ''}';
+    
+    String shareText = '''
+🔧 *${service.title}*
+
+📋 *Descripción:*
+${service.description}
+
+👤 *Proveedor:* ${service.providerName}
+💰 *Precio:* $price
+📊 *Calificación:* $rating
+🏷️ *Categoría:* ${service.category}
+''';
+
+    // Agregar dirección si está disponible
+    if (service.address != null && service.address!.isNotEmpty) {
+      shareText += '\n📍 *Ubicación:* ${service.address}';
+    }
+
+    // Agregar características si las hay
+    if (service.features.isNotEmpty) {
+      shareText += '\n\n✅ *Incluye:*';
+      for (final feature in service.features.take(3)) {
+        shareText += '\n• $feature';
+      }
+      if (service.features.length > 3) {
+        shareText += '\n• Y ${service.features.length - 3} beneficios más...';
+      }
+    }
+
+    // Agregar contacto si está disponible
+    if (service.whatsappNumber != null && service.whatsappNumber!.isNotEmpty) {
+      shareText += '\n\n📱 *Contacto WhatsApp:* ${service.whatsappNumber}';
+    }
+
+    shareText += '''
+
+🎯 *Encontrado en Prosavis*
+Descarga la app y encuentra los mejores servicios profesionales cerca de ti.
+
+📲 Descarga Prosavis:
+[Link de descarga - próximamente]
+
+#Prosavis #${service.category.replaceAll(' ', '')} #ServiciosProfesionales''';
+
+    return shareText;
+  }
+
+  String _buildWhatsAppShareText() {
+    final service = _currentService!;
+    final rating = service.rating > 0 ? '⭐ ${service.rating.toStringAsFixed(1)}' : 'Sin reseñas';
+    
+    return '''¡Hola! 👋
+
+Encontré este servicio en Prosavis y pensé que te podría interesar:
+
+🔧 *${service.title}*
+👤 Por: ${service.providerName}
+💰 Precio: \$${service.price.toStringAsFixed(0)}
+📊 $rating
+
+${service.description}
+
+¿Te interesa? ¡Descarga Prosavis para ver más detalles y contactar directamente! 📲''';
+  }
+
+  String _buildAppPromotionText() {
+    return '''🎯 *¡Descubre Prosavis!*
+
+La aplicación que conecta a las mejores personas que ofrecen servicios profesionales contigo.
+
+✨ *¿Qué puedes encontrar?*
+• Servicios de limpieza y mantenimiento
+• Servicios técnicos y reparaciones
+• Servicios de belleza y cuidado personal
+• Servicios profesionales y consultoría
+• ¡Y mucho más!
+
+🌟 *Beneficios:*
+• Buscar servicios cerca de ti
+• Ver calificaciones y reseñas reales
+• Contactar directamente por WhatsApp
+• Comparar precios y ofertas
+• Servicios verificados y confiables
+
+📲 *Descarga Prosavis:*
+[Link de descarga - próximamente]
+
+#Prosavis #ServiciosProfesionales #AppMovil''';
   }
 
   void _onWhatsAppPressed() {

@@ -3337,7 +3337,7 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
       }
 
       String? mainImageUrl;
-      List<String> additionalImageUrls = [];
+      final List<String> additionalImageUrls = [];
       
       // Subir imagen principal si existe
       if (_mainImageFile != null) {
@@ -3358,7 +3358,7 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
         for (int i = 0; i < _newImages.length; i++) {
           try {
             // Usar un ID temporal único para cada imagen
-            final tempId = DateTime.now().millisecondsSinceEpoch.toString() + '_$i';
+            final tempId = '${DateTime.now().millisecondsSinceEpoch}_$i';
             final imageUrl = await imageStorageService.uploadServiceImage(tempId, _newImages[i]);
             
             if (imageUrl != null) {

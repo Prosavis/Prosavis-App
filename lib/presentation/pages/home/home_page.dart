@@ -8,8 +8,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_tokens.dart';
 import '../../../core/config/performance_config.dart';
-import '../../../core/utils/location_utils.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/home/home_bloc.dart';
@@ -20,6 +20,8 @@ import '../../blocs/location/location_event.dart';
 import '../../blocs/location/location_state.dart';
 
 import '../../widgets/common/service_card.dart';
+import '../../widgets/common/help_button_widget.dart';
+import '../../widgets/common/limited_address_widget.dart';
 
 import '../../widgets/dialogs/location_permission_dialog.dart';
 import '../../widgets/dialogs/welcome_dialog.dart';
@@ -43,13 +45,123 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
+class SectionCard extends StatelessWidget {
+  final String title;
+  final Gradient gradient;
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+  final Widget? headerTrailing;
+
+  const SectionCard({
+    super.key,
+    required this.title,
+    required this.gradient,
+    required this.child,
+    this.padding,
+    this.headerTrailing,
+  });
+
+  /// Crea gradientes sutiles según el título de la sección y el tema actual
+  Gradient _createSoftGradient(Gradient originalGradient, BuildContext context) {
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Usar gradientes predefinidos según el tema
+    switch (title.toLowerCase()) {
+      case 'categorías':
+        return isDarkMode 
+            ? AppTokens.categoriesGradientDark 
+            : AppTokens.categoriesGradient;
+        
+      case 'servicios destacados':
+        return isDarkMode 
+            ? AppTokens.featuredGradientDark 
+            : AppTokens.featuredGradient;
+        
+      case 'cerca de ti':
+        return isDarkMode 
+            ? AppTokens.nearbyGradientDark 
+            : AppTokens.nearbyGradient;
+        
+      default:
+        // Fallback según el tema
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: isDarkMode ? [
+            const Color(0xFF1F2937), // Superficie elevada oscura
+            const Color(0xFF111827), // Fondo oscuro
+          ] : [
+            const Color(0xFFFAFBFC), // Superficie elevada clara
+            AppTokens.surface,        // Blanco puro
+          ],
+          stops: const [0.0, 1.0],
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+      decoration: BoxDecoration(
+        gradient: _createSoftGradient(gradient, context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark 
+              ? Colors.grey.shade700
+              : AppTokens.outline
+        ),
+        boxShadow: [
+          AppTokens.cardShadow,
+        ],
+      ),
+      child: Column(
+        children: [
+          // Header integrado
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    color: Theme.of(context).brightness == Brightness.dark 
+                        ? Colors.white
+                        : AppTokens.textPrimary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                if (headerTrailing != null) ...[
+                  const SizedBox(width: 8),
+                  headerTrailing!,
+                ],
+              ],
+            ),
+          ),
+          // Contenido
+          Padding(
+            padding: padding ?? const EdgeInsets.fromLTRB(
+              AppConstants.paddingMedium, 
+              0, 
+              AppConstants.paddingMedium, 
+              AppConstants.paddingMedium
+            ),
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HomePageState extends State<HomePage>
     with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   
-  late AnimationController _locationHighlightController;
-  late Animation<double> _locationHighlightAnimation;
+
   
   bool _hasShownWelcomeDialog = false;
   
@@ -67,18 +179,7 @@ class _HomePageState extends State<HomePage>
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
 
-    // Animación sutil para destacar la ubicación detectada
-    _locationHighlightController = AnimationController(
-      duration: const Duration(milliseconds: 220),
-      vsync: this,
-    );
-    
-    _locationHighlightAnimation = Tween<double>(begin: 1.0, end: 1.06).animate(
-      CurvedAnimation(
-        parent: _locationHighlightController,
-        curve: Curves.easeOutCubic,
-      ),
-    );
+
 
 
     _fadeController.forward();
@@ -95,7 +196,6 @@ class _HomePageState extends State<HomePage>
   @override
   void dispose() {
     _fadeController.dispose();
-    _locationHighlightController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -124,14 +224,7 @@ class _HomePageState extends State<HomePage>
     // Ejecutar animación sutil para llamar la atención sobre la ubicación detectada
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted) {
-        developer.log('🎯 Ejecutando animación de atención para ubicación detectada', name: 'HomePage');
-        _locationHighlightController.forward().then((_) {
-          Future.delayed(const Duration(milliseconds: 200), () {
-            if (mounted) {
-              _locationHighlightController.reverse();
-            }
-          });
-        });
+        developer.log('🎯 Ubicación detectada correctamente', name: 'HomePage');
       }
     });
   }
@@ -264,102 +357,80 @@ class _HomePageState extends State<HomePage>
   Widget _buildAppBar(AuthAuthenticated state) {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Row(
+        padding: const EdgeInsets.only(
+          left: AppConstants.paddingMedium,
+          right: AppConstants.paddingMedium,
+          top: AppConstants.paddingMedium,
+          bottom: 8, // Reducido el padding inferior para acercar a la barra de búsqueda
+        ),
+        child: Stack(
           children: [
-            // User Avatar - Clickeable para ir al perfil
-            GestureDetector(
-              onTap: () {
-                widget.onProfileTapped?.call();
-              },
-              child: CircleAvatar(
-                radius: 24,
-                backgroundImage: _getImageProvider(state.user.photoUrl),
-                backgroundColor: AppTheme.primaryColor,
-                child: state.user.photoUrl == null
-                    ? const Icon(
-                        Symbols.person,
-                        color: Colors.white,
-                        size: 28,
-                      )
-                    : null,
-              ),
+            // Contenido principal: Avatar + Saludo + Dirección
+            Row(
+              children: [
+                // User Avatar - Clickeable para ir al perfil
+                GestureDetector(
+                  onTap: () {
+                    widget.onProfileTapped?.call();
+                  },
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundImage: _getImageProvider(state.user.photoUrl),
+                    backgroundColor: AppTheme.primaryColor,
+                    child: state.user.photoUrl == null
+                        ? const Icon(
+                            Symbols.person,
+                            color: Colors.white,
+                            size: 28,
+                          )
+                        : null,
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Welcome message + ubicación minimalista
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '¡Hola, ${state.user.name.split(' ').first}!',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 2),
+                      // Dirección limitada con scroll automático
+                      LimitedAddressWidget(
+                        maxWidth: MediaQuery.of(context).size.width - 
+                                  AppConstants.paddingMedium * 2 - // Padding del container
+                                  48 - // Avatar (radius 24 * 2)
+                                  12 - // Espacio entre avatar y texto
+                                  100 - // Espacio reservado para el botón de ayuda
+                                  20,   // Margen de seguridad
+                        onTap: () {
+                          _showLocationDialog();
+                        },
+                        anonymousText: 'Toca para agregar ubicación',
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Espacio para el botón que estará positioned
+                const SizedBox(width: 80),
+              ],
             ),
             
-            const SizedBox(width: 12),
-            
-            // Welcome + ubicación activa usando LocationBloc
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _locationHighlightAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _locationHighlightAnimation.value,
-                    child: GestureDetector(
-                      onTap: () {
-                        _showLocationDialog();
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '¡Hola, ${state.user.name.split(' ').first}!',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          BlocBuilder<LocationBloc, LocationState>(
-                            builder: (context, locationState) {
-                              return Row(
-                                children: [
-                                  Icon(
-                                    locationState is LocationLoading
-                                        ? Symbols.my_location
-                                        : locationState is LocationLoaded
-                                            ? Symbols.location_on
-                                            : Symbols.location_off,
-                                    size: 16,
-                                    color: locationState is LocationLoading
-                                        ? AppTheme.accentColor
-                                        : AppTheme.getTextSecondary(context),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      locationState is LocationLoading
-                                          ? 'Detectando ubicación por GPS...'
-                                          : locationState is LocationLoaded
-                                              ? LocationUtils.normalizeAddress(locationState.address)
-                                              : 'Toca para agregar ubicación',
-                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                        fontStyle: locationState is LocationLoading ? FontStyle.italic : null,
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
+            // Botón de ayuda en la esquina superior derecha
+            Positioned(
+              top: 0,
+              right: 0,
+              child: HelpButtonWidget(
+                onTap: () {
+                  context.push('/support');
                 },
               ),
-            ),
-            
-            // Support
-            IconButton(
-              onPressed: () {
-                context.push('/support');
-              },
-              icon: const Icon(
-                Symbols.support_agent,
-                color: AppTheme.accentColor,
-                size: 28,
-              ),
-              tooltip: 'Soporte',
             ),
           ],
         ),
@@ -370,100 +441,80 @@ class _HomePageState extends State<HomePage>
   Widget _buildAppBarAnonymous() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.all(AppConstants.paddingMedium),
-        child: Row(
+        padding: const EdgeInsets.only(
+          left: AppConstants.paddingMedium,
+          right: AppConstants.paddingMedium,
+          top: AppConstants.paddingMedium,
+          bottom: 8, // Reducido el padding inferior para acercar a la barra de búsqueda
+        ),
+        child: Stack(
           children: [
-            // User Avatar for anonymous user - Clickeable para ir al perfil
-            GestureDetector(
-              onTap: () {
-                widget.onProfileTapped?.call();
-              },
-              child: const Hero(
-                tag: 'header-avatar-anon',
-                child: CircleAvatar(
-                radius: 24,
-                backgroundColor: AppTheme.primaryColor,
-                child: Icon(
-                  Symbols.person,
-                  color: Colors.white,
-                  size: 28,
-                ),
-                ),
-              ),
-            ),
-            
-            const SizedBox(width: 12),
-            
-            // Welcome Message for anonymous user + Ubicación GPS usando LocationBloc
-            Expanded(
-              child: AnimatedBuilder(
-                animation: _locationHighlightAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _locationHighlightAnimation.value,
-                    child: GestureDetector(
-                      onTap: () {
-                        _showLocationDialog();
-                      },
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '¡Hola!',
-                            style: Theme.of(context).textTheme.headlineSmall,
-                          ),
-                          const SizedBox(height: 2),
-                          BlocBuilder<LocationBloc, LocationState>(
-                            builder: (context, locationState) {
-                              return Row(
-                                children: [
-                                  Icon(
-                                    locationState is LocationLoading
-                                        ? Symbols.my_location
-                                        : locationState is LocationLoaded
-                                            ? Symbols.location_on
-                                            : Symbols.location_off,
-                                    size: 16,
-                                    color: locationState is LocationLoading
-                                        ? AppTheme.accentColor
-                                        : AppTheme.getTextSecondary(context),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Expanded(
-                                    child: Text(
-                                      locationState is LocationLoading
-                                          ? 'Detectando ubicación por GPS...'
-                                          : locationState is LocationLoaded
-                                              ? LocationUtils.normalizeAddress(locationState.address)
-                                              : 'Inicia sesión para gestionar direcciones',
-                                      style: Theme.of(context).textTheme.bodyMedium,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
-                          ),
-                        ],
+            // Contenido principal: Avatar + Saludo + Dirección
+            Row(
+              children: [
+                // User Avatar for anonymous user - Clickeable para ir al perfil
+                GestureDetector(
+                  onTap: () {
+                    widget.onProfileTapped?.call();
+                  },
+                  child: const Hero(
+                    tag: 'header-avatar-anon',
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppTheme.primaryColor,
+                      child: Icon(
+                        Symbols.person,
+                        color: Colors.white,
+                        size: 28,
                       ),
                     ),
-                  );
-                },
-              ),
+                  ),
+                ),
+                
+                const SizedBox(width: 12),
+                
+                // Welcome message + ubicación minimalista
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '¡Hola!',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      const SizedBox(height: 2),
+                      // Dirección limitada con scroll automático
+                      LimitedAddressWidget(
+                        maxWidth: MediaQuery.of(context).size.width - 
+                                  AppConstants.paddingMedium * 2 - // Padding del container
+                                  48 - // Avatar (radius 24 * 2)
+                                  12 - // Espacio entre avatar y texto
+                                  100 - // Espacio reservado para el botón de ayuda
+                                  20,   // Margen de seguridad
+                        onTap: () {
+                          _showLocationDialog();
+                        },
+                        anonymousText: 'Inicia sesión para gestionar direcciones',
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Espacio para el botón que estará positioned
+                const SizedBox(width: 80),
+              ],
             ),
             
-            // Support - Disponible para usuarios anónimos
-            IconButton(
-              onPressed: () {
-                context.push('/support');
-              },
-              icon: const Icon(
-                Symbols.support_agent,
-                color: AppTheme.accentColor,
-                size: 28,
+            // Botón de ayuda en la esquina superior derecha
+            Positioned(
+              top: 0,
+              right: 0,
+              child: HelpButtonWidget(
+                onTap: () {
+                  context.push('/support');
+                },
               ),
-              tooltip: 'Soporte',
             ),
           ],
         ),
@@ -474,7 +525,12 @@ class _HomePageState extends State<HomePage>
   Widget _buildSearchBar() {
     return SliverToBoxAdapter(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+        padding: const EdgeInsets.only(
+          left: AppConstants.paddingMedium,
+          right: AppConstants.paddingMedium,
+          top: 8, // Reducido significativamente el espacio superior
+          bottom: AppConstants.paddingMedium,
+        ),
         child: GestureDetector(
           onTap: () {
             // Navegar a la página de búsqueda independiente
@@ -521,47 +577,27 @@ class _HomePageState extends State<HomePage>
     return [
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.all(AppConstants.paddingMedium),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  gradient: AppTheme.primaryGradient,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  'Categorías',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-                  textAlign: TextAlign.center,
-                ),
+          padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
+          child: SectionCard(
+            title: 'Categorías',
+            gradient: AppTheme.primaryGradient,
+            padding: EdgeInsets.zero,
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppConstants.paddingMedium),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 4,
+                crossAxisSpacing: 12,
+                mainAxisSpacing: 12,
+                childAspectRatio: 0.68,
               ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ),
-      SliverPadding(
-        padding: const EdgeInsets.only(
-          left: AppConstants.paddingMedium,
-          right: AppConstants.paddingMedium,
-          bottom: AppConstants.paddingMedium,
-        ),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 4,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.68, // Mantener proporción; iconos aumentados
-          ),
-          delegate: SliverChildBuilderDelegate(
-            (context, index) {
-              final category = AppConstants.serviceCategories[index];
-              return _buildCategoryGridItem(category, index: index);
-            },
-            childCount: AppConstants.serviceCategories.length,
+              itemCount: AppConstants.serviceCategories.length,
+              itemBuilder: (context, index) {
+                final category = AppConstants.serviceCategories[index];
+                return _buildCategoryGridItem(category, index: index);
+              },
+            ),
           ),
         ),
       ),
@@ -588,54 +624,34 @@ class _HomePageState extends State<HomePage>
         closedBuilder: (context, openContainer) {
           return PressScale(
             onPressed: openContainer,
-            borderRadius: BorderRadius.circular(16),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppTheme.getSurfaceColor(context),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppTheme.getBorderColor(context)),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppTheme.accentColor.withValues(alpha: 0.05),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _BreathingScale(
                     delayMs: index * 120,
                     minScale: 1.0,
-                    maxScale: 1.04,
+                    maxScale: 1.05,
                     duration: const Duration(milliseconds: 2600),
-                    child: Container(
-                      height: 72,
-                      width: 72,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppTheme.accentColor.withValues(alpha: 0.18),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 1.0],
-                        ),
-                      ),
-                      alignment: Alignment.center,
-                      child: Hero(
-                        tag: "category-${category['name']}-icon",
-                        child: _buildCategoryIconFromAsset(category, size: 64),
-                      ),
+                    child: Hero(
+                      tag: "category-${category['name']}-icon",
+                      child: _buildCategoryIconFromAsset(category, size: 64, context: context),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
                   Text(
                     category['name'],
-                    style: Theme.of(context).textTheme.labelMedium,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).brightness == Brightness.dark 
+                          ? Colors.white
+                          : AppTokens.textPrimary,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 11,
+                    ),
                     textAlign: TextAlign.center,
-                    maxLines: 2,
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -647,8 +663,11 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildCategoryIconFromAsset(Map<String, dynamic> category, {double size = 32}) {
+  Widget _buildCategoryIconFromAsset(Map<String, dynamic> category, {double size = 32, required BuildContext context}) {
     final String? asset = category['asset'] as String?;
+    final categoryName = category['name'] as String? ?? '';
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     if (asset != null && asset.isNotEmpty) {
       return Image.asset(
         asset,
@@ -658,69 +677,40 @@ class _HomePageState extends State<HomePage>
         filterQuality: FilterQuality.high,
         errorBuilder: (_, __, ___) => Icon(
           category['icon'],
-          color: _getCategoryColor(category['name']),
+          color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
           size: size,
         ),
       );
     }
     return Icon(
       category['icon'],
-      color: _getCategoryColor(category['name']),
+      color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
       size: size,
     );
-  }
- 
-  Color _getCategoryColor(String categoryName) {
-    // Si en el futuro queremos reintroducir colores por categoría, aquí es el punto.
-    // Por ahora, usamos un color de énfasis consistente para simplificar diseño.
-    return AppTheme.primaryColor;
   }
 
   Widget _buildFeaturedServicesSection() {
     return BlocBuilder<HomeBloc, HomeState>(
       builder: (context, state) {
         return SliverToBoxAdapter(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.paddingMedium,
-                ),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.secondaryGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        'Servicios Destacados',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-                        textAlign: TextAlign.center,
-                      ),
-                      if (state is HomeLoading)
-                        const Padding(
-                          padding: EdgeInsets.only(left: 8),
-                          child: SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              SizedBox(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: AppConstants.paddingMedium),
+            child: SectionCard(
+              title: 'Servicios Destacados',
+              gradient: AppTheme.secondaryGradient,
+              padding: EdgeInsets.zero,
+              headerTrailing: state is HomeLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    )
+                  : null,
+              child: SizedBox(
                 height: ServiceCard.preferredVerticalListHeight(context),
                 child: _buildFeaturedServicesList(state),
               ),
-            ],
+            ),
           ),
         );
       },
@@ -790,6 +780,7 @@ class _HomePageState extends State<HomePage>
                 service: service,
                 onTap: openContainer,
                 enableHero: false,
+                transparentBackground: true,
               ),
             ),
           );
@@ -805,26 +796,14 @@ class _HomePageState extends State<HomePage>
       builder: (context, state) {
         return SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.all(AppConstants.paddingMedium),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: AppTheme.welcomeGradient,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Text(
-                    'Cerca de ti',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(color: Colors.white, fontWeight: FontWeight.w800),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _buildNearbyServicesList(state),
-              ],
+            padding: const EdgeInsets.symmetric(
+              vertical: AppConstants.paddingMedium,
+              horizontal: 0,
+            ),
+            child: SectionCard(
+              title: 'Cerca de ti',
+              gradient: AppTheme.welcomeGradient,
+              child: _buildNearbyServicesList(state),
             ),
           ),
         );
@@ -890,6 +869,7 @@ class _HomePageState extends State<HomePage>
                 isHorizontal: true,
                 onTap: openContainer,
                 enableHero: false,
+                transparentBackground: true,
               ),
             ),
           );
