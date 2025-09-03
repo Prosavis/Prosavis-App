@@ -42,10 +42,11 @@ service firebase.storage {
         && request.resource.contentType.matches('image/(jpeg|png|webp|jpg)')
         && request.resource.size < 10 * 1024 * 1024;
 
-      // Borrado para usuarios autenticados (validación por nombre de archivo que contenga uid)
+      // Borrado para usuarios autenticados
       allow delete: if isSignedIn()
         && (fileName.matches('.*' + request.auth.uid + '.*') 
-            || (resource.metadata != null && resource.metadata.serviceId != null && isServiceOwnerById(resource.metadata.serviceId)));
+            || (resource.metadata != null && resource.metadata.serviceId != null && isServiceOwnerById(resource.metadata.serviceId))
+            || (fileName.matches('.*_.*') && firestore.exists(/databases/(default)/documents/services/$(fileName.split('_')[0])) && request.auth.uid == firestore.get(/databases/(default)/documents/services/$(fileName.split('_')[0])).data.providerId));
     }
     
     // === DOCUMENTOS Y CERTIFICADOS ===

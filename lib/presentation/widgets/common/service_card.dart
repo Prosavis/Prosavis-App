@@ -270,33 +270,33 @@ class ServiceCard extends StatelessWidget {
           if (!isHorizontal) const SizedBox(height: 8),
           if (isHorizontal) const Spacer(),
           
-          // Rating, distancia (si aplica) y precio
+          // Rating y distancia
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              // Rating
-              Row(
-                children: [
-                  const Icon(
-                    Symbols.star,
-                    size: 14,
-                    color: Colors.amber,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    service.rating.toStringAsFixed(1),
-                    style: GoogleFonts.inter(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.getTextSecondary(context),
-                    ),
-                  ),
-                  // Distancia (si se puede calcular)
-                  _DistanceBadge(service: service),
-                ],
+              const Icon(
+                Symbols.star,
+                size: 14,
+                color: Colors.amber,
               ),
-              
-              // Precio
+              const SizedBox(width: 2),
+              Text(
+                service.rating.toStringAsFixed(1),
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.getTextSecondary(context),
+                ),
+              ),
+              // Distancia (si se puede calcular)
+              _DistanceBadge(service: service),
+            ],
+          ),
+          
+          const SizedBox(height: 4),
+          
+          // Precio
+          Row(
+            children: [
               Text(
                 _formatPrice(),
                 style: GoogleFonts.inter(

@@ -202,17 +202,31 @@ class ImageStorageService {
     try {
       final firebaseStorage = storage;
 
+      developer.log('🗑️ Intentando eliminar imagen de servicio: $imageUrl');
+      
       // Obtener referencia desde la URL
       final Reference ref = firebaseStorage.refFromURL(imageUrl);
+      final fileName = ref.name;
+      
+      developer.log('📁 Nombre del archivo a eliminar: $fileName');
+      
+      // Obtener metadatos antes de eliminar para debugging
+      try {
+        final metadata = await ref.getMetadata();
+        developer.log('📊 Metadatos del archivo: ${metadata.customMetadata}');
+      } catch (metadataError) {
+        developer.log('⚠️ No se pudieron obtener metadatos: $metadataError');
+      }
       
       // Eliminar imagen
       await ref.delete();
       
-      developer.log('✅ Imagen de servicio eliminada exitosamente');
+      developer.log('✅ Imagen de servicio eliminada exitosamente: $fileName');
       return true;
       
     } catch (e) {
       developer.log('❌ Error al eliminar imagen de servicio: $e');
+      developer.log('🔍 URL de la imagen que falló: $imageUrl');
       return false;
     }
   }
