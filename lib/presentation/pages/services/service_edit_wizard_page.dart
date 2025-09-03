@@ -78,7 +78,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   final _addressController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _phone1Controller = TextEditingController();
-  final _phone2Controller = TextEditingController();
   final _instagramController = TextEditingController();
   final _xController = TextEditingController();
   final _tiktokController = TextEditingController();
@@ -351,14 +350,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
           phone1 = phone1.substring(3);
         }
         _phone1Controller.text = phone1;
-        
-        if (service.callPhones.length > 1) {
-          String phone2 = service.callPhones[1];
-          if (phone2.startsWith('+57')) {
-            phone2 = phone2.substring(3);
-          }
-          _phone2Controller.text = phone2;
-        }
       }
 
       // Cargar WhatsApp (limpiar formato +57)
@@ -443,7 +434,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     _addressController.dispose();
     _whatsappController.dispose();
     _phone1Controller.dispose();
-    _phone2Controller.dispose();
     _instagramController.dispose();
     _xController.dispose();
     _tiktokController.dispose();
@@ -1358,19 +1348,11 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                 _buildWhatsAppField(),
                 const SizedBox(height: 16),
                 
-                // Teléfono 1
+                // Teléfono de llamadas
                 _buildPhoneField(
-                  'Teléfono principal',
+                  'Teléfono de llamadas',
                   _phone1Controller,
                   'Ej: 1 234 5678 o móvil',
-                ),
-                const SizedBox(height: 16),
-                
-                // Teléfono 2
-                _buildPhoneField(
-                  'Teléfono secundario',
-                  _phone2Controller,
-                  'Ej: 300 987 6543',
                 ),
                 const SizedBox(height: 16),
                 
@@ -1585,7 +1567,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                 ),
                 const SizedBox(height: 12),
                 
-                // Grid de habilidades
+                // Grid de habilidades (predeterminadas + personalizadas)
                 GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
@@ -1595,20 +1577,26 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                     crossAxisSpacing: 8,
                     mainAxisSpacing: 8,
                   ),
-                  itemCount: _commonSkills.length,
+                  itemCount: _getAllDisplaySkills().length,
                   itemBuilder: (context, index) {
-                    final skill = _commonSkills[index];
-                    final isSelected = _selectedSkills.contains(skill);
+                    final skill = _getAllDisplaySkills()[index];
+                    final isCustomSkill = _customSkills.contains(skill);
+                    final isSelected = isCustomSkill || _selectedSkills.contains(skill);
                     
                     return GestureDetector(
                       onTap: () {
                         setState(() {
-                          if (isSelected) {
-                            _selectedSkills.remove(skill);
+                          if (isCustomSkill) {
+                            // Si es habilidad personalizada, eliminarla automáticamente
+                            _customSkills.remove(skill);
                           } else {
-                            // Remover si existe en cualquier posición y agregar al inicio
-                            _selectedSkills.remove(skill);
-                            _selectedSkills.insert(0, skill);
+                            // Si es habilidad predeterminada, manejar selección normal
+                            if (isSelected) {
+                              _selectedSkills.remove(skill);
+                            } else {
+                              _selectedSkills.remove(skill);
+                              _selectedSkills.insert(0, skill);
+                            }
                           }
                         });
                       },
@@ -1649,6 +1637,17 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
+                            // Mostrar indicador para habilidades personalizadas
+                            if (isCustomSkill) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Symbols.star,
+                                size: 12,
+                                color: isSelected 
+                                  ? AppTheme.primaryColor 
+                                  : AppTheme.getTextSecondary(context),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -1714,159 +1713,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                     ),
                   ],
                 ),
-                
-                // Grid de habilidades personalizadas si existen
-                if (_customSkills.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  Text(
-                    'Habilidades personalizadas',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.getTextPrimary(context),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 3,
-                      crossAxisSpacing: 8,
-                      mainAxisSpacing: 8,
-                    ),
-                    itemCount: _customSkills.length,
-                    itemBuilder: (context, index) {
-                      final skill = _customSkills[index];
-                      
-                      return GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            // Al deseleccionar una habilidad personalizada, se elimina automáticamente
-                            _customSkills.remove(skill);
-                          });
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                            border: Border.all(
-                              color: AppTheme.primaryColor,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Symbols.check_circle,
-                                size: 16,
-                                color: AppTheme.primaryColor,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Text(
-                                  skill,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w500,
-                                    color: AppTheme.primaryColor,
-                                  ),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-                
-                if (_selectedSkills.isNotEmpty || _customSkills.isNotEmpty) ...[
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppTheme.primaryColor.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Symbols.check_circle,
-                              color: AppTheme.primaryColor,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Habilidades seleccionadas (${_getAllSelectedSkills().length})',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 4,
-                          children: [
-                            // Todas las habilidades seleccionadas en orden (más recientes primero)
-                            ..._getAllSelectedSkills().map((skill) {
-                              final isCustomSkill = _customSkills.contains(skill);
-                              return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: isCustomSkill
-                                  ? Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Text(
-                                          skill,
-                                          style: GoogleFonts.inter(
-                                            fontSize: 12,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 4),
-                                        GestureDetector(
-                                          onTap: () => _removeCustomSkill(skill),
-                                          child: const Icon(
-                                            Symbols.close,
-                                            size: 14,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                      ],
-                                    )
-                                  : Text(
-                                      skill,
-                                      style: GoogleFonts.inter(
-                                        fontSize: 12,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ],
             ),
           ),
@@ -2364,9 +2210,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     }
     if (_phone1Controller.text.trim().isNotEmpty) {
       contactInfo.add('Tel: ${_phone1Controller.text.trim()}');
-    }
-    if (_phone2Controller.text.trim().isNotEmpty) {
-      contactInfo.add('Tel 2: ${_phone2Controller.text.trim()}');
     }
     if (_instagramController.text.trim().isNotEmpty) {
       contactInfo.add('Instagram: @${_instagramController.text.trim()}');
@@ -3094,21 +2937,15 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     }
   }
 
-  void _removeCustomSkill(String skill) {
-    setState(() {
-      _customSkills.remove(skill);
-    });
-  }
-
-  // Método para obtener todas las habilidades seleccionadas en orden
-  List<String> _getAllSelectedSkills() {
+  // Método para obtener todas las habilidades para mostrar en el grid
+  List<String> _getAllDisplaySkills() {
     final List<String> allSkills = [];
     
-    // Primero agregar habilidades personalizadas (más recientes primero)
+    // Primero agregar habilidades personalizadas (al inicio)
     allSkills.addAll(_customSkills);
     
-    // Luego agregar habilidades predeterminadas seleccionadas (más recientes primero)
-    allSkills.addAll(_selectedSkills);
+    // Luego agregar habilidades predeterminadas
+    allSkills.addAll(_commonSkills);
     
     return allSkills;
   }
@@ -3366,7 +3203,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       // Normalizar teléfonos usando los métodos auxiliares
       final whatsapp = _normalizeColombianPhone(_whatsappController.text);
       final phone1 = _normalizeColombianPhone(_phone1Controller.text);
-      final phone2 = _normalizeColombianPhone(_phone2Controller.text);
       
       // Actualizar el servicio
       final updatedService = _service!.copyWith(
@@ -3384,7 +3220,6 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
         whatsappNumber: whatsapp,
         callPhones: [
           if (phone1 != null) phone1,
-          if (phone2 != null) phone2,
         ],
         instagram: _instagramController.text.trim().isNotEmpty ? _instagramController.text.trim() : null,
         xProfile: _xController.text.trim().isNotEmpty ? _xController.text.trim() : null,

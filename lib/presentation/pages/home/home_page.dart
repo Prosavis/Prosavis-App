@@ -590,7 +590,7 @@ class _HomePageState extends State<HomePage>
                 crossAxisCount: 4,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
-                childAspectRatio: 0.68,
+                childAspectRatio: 0.85,
               ),
               itemCount: AppConstants.serviceCategories.length,
               itemBuilder: (context, index) {
@@ -626,33 +626,34 @@ class _HomePageState extends State<HomePage>
             onPressed: openContainer,
             borderRadius: BorderRadius.circular(12),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(6.0),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _BreathingScale(
-                    delayMs: index * 120,
-                    minScale: 1.0,
-                    maxScale: 1.05,
-                    duration: const Duration(milliseconds: 2600),
+                  Flexible(
+                    flex: 3,
                     child: Hero(
                       tag: "category-${category['name']}-icon",
-                      child: _buildCategoryIconFromAsset(category, size: 72, context: context),
+                      child: _buildCategoryIconFromAsset(category, size: 75, context: context, delayMs: index * 120),
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    category['name'],
-                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).brightness == Brightness.dark 
-                          ? Colors.white
-                          : AppTokens.textPrimary,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 11,
+                  const SizedBox(height: 2),
+                  Flexible(
+                    flex: 1,
+                    child: Text(
+                      category['name'],
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        color: Theme.of(context).brightness == Brightness.dark 
+                            ? Colors.white
+                            : AppTokens.textPrimary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 8,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
@@ -663,7 +664,7 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget _buildCategoryIconFromAsset(Map<String, dynamic> category, {double size = 32, required BuildContext context}) {
+  Widget _buildCategoryIconFromAsset(Map<String, dynamic> category, {double size = 32, required BuildContext context, int delayMs = 0}) {
     final String? asset = category['asset'] as String?;
     final categoryName = category['name'] as String? ?? '';
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
@@ -672,21 +673,21 @@ class _HomePageState extends State<HomePage>
     if (asset != null && asset.isNotEmpty) {
       iconWidget = Image.asset(
         asset,
-        height: size * 0.6, // Reducir el tamaño del ícono para que se vea bien dentro del contenedor
-        width: size * 0.6,
+        height: size * 0.75, // Aumentar el tamaño del ícono para que se vea más grande
+        width: size * 0.75,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         errorBuilder: (_, __, ___) => Icon(
           category['icon'],
           color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
-          size: size * 0.6,
+          size: size * 0.75,
         ),
       );
     } else {
       iconWidget = Icon(
         category['icon'],
         color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
-        size: size * 0.6,
+        size: size * 0.75,
       );
     }
     
@@ -705,7 +706,15 @@ class _HomePageState extends State<HomePage>
           ),
         ],
       ),
-      child: Center(child: iconWidget),
+      child: Center(
+        child: _BreathingScale(
+          delayMs: delayMs,
+          minScale: 1.0,
+          maxScale: 1.15,
+          duration: const Duration(milliseconds: 2600),
+          child: iconWidget,
+        ),
+      ),
     );
   }
 
@@ -724,13 +733,7 @@ class _HomePageState extends State<HomePage>
                 AppConstants.paddingMedium, // lateral derecho
                 30, // inferior aumentado para dar más espacio a las tarjetas
               ),
-              headerTrailing: state is HomeLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : null,
+              headerTrailing: null,
               child: SizedBox(
                 height: ServiceCard.preferredVerticalListHeight(context),
                 child: _buildFeaturedServicesList(state),
