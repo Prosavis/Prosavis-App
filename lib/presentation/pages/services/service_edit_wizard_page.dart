@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -85,6 +86,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
   String _priceType = 'fixed';
   String? _mainImageUrl;
   File? _mainImageFile;
+  bool _imageDeleted = false; // Bandera para rastrear si se eliminó la imagen principal
   List<String> _selectedImages = [];
   final List<File> _newImages = [];
   List<String> _selectedTags = [];
@@ -202,15 +204,15 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
           (state._priceController.text.isNotEmpty && double.tryParse(state._priceController.text) != null),
       ),
       
-      // Paso 4: Imagen principal (Obligatorio)
+      // Paso 4: Imagen principal (Opcional)
       ServiceEditStep(
         id: 'main_image',
         title: 'Imagen principal',
-        subtitle: 'Cambia la imagen de tu servicio',
+        subtitle: 'Cambia la imagen de tu servicio (opcional)',
         icon: Symbols.image,
-        isRequired: true,
+        isRequired: false,
         builder: _buildMainImageStep,
-        validator: (state) => state._mainImageFile != null || state._mainImageUrl != null,
+        validator: (state) => true, // Siempre válido por ser opcional
       ),
       
       // Paso 5: Experiencia (Opcional)
@@ -328,6 +330,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       _selectedCategory = service.category;
       _priceType = service.priceType;
       _mainImageUrl = service.mainImage;
+      _imageDeleted = false; // Resetear bandera al cargar servicio
       _selectedImages = List.from(service.images);
       _selectedTags = List.from(service.tags);
       _selectedSkills = List.from(service.features);
@@ -752,6 +755,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
           if (mounted) {
             setState(() {
               _mainImageFile = file;
+              _imageDeleted = false; // Resetear la bandera si se selecciona una nueva imagen
               // No limpiar _mainImageUrl aquí para mantener la imagen actual como respaldo
             });
           }
@@ -762,6 +766,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
             setState(() {
               _mainImageFile = null;
               _mainImageUrl = null;
+              _imageDeleted = true; // Marcar que se eliminó la imagen
             });
           }
         },
@@ -2061,12 +2066,16 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
+                
+                // 1. Categoría
                 _buildSummaryItem(
                   icon: Symbols.category,
                   title: 'Categoría',
                   value: _selectedCategory ?? 'No seleccionada',
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                
+                // 2. Información básica - Título
                 _buildSummaryItem(
                   icon: Symbols.title,
                   title: 'Título',
@@ -2074,7 +2083,9 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                       ? 'Sin título' 
                       : _titleController.text.trim(),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                
+                // 2. Información básica - Descripción
                 _buildSummaryItem(
                   icon: Symbols.description,
                   title: 'Descripción',
@@ -2083,7 +2094,9 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                       : _descriptionController.text.trim(),
                   maxLines: 3,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                
+                // 3. Precio
                 _buildSummaryItem(
                   icon: Symbols.payments,
                   title: 'Precio',
@@ -2093,7 +2106,9 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           ? 'No definido'
                           : '\$${_priceController.text}',
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
+                
+                // 4. Imagen principal
                 _buildSummaryItem(
                   icon: Symbols.image,
                   title: 'Imagen principal',
@@ -2103,7 +2118,64 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           ? 'Imagen actual mantenida' 
                           : 'Sin imagen',
                 ),
+                const SizedBox(height: 12),
+                
+                // 5. Experiencia
+                _buildSummaryItem(
+                  icon: Symbols.star,
+                  title: 'Experiencia',
+                  value: _selectedExperienceLevel != null 
+                      ? _selectedExperienceLevel! 
+                      : 'No especificada',
+                ),
+                const SizedBox(height: 12),
+                
+                // 6. Contacto
+                _buildSummaryItem(
+                  icon: Symbols.contact_phone,
+                  title: 'Contacto',
+                  value: _getContactSummary(),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                
+                // 7. Disponibilidad
+                _buildSummaryItem(
+                  icon: Symbols.schedule,
+                  title: 'Disponibilidad',
+                  value: _availableDays.isNotEmpty 
+                      ? _availableDays.join(', ')
+                      : 'Días no especificados',
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                
+                // 8. Habilidades especiales
+                _buildSummaryItem(
+                  icon: Symbols.verified,
+                  title: 'Habilidades especiales',
+                  value: _getSkillsSummary(),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                
+                // 9. Imágenes adicionales
+                _buildSummaryItem(
+                  icon: Symbols.photo_library,
+                  title: 'Imágenes adicionales',
+                  value: _getAdditionalImagesSummary(),
+                ),
+                const SizedBox(height: 12),
+                
+                // 10. Ubicación
+                _buildSummaryItem(
+                  icon: Symbols.location_on,
+                  title: 'Ubicación',
+                  value: _getLocationSummary(),
+                  maxLines: 2,
+                ),
                 const SizedBox(height: 24),
+                
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -2190,6 +2262,88 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
         ],
       ),
     );
+  }
+
+  // Métodos auxiliares para generar resúmenes
+  String _getContactSummary() {
+    List<String> contactInfo = [];
+    
+    if (_whatsappController.text.trim().isNotEmpty) {
+      contactInfo.add('WhatsApp: ${_whatsappController.text.trim()}');
+    }
+    if (_phone1Controller.text.trim().isNotEmpty) {
+      contactInfo.add('Tel: ${_phone1Controller.text.trim()}');
+    }
+    if (_phone2Controller.text.trim().isNotEmpty) {
+      contactInfo.add('Tel 2: ${_phone2Controller.text.trim()}');
+    }
+    if (_instagramController.text.trim().isNotEmpty) {
+      contactInfo.add('Instagram: @${_instagramController.text.trim()}');
+    }
+    if (_xController.text.trim().isNotEmpty) {
+      contactInfo.add('X: @${_xController.text.trim()}');
+    }
+    if (_tiktokController.text.trim().isNotEmpty) {
+      contactInfo.add('TikTok: @${_tiktokController.text.trim()}');
+    }
+    
+    return contactInfo.isNotEmpty 
+        ? contactInfo.join(' • ')
+        : 'No se agregó información de contacto';
+  }
+
+  String _getSkillsSummary() {
+    List<String> allSkills = [];
+    allSkills.addAll(_selectedSkills);
+    allSkills.addAll(_customSkills);
+    
+    return allSkills.isNotEmpty 
+        ? allSkills.join(', ')
+        : 'No se seleccionaron habilidades especiales';
+  }
+
+  String _getAdditionalImagesSummary() {
+    int totalImages = _selectedImages.length + _newImages.length;
+    
+    if (totalImages == 0) {
+      return 'No se agregaron imágenes adicionales';
+    } else if (_newImages.isNotEmpty && _selectedImages.isNotEmpty) {
+      return '${_selectedImages.length} imágenes mantenidas, ${_newImages.length} nuevas';
+    } else if (_newImages.isNotEmpty) {
+      return '${_newImages.length} nuevas imágenes seleccionadas';
+    } else {
+      return '${_selectedImages.length} imágenes actuales mantenidas';
+    }
+  }
+
+  String _getLocationSummary() {
+    List<String> locationInfo = [];
+    
+    String serviceTypeText = '';
+    switch (_selectedServiceType) {
+      case 'home_service':
+        serviceTypeText = 'Servicio a domicilio';
+        break;
+      case 'workshop':
+        serviceTypeText = 'En mi taller/local';
+        break;
+      case 'remote':
+        serviceTypeText = 'Servicio remoto';
+        break;
+      default:
+        serviceTypeText = 'Tipo no especificado';
+    }
+    locationInfo.add(serviceTypeText);
+    
+    if (_addressController.text.trim().isNotEmpty) {
+      locationInfo.add('Dirección: ${_addressController.text.trim()}');
+    }
+    
+    if (_lat != null && _lng != null) {
+      locationInfo.add('Ubicación GPS definida');
+    }
+    
+    return locationInfo.join(' • ');
   }
 
 
@@ -2993,8 +3147,29 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
       final imageStorageService = sl<ImageStorageService>();
       String? mainImageUrl = _mainImageUrl;
       
-      // Subir nueva imagen principal si existe
-      if (_mainImageFile != null) {
+      // Manejar imagen principal
+      if (_imageDeleted) {
+        // Si se eliminó la imagen, eliminarla del storage y establecer como null
+        if (_service!.mainImage != null && _service!.mainImage!.isNotEmpty) {
+          try {
+            await imageStorageService.deleteServiceImage(_service!.mainImage!);
+          } catch (e) {
+            // Log el error pero continúa (la imagen puede ya no existir)
+            developer.log('⚠️ Error al eliminar imagen anterior: $e');
+          }
+        }
+        mainImageUrl = null;
+      } else if (_mainImageFile != null) {
+        // Si hay una nueva imagen, subirla y eliminar la anterior si existe
+        if (_service!.mainImage != null && _service!.mainImage!.isNotEmpty) {
+          try {
+            await imageStorageService.deleteServiceImage(_service!.mainImage!);
+          } catch (e) {
+            // Log el error pero continúa
+            developer.log('⚠️ Error al eliminar imagen anterior: $e');
+          }
+        }
+        
         mainImageUrl = await imageStorageService.uploadServiceImage(
           widget.serviceId,
           _mainImageFile!,
@@ -3004,6 +3179,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
           throw Exception('Error al subir la imagen principal');
         }
       }
+      // Si no se eliminó ni hay nueva imagen, mantener la URL actual
 
       // Subir nuevas imágenes adicionales si las hay
       final List<String> allImages = List.from(_selectedImages);

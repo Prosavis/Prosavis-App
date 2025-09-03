@@ -24,11 +24,7 @@ service cloud.firestore {
       return l == null || l is list && l.size() <= 6;
     }
     
-    // Helper para validar que rating sea entero
-    function isInt(n) { 
-      return n is number && n == int(n); 
-    }
-    
+
     // Helper para validar timestamps cercanos al momento actual (más permisivo)
     function nearNow(ts) {
       return ts is timestamp
@@ -87,10 +83,11 @@ service cloud.firestore {
           && request.resource.id == request.auth.uid
           && request.resource.data.keys().hasAll(['serviceId','userId','rating'])
           && request.resource.data.serviceId == serviceId
-          && isInt(request.resource.data.rating)
+          && (request.resource.data.rating is number)
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
           && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
-          && request.auth.uid != get(/databases/$(database)/documents/services/$(serviceId)).data.providerId
+          && (!request.resource.data.keys().hasAny(['userName']) || (request.resource.data.userName is string && request.resource.data.userName.size() <= 100))
+          && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500))
           && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
           && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
 
@@ -100,7 +97,7 @@ service cloud.firestore {
           && request.resource.data.serviceId == resource.data.serviceId
           && request.resource.data.userId == resource.data.userId
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
-          && isInt(request.resource.data.rating)
+          && (request.resource.data.rating is number)
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
           && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
           && (!request.resource.data.keys().hasAny(['updatedAt']) || (
@@ -128,9 +125,11 @@ service cloud.firestore {
       allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.userId
         && request.resource.data.keys().hasAll(['serviceId','userId','rating'])
-        && isInt(request.resource.data.rating)
+        && (request.resource.data.rating is number)
         && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
         && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
+        && (!request.resource.data.keys().hasAny(['userName']) || (request.resource.data.userName is string && request.resource.data.userName.size() <= 100))
+        && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500))
         && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
         && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
 
@@ -141,7 +140,7 @@ service cloud.firestore {
          && request.resource.data.serviceId == resource.data.serviceId
          && request.resource.data.userId == resource.data.userId
          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
-         && isInt(request.resource.data.rating)
+         && (request.resource.data.rating is number)
          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
          && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
          && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt)))

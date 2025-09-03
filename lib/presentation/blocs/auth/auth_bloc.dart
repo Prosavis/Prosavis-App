@@ -115,7 +115,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final user = await _signInWithGoogleUseCase(NoParams());
       
       if (user != null) {
-        emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user, isRecentLogin: true));
       } else {
         emit(AuthUnauthenticated());
       }
@@ -136,7 +136,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       
       if (user != null) {
-        emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user, isRecentLogin: true));
       } else {
         emit(const AuthError('Credenciales incorrectas. Verifica tu email y contraseña.'));
       }
@@ -163,7 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       
       if (user != null) {
-        emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user, isRecentLogin: true));
       } else {
         emit(const AuthError('Error al crear la cuenta. Intenta nuevamente.'));
       }
@@ -212,7 +212,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       
       if (user != null) {
-        emit(AuthAuthenticated(user));
+        emit(AuthAuthenticated(user, isRecentLogin: true));
       } else {
         emit(const AuthError('Código SMS incorrecto. Verifica e intenta nuevamente.'));
       }

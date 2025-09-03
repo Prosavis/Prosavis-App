@@ -25,6 +25,9 @@ import 'presentation/blocs/search/search_event.dart';
 import 'presentation/blocs/profile/profile_bloc.dart';
 import 'presentation/blocs/home/home_bloc.dart';
 import 'presentation/blocs/favorites/favorites_bloc.dart';
+import 'presentation/blocs/favorites/favorites_event.dart';
+import 'presentation/blocs/favorites/favorites_state.dart';
+import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/review/review_bloc.dart';
 import 'presentation/blocs/location/location_bloc.dart';
 import 'data/services/image_storage_service.dart';
@@ -434,22 +437,38 @@ class MyApp extends StatelessWidget {
         ),
 
       ],
-      child: BlocBuilder<ThemeBloc, ThemeState>(
-        builder: (context, themeState) {
-          return AnimatedTheme(
-            data: themeState.isDark ? AppTheme.darkTheme : AppTheme.lightTheme,
-            duration: AppConstants.mediumAnimation,
-            curve: Curves.easeInOut,
-            child: MaterialApp.router(
-              title: AppConstants.appName,
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeState.themeMode,
-              routerConfig: _router,
-            ),
-          );
+      child: BlocListener<AuthBloc, AuthState>(
+        listener: (context, authState) {
+          // Cargar favoritos automáticamente cuando el usuario se autentica
+          if (authState is AuthAuthenticated) {
+            final favoritesBloc = context.read<FavoritesBloc>();
+            // Solo cargar si no están ya cargados
+            if (favoritesBloc.state is FavoritesInitial) {
+              favoritesBloc.add(LoadUserFavorites(authState.user.id));
+            }
+          } else if (authState is AuthUnauthenticated) {
+            // Limpiar favoritos cuando el usuario cierra sesión
+            final favoritesBloc = context.read<FavoritesBloc>();
+            favoritesBloc.add(const FavoritesStreamUpdated([]));
+          }
         },
+        child: BlocBuilder<ThemeBloc, ThemeState>(
+          builder: (context, themeState) {
+            return AnimatedTheme(
+              data: themeState.isDark ? AppTheme.darkTheme : AppTheme.lightTheme,
+              duration: AppConstants.mediumAnimation,
+              curve: Curves.easeInOut,
+              child: MaterialApp.router(
+                title: AppConstants.appName,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme,
+                darkTheme: AppTheme.darkTheme,
+                themeMode: themeState.themeMode,
+                routerConfig: _router,
+              ),
+            );
+          },
+        ),
       ),
     );
   }

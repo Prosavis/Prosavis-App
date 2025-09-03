@@ -40,11 +40,16 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             // Icono de advertencia
             Container(
               width: 64,
@@ -246,6 +251,8 @@ class _DeleteAccountDialogState extends State<DeleteAccountDialog> {
               ],
             ),
           ],
+            ),
+          ),
         ),
       ),
     );

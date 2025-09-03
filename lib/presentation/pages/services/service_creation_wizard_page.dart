@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -235,15 +236,15 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
           (state._priceController.text.isNotEmpty && double.tryParse(state._priceController.text) != null),
       ),
       
-      // Paso 4: Imagen principal (Obligatorio)
+      // Paso 4: Imagen principal (Opcional)
       ServiceCreationStep(
         id: 'main_image',
         title: 'Imagen principal',
-        subtitle: 'Añade una imagen que represente tu servicio',
+        subtitle: 'Añade una imagen que represente tu servicio (opcional)',
         icon: Symbols.image,
-        isRequired: true,
+        isRequired: false,
         builder: _buildMainImageStep,
-        validator: (state) => state._mainImageFile != null || state._mainImageUrl != null,
+        validator: (state) => true, // Siempre válido por ser opcional
       ),
       
       // Paso 5: Experiencia (Opcional)
@@ -3336,6 +3337,7 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
       }
 
       String? mainImageUrl;
+      List<String> additionalImageUrls = [];
       
       // Subir imagen principal si existe
       if (_mainImageFile != null) {
@@ -3346,6 +3348,26 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
         
         if (mainImageUrl == null) {
           throw Exception('Error al subir la imagen principal');
+        }
+      }
+
+      // Subir imágenes adicionales si existen
+      if (_newImages.isNotEmpty) {
+        final imageStorageService = ImageStorageService();
+        
+        for (int i = 0; i < _newImages.length; i++) {
+          try {
+            // Usar un ID temporal único para cada imagen
+            final tempId = DateTime.now().millisecondsSinceEpoch.toString() + '_$i';
+            final imageUrl = await imageStorageService.uploadServiceImage(tempId, _newImages[i]);
+            
+            if (imageUrl != null) {
+              additionalImageUrls.add(imageUrl);
+            }
+          } catch (e) {
+            // Log el error pero continúa con las otras imágenes
+            developer.log('⚠️ Error al subir imagen adicional $i: $e');
+          }
         }
       }
 
@@ -3370,7 +3392,7 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
           if (_phone2Controller.text.trim().isNotEmpty) '+57${_phone2Controller.text.trim()}',
         ],
         mainImage: mainImageUrl,
-        images: const [], // Se implementará subida de imágenes adicionales
+        images: additionalImageUrls, // URLs de las imágenes adicionales subidas
         tags: const [], // Se implementará en pasos futuros
         features: [
           if (_experienceController.text.trim().isNotEmpty) 

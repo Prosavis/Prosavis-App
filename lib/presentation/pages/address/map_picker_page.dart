@@ -260,7 +260,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                 Positioned(
                   left: 16,
                   right: 16,
-                  bottom: 24,
+                  bottom: 24 + MediaQuery.of(context).padding.bottom,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [

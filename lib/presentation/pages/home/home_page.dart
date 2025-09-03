@@ -22,6 +22,7 @@ import '../../blocs/location/location_state.dart';
 import '../../widgets/common/service_card.dart';
 
 import '../../widgets/dialogs/location_permission_dialog.dart';
+import '../../widgets/dialogs/welcome_dialog.dart';
 import '../../widgets/common/press_scale.dart';
 import '../services/category_services_page.dart';
 import '../services/service_details_page.dart';
@@ -30,8 +31,13 @@ import 'package:animations/animations.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? onProfileTapped;
+  final VoidCallback? onOfferServiceTapped;
   
-  const HomePage({super.key, this.onProfileTapped});
+  const HomePage({
+    super.key, 
+    this.onProfileTapped,
+    this.onOfferServiceTapped,
+  });
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -45,7 +51,7 @@ class _HomePageState extends State<HomePage>
   late AnimationController _locationHighlightController;
   late Animation<double> _locationHighlightAnimation;
   
-
+  bool _hasShownWelcomeDialog = false;
   
   final TextEditingController _searchController = TextEditingController();
 
@@ -141,6 +147,23 @@ class _HomePageState extends State<HomePage>
     }
   }
 
+  /// Muestra el pop-up de bienvenida después del inicio de sesión exitoso
+  void _showWelcomeDialog() {
+    if (!mounted) return;
+    
+    WelcomeDialog.show(
+      context,
+      onOfferServiceTapped: () {
+        // Navegar a la sección de "Ofrecer" servicios
+        widget.onOfferServiceTapped?.call();
+      },
+      onClose: () {
+        // El dialog ya se cierra automáticamente
+        developer.log('🎉 Pop-up de bienvenida cerrado', name: 'HomePage');
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -153,6 +176,14 @@ class _HomePageState extends State<HomePage>
               if (!locationBloc.hasLocation) {
                 developer.log('🔐 Usuario autenticado - Iniciando detección GPS', name: 'HomePage');
                 locationBloc.add(DetectLocationEvent());
+              }
+              
+              // Mostrar pop-up de bienvenida si es un login reciente
+              if (state.isRecentLogin && !_hasShownWelcomeDialog) {
+                _hasShownWelcomeDialog = true;
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _showWelcomeDialog();
+                });
               }
             }
           },

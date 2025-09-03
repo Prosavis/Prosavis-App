@@ -5,22 +5,11 @@ import 'package:go_router/go_router.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../domain/entities/service_entity.dart';
 import 'optimized_image.dart';
+import 'service_image_placeholder.dart';
 import '../../../core/utils/location_utils.dart';
 
 
-/// Widget constante para el placeholder de imagen por defecto
-class _DefaultImagePlaceholder extends StatelessWidget {
-  const _DefaultImagePlaceholder();
 
-  @override
-  Widget build(BuildContext context) {
-    return const Icon(
-      Symbols.image,
-      size: 40,
-      color: Colors.grey,
-    );
-  }
-}
 
 class ServiceCard extends StatelessWidget {
   final ServiceEntity service;
@@ -160,12 +149,7 @@ class ServiceCard extends StatelessWidget {
                     height: isHorizontal ? 120 : double.infinity,
                     fit: BoxFit.cover,
                   )
-                : Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: AppTheme.getContainerColor(context),
-                    child: const _DefaultImagePlaceholder(),
-                  ),
+                : const ServiceImagePlaceholder(),
           ),
           // Botón de favorito
           if (showFavoriteButton)

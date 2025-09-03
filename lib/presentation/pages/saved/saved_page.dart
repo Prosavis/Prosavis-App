@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
-import '../../../core/injection/injection_container.dart';
+
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/favorites/favorites_bloc.dart';
@@ -67,11 +67,15 @@ class _SavedPageState extends State<SavedPage>
                 child: BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, authState) {
                     if (authState is AuthAuthenticated) {
-                      return BlocProvider(
-                        create: (context) => sl<FavoritesBloc>()
-                          ..add(LoadUserFavorites(authState.user.id)),
-                        child: _buildFavoritesContent(authState.user.id),
-                      );
+                      // Usar la instancia global y cargar favoritos si es necesario
+                      final favoritesBloc = context.read<FavoritesBloc>();
+                      
+                      // Solo cargar favoritos si no están cargados o el estado es inicial
+                      if (favoritesBloc.state is FavoritesInitial) {
+                        favoritesBloc.add(LoadUserFavorites(authState.user.id));
+                      }
+                      
+                      return _buildFavoritesContent(authState.user.id);
                     } else {
                       return const LoginRequiredWidget(
                         title: 'Inicia sesión para ver tus favoritos',

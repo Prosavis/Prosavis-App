@@ -18,6 +18,7 @@ import '../../blocs/favorites/favorites_event.dart';
 import '../../blocs/favorites/favorites_state.dart';
 import '../../widgets/common/service_card.dart' hide LoginRequiredWidget;
 import '../../widgets/common/optimized_image.dart';
+import '../../widgets/common/service_image_placeholder.dart';
 import '../../widgets/reviews/write_review_dialog.dart';
 import '../../widgets/reviews/review_restriction_dialog.dart';
 import '../../widgets/reviews/edit_review_dialog.dart';
@@ -587,6 +588,25 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
             child: Icon(Symbols.share, color: AppTheme.getTextPrimary(context)),
           ),
         ),
+        // Ícono de Soporte
+        IconButton(
+          onPressed: () {
+            context.push('/support');
+          },
+          icon: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppTheme.getSurfaceColor(context).withValues(alpha: 0.9),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Symbols.support_agent,
+              color: AppTheme.getTextPrimary(context),
+              size: 24,
+            ),
+          ),
+          tooltip: 'Soporte',
+        ),
       ],
       flexibleSpace: FlexibleSpaceBar(
         stretchModes: const [
@@ -684,24 +704,9 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                 ),
               ),
             )
-            : Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      AppTheme.primaryColor,
-                      AppTheme.primaryColor.withValues(alpha: 0.8),
-                    ],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    Symbols.work,
-                    size: 80,
-                    color: Colors.white.withValues(alpha: 0.3),
-                  ),
-                ),
+            : const ServiceImagePlaceholder(
+                showText: false,
+                iconSize: 80,
               ),
       ),
     );
@@ -745,6 +750,38 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
                       fontSize: 10,
                       fontWeight: FontWeight.w600,
                       color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ),
+                const Spacer(), // Empuja el ícono de WhatsApp a la derecha
+                // Ícono de WhatsApp
+                GestureDetector(
+                  onTap: _onWhatsAppPressed,
+                  child: Container(
+                    width: 45,
+                    height: 45,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF25D366), // Verde de WhatsApp
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF25D366).withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/icons/social/whatsapp.webp',
+                        width: 24,
+                        height: 24,
+                        errorBuilder: (_, __, ___) => const Icon(
+                          Symbols.chat,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -1728,7 +1765,12 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
 
   Widget _buildActionButtons() {
     return Container(
-      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      padding: EdgeInsets.only(
+        left: AppConstants.paddingMedium,
+        right: AppConstants.paddingMedium,
+        top: AppConstants.paddingMedium,
+        bottom: AppConstants.paddingMedium + MediaQuery.of(context).padding.bottom,
+      ),
       decoration: BoxDecoration(
         color: AppTheme.getSurfaceColor(context),
         border: Border(
@@ -2140,7 +2182,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
           missingFields: missingFields,
           onEditProfile: () {
             // Navegar a la página de edición de perfil
-            context.push('/profile/edit');
+            context.push('/settings/edit-profile');
           },
         );
       },

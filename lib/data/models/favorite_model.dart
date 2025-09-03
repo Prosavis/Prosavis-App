@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/favorite_entity.dart';
 
 class FavoriteModel extends FavoriteEntity {
@@ -14,19 +15,29 @@ class FavoriteModel extends FavoriteEntity {
       id: json['id'] ?? '',
       userId: json['userId'] ?? '',
       serviceId: json['serviceId'] ?? '',
-      createdAt: DateTime.parse(json['createdAt'] ?? DateTime.now().toIso8601String()),
-      updatedAt: json['updatedAt'] != null ? DateTime.parse(json['updatedAt']) : null,
+      createdAt: _parseDateTime(json['createdAt']),
+      updatedAt: json['updatedAt'] != null ? _parseDateTime(json['updatedAt']) : null,
     );
+  }
+
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is Timestamp) {
+      return value.toDate();
+    } else if (value is String) {
+      return DateTime.parse(value);
+    } else {
+      return DateTime.now();
+    }
   }
 
   Map<String, dynamic> toJson() {
     final map = {
       'userId': userId,
       'serviceId': serviceId,
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
     };
     if (updatedAt != null) {
-      map['updatedAt'] = updatedAt!.toIso8601String();
+      map['updatedAt'] = Timestamp.fromDate(updatedAt!);
     }
     return map;
   }

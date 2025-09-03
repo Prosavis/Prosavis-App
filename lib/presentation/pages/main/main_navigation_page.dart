@@ -44,7 +44,10 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   // Lazy loading de las páginas para evitar problemas con GetIt
   List<Widget> get pages {
     _pages ??= [
-      HomePage(onProfileTapped: _goToProfile),
+      HomePage(
+        onProfileTapped: _goToProfile,
+        onOfferServiceTapped: _goToOfferServices,
+      ),
       // Optimización: Crear páginas con AutomaticKeepAlive cuando sea necesario
       const KeepAlivePage(
         child: MyServicesPage(),
@@ -57,6 +60,10 @@ class _MainNavigationPageState extends State<MainNavigationPage>
 
   void _goToProfile() {
     onItemTapped(3); // Índice 3 corresponde a ProfilePage
+  }
+
+  void _goToOfferServices() {
+    onItemTapped(1); // Índice 1 corresponde a MyServicesPage (Ofrecer)
   }
 
   @override
