@@ -46,40 +46,40 @@ class AppTokens {
   
   // === GRADIENTES SUTILES MODO CLARO ===
   
-  /// Gradiente suave para sección de Categorías (azul claro → naranja muy sutil)
+  /// Gradiente vívido para sección de Categorías (azul vibrante → naranja vibrante)
   static const LinearGradient categoriesGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFFF1F8FF), // Azul muy claro
-      Color(0xFFFFF8F1), // Naranja muy claro
+      Color(0xFFBBDEFB), // Azul más saturado
+      Color(0xFFFFE0B2), // Naranja más saturado
+      surface,           // Blanco puro
+    ],
+    stops: [0.0, 0.6, 1.0],
+  );
+  
+  /// Gradiente vívido para Servicios Destacados (naranja vibrante → blanco)
+  static const LinearGradient featuredGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFFFE0B2), // Naranja más saturado
+      Color(0xFFFFF3E0), // Naranja intermedio
       surface,           // Blanco puro
     ],
     stops: [0.0, 0.5, 1.0],
   );
   
-  /// Gradiente suave para Servicios Destacados (naranja muy sutil → blanco)
-  static const LinearGradient featuredGradient = LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: [
-      Color(0xFFFFF8F1), // Naranja muy claro
-      Color(0xFFFFFBF7), // Naranja casi imperceptible
-      surface,           // Blanco puro
-    ],
-    stops: [0.0, 0.4, 1.0],
-  );
-  
-  /// Gradiente suave para Cerca de ti (azul muy sutil → blanco)
+  /// Gradiente vívido para Cerca de ti (azul vibrante → blanco)
   static const LinearGradient nearbyGradient = LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
     colors: [
-      Color(0xFFF1F8FF), // Azul muy claro
-      Color(0xFFF8FCFF), // Azul casi imperceptible
+      Color(0xFFBBDEFB), // Azul más saturado
+      Color(0xFFE3F2FD), // Azul intermedio
       surface,           // Blanco puro
     ],
-    stops: [0.0, 0.4, 1.0],
+    stops: [0.0, 0.5, 1.0],
   );
   
   // === GRADIENTES SUTILES MODO OSCURO ===

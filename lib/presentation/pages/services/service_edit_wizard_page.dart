@@ -1606,7 +1606,9 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           if (isSelected) {
                             _selectedSkills.remove(skill);
                           } else {
-                            _selectedSkills.add(skill);
+                            // Remover si existe en cualquier posición y agregar al inicio
+                            _selectedSkills.remove(skill);
+                            _selectedSkills.insert(0, skill);
                           }
                         });
                       },
@@ -1713,6 +1715,75 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                   ],
                 ),
                 
+                // Grid de habilidades personalizadas si existen
+                if (_customSkills.isNotEmpty) ...[
+                  const SizedBox(height: 24),
+                  Text(
+                    'Habilidades personalizadas',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: AppTheme.getTextPrimary(context),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 2,
+                      childAspectRatio: 3,
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                    ),
+                    itemCount: _customSkills.length,
+                    itemBuilder: (context, index) {
+                      final skill = _customSkills[index];
+                      
+                      return GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            // Al deseleccionar una habilidad personalizada, se elimina automáticamente
+                            _customSkills.remove(skill);
+                          });
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                            border: Border.all(
+                              color: AppTheme.primaryColor,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Symbols.check_circle,
+                                size: 16,
+                                color: AppTheme.primaryColor,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  skill,
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppTheme.primaryColor,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+                
                 if (_selectedSkills.isNotEmpty || _customSkills.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   Container(
@@ -1736,7 +1807,7 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              'Habilidades seleccionadas (${_selectedSkills.length + _customSkills.length})',
+                              'Habilidades seleccionadas (${_getAllSelectedSkills().length})',
                               style: GoogleFonts.inter(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w500,
@@ -1750,54 +1821,46 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
                           spacing: 8,
                           runSpacing: 4,
                           children: [
-                            // Habilidades predefinidas
-                            ..._selectedSkills.map((skill) => 
-                              Container(
+                            // Todas las habilidades seleccionadas en orden (más recientes primero)
+                            ..._getAllSelectedSkills().map((skill) {
+                              final isCustomSkill = _customSkills.contains(skill);
+                              return Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
                                   color: AppTheme.primaryColor,
                                   borderRadius: BorderRadius.circular(16),
                                 ),
-                                child: Text(
-                                  skill,
-                                  style: GoogleFonts.inter(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            // Habilidades personalizadas
-                            ..._customSkills.map((skill) => 
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.primaryColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
+                                child: isCustomSkill
+                                  ? Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          skill,
+                                          style: GoogleFonts.inter(
+                                            fontSize: 12,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        GestureDetector(
+                                          onTap: () => _removeCustomSkill(skill),
+                                          child: const Icon(
+                                            Symbols.close,
+                                            size: 14,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
                                       skill,
                                       style: GoogleFonts.inter(
                                         fontSize: 12,
                                         color: Colors.white,
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    GestureDetector(
-                                      onTap: () => _removeCustomSkill(skill),
-                                      child: const Icon(
-                                        Symbols.close,
-                                        size: 14,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                              );
+                            }),
                           ],
                         ),
                       ],
@@ -3024,7 +3087,8 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
         !_customSkills.contains(customSkill) && 
         !_selectedSkills.contains(customSkill)) {
       setState(() {
-        _customSkills.add(customSkill);
+        // Agregar al inicio de la lista y marcar como seleccionada
+        _customSkills.insert(0, customSkill);
         _customSkillController.clear();
       });
     }
@@ -3034,6 +3098,19 @@ class ServiceEditWizardPageState extends State<ServiceEditWizardPage>
     setState(() {
       _customSkills.remove(skill);
     });
+  }
+
+  // Método para obtener todas las habilidades seleccionadas en orden
+  List<String> _getAllSelectedSkills() {
+    final List<String> allSkills = [];
+    
+    // Primero agregar habilidades personalizadas (más recientes primero)
+    allSkills.addAll(_customSkills);
+    
+    // Luego agregar habilidades predeterminadas seleccionadas (más recientes primero)
+    allSkills.addAll(_selectedSkills);
+    
+    return allSkills;
   }
 
   Widget _buildServiceTypeOption(String title, String subtitle, IconData icon, String value) {

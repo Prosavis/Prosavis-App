@@ -53,7 +53,7 @@ class ServiceCard extends StatelessWidget {
   /// Ajusta dinámicamente la altura base (220) considerando el `textScaleFactor`
   /// del dispositivo para evitar overflows en pantallas con fuentes grandes.
   static double preferredVerticalListHeight(BuildContext context) {
-    const double baseHeight = 220.0;
+    const double baseHeight = 220.0; // Altura original
     // Calcular factor real a partir del nuevo TextScaler
     final double textScale = MediaQuery.of(context).textScaler.scale(16.0) / 16.0;
     // Aumento suave en función del escalado de texto, limitado para no ocupar
@@ -82,6 +82,14 @@ class ServiceCard extends StatelessWidget {
             ? Colors.transparent 
             : AppTheme.getSurfaceColor(context),
         borderRadius: BorderRadius.circular(16),
+        border: transparentBackground 
+            ? Border.all(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withValues(alpha: 0.1)
+                    : AppTokens.outline,
+                width: 1,
+              )
+            : null,
         boxShadow: transparentBackground ? null : [
           BoxShadow(
             color: Theme.of(context).brightness == Brightness.dark
@@ -126,6 +134,14 @@ class ServiceCard extends StatelessWidget {
               ? Colors.transparent 
               : AppTheme.getSurfaceColor(context),
           borderRadius: BorderRadius.circular(16),
+          border: transparentBackground 
+              ? Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white.withValues(alpha: 0.1)
+                      : AppTokens.outline,
+                  width: 1,
+                )
+              : null,
           boxShadow: transparentBackground ? null : [
             BoxShadow(
               color: Theme.of(context).brightness == Brightness.dark
@@ -333,10 +349,10 @@ class ServiceCard extends StatelessWidget {
               color: transparentBackground 
                   ? (Theme.of(context).brightness == Brightness.dark 
                       ? AppTokens.primary 
-                      : AppTokens.primaryDark) // Naranja brillante en modo oscuro
+                      : AppTokens.textPrimary) // Color de texto normal en modo claro
                   : (Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
-                      : AppTheme.primaryColor),
+                      : AppTokens.textPrimary), // Color de texto normal también para tarjetas normales
             ),
           ),
         ] : [
@@ -425,10 +441,10 @@ class ServiceCard extends StatelessWidget {
                   color: transparentBackground 
                       ? (Theme.of(context).brightness == Brightness.dark 
                           ? AppTokens.primary 
-                          : AppTokens.primaryDark) // Naranja brillante en modo oscuro
+                          : AppTokens.textPrimary) // Color de texto normal en modo claro
                       : (Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : AppTheme.primaryColor),
+                          : AppTokens.textPrimary), // Color de texto normal también para tarjetas normales
                 ),
               ),
             ],

@@ -637,7 +637,7 @@ class _HomePageState extends State<HomePage>
                     duration: const Duration(milliseconds: 2600),
                     child: Hero(
                       tag: "category-${category['name']}-icon",
-                      child: _buildCategoryIconFromAsset(category, size: 64, context: context),
+                      child: _buildCategoryIconFromAsset(category, size: 72, context: context),
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -668,24 +668,44 @@ class _HomePageState extends State<HomePage>
     final categoryName = category['name'] as String? ?? '';
     final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     
+    Widget iconWidget;
     if (asset != null && asset.isNotEmpty) {
-      return Image.asset(
+      iconWidget = Image.asset(
         asset,
-        height: size,
-        width: size,
+        height: size * 0.6, // Reducir el tamaño del ícono para que se vea bien dentro del contenedor
+        width: size * 0.6,
         fit: BoxFit.contain,
         filterQuality: FilterQuality.high,
         errorBuilder: (_, __, ___) => Icon(
           category['icon'],
           color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
-          size: size,
+          size: size * 0.6,
         ),
       );
+    } else {
+      iconWidget = Icon(
+        category['icon'],
+        color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
+        size: size * 0.6,
+      );
     }
-    return Icon(
-      category['icon'],
-      color: AppTokens.getCategoryIconColor(categoryName, isDarkMode: isDarkMode),
-      size: size,
+    
+    // Contenedor blanco redondeado para hacer resaltar el ícono
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Center(child: iconWidget),
     );
   }
 
@@ -698,7 +718,12 @@ class _HomePageState extends State<HomePage>
             child: SectionCard(
               title: 'Servicios Destacados',
               gradient: AppTheme.secondaryGradient,
-              padding: EdgeInsets.zero,
+              padding: const EdgeInsets.fromLTRB(
+                AppConstants.paddingMedium, // lateral izquierdo
+                0, // superior (sin padding)
+                AppConstants.paddingMedium, // lateral derecho
+                30, // inferior aumentado para dar más espacio a las tarjetas
+              ),
               headerTrailing: state is HomeLoading
                   ? const SizedBox(
                       width: 16,
