@@ -94,7 +94,7 @@ class ProsavisLogo extends StatelessWidget {
           style: TextStyle(
             color: BrandConstants.textLight,
             fontSize: size * 0.5,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600, // Corporativo
             fontFamily: BrandConstants.primaryFontFamily,
           ),
         ),

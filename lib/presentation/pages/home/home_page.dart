@@ -129,7 +129,7 @@ class SectionCard extends StatelessWidget {
                     color: Theme.of(context).brightness == Brightness.dark 
                         ? Colors.white
                         : AppTokens.textPrimary,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600, // Corporativo: máximo w600
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -792,6 +792,8 @@ class _HomePageState extends State<HomePage>
       return ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: AppConstants.paddingMedium),
+        // 🚀 OPTIMIZACIÓN: itemExtent para lista horizontal evita layouts costosos
+        itemExtent: 200, // Ancho fijo para ServiceCard en horizontal scroll
         cacheExtent: PerformanceConfig.optimizedCacheExtent,
         itemCount: state.featuredServices.length,
         itemBuilder: (context, index) {

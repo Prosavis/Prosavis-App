@@ -908,7 +908,7 @@ class _LoginPageState extends State<LoginPage>
       builder: (context) => AlertDialog(
         title: Text(
           'Recuperar contraseña',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.labelLarge,
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,

@@ -86,10 +86,15 @@ flutter:
     - assets/audio/transitions/
 
   fonts:
-    - family: Archivo
+    # 🎯 Inter Variable Font - Óptimo para Android/Web (todos los pesos 100-900)
+    # iOS usará automáticamente San Francisco del sistema
+    - family: Inter
       fonts:
-        - asset: assets/fonts/archivo-black.ttf
-          weight: 900
+        - asset: assets/fonts/InterVariable.ttf
+          # Variable font contiene weights 100-900, solo usaremos 400/500/600
+        - asset: assets/fonts/InterVariable-Italic.ttf
+          style: italic
+          # Variable font italic para casos específicos
 
 # Configuración para generar iconos de la app
 flutter_launcher_icons:

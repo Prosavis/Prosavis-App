@@ -257,7 +257,7 @@ class ImagePickerBottomSheet extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: Text(
           'Permiso Requerido',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.labelLarge,
         ),
         content: Text(
           'Para acceder a la $sourceName necesitamos tu permiso.',
@@ -294,7 +294,7 @@ class ImagePickerBottomSheet extends StatelessWidget {
       builder: (context) => AlertDialog(
         title: Text(
           'Permiso Permanentemente Denegado',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.labelLarge,
         ),
         content: Text(
           'Para acceder a la $sourceName, ve a Configuración y habilita los permisos.',

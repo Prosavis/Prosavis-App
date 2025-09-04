@@ -1,10 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart';
+// GoogleFonts removido - ahora usamos tipografía específica por plataforma
 import '../utils/font_manager.dart';
 import '../constants/app_tokens.dart';
 import 'package:animations/animations.dart';
 
 class AppTheme {
+  // === TIPOGRAFÍA CORPORATIVA ELEGANTE (iOS: SF Sistema, Android/Web: Inter) ===
+  
+  /// Obtiene la familia de fuente apropiada según la plataforma
+  /// iOS: Sistema (San Francisco), Android/Web: Inter
+  static String get _platformFontFamily {
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.iOS:
+      case TargetPlatform.macOS:
+        return '.SF Pro Text'; // Fuente del sistema iOS/macOS
+      case TargetPlatform.android:
+      case TargetPlatform.windows:
+      case TargetPlatform.linux:
+      case TargetPlatform.fuchsia:
+        return 'Inter';
+    }
+  }
+  
+  /// Crea TextStyle corporativo con la fuente de plataforma adecuada
+  static TextStyle _corporateTextStyle({
+    required double fontSize,
+    required FontWeight fontWeight,
+    Color? color,
+    double? height,
+    double? letterSpacing,
+  }) {
+    return TextStyle(
+      fontFamily: _platformFontFamily,
+      fontSize: fontSize,
+      fontWeight: fontWeight,
+      color: color,
+      height: height,
+      letterSpacing: letterSpacing,
+    );
+  }
+
   // Colores principales de Prosavis basados en el logo
   static const Color primaryColor = Color(0xFF002446); // Azul marino del logo
   static const Color secondaryColor = Color(0xFF00355F); // Azul más claro
@@ -198,7 +234,7 @@ class AppTheme {
       visualDensity: VisualDensity.standard,
       colorScheme: scheme,
       scaffoldBackgroundColor: AppTokens.surface,
-      fontFamily: FontManager.fontFamily,
+      fontFamily: _platformFontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
@@ -215,9 +251,9 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: FontManager.inter(
+        titleTextStyle: _corporateTextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500, // Corporativo: menos agresivo
           color: AppTokens.textPrimary,
         ),
         iconTheme: const IconThemeData(color: AppTokens.textPrimary),
@@ -302,83 +338,119 @@ class AppTheme {
           borderSide: const BorderSide(color: AppTokens.error),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        hintStyle: GoogleFonts.inter(
-          color: AppTokens.textTertiary,
+        hintStyle: _corporateTextStyle(
           fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: AppTokens.textTertiary,
         ),
       ),
       
-      // Text Theme con tokens actualizados
+      // 🎯 ESCALA TIPOGRÁFICA CORPORATIVA ELEGANTE
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.inter(
+        // === DISPLAY (muy grande) - 32-40px, w600, letterSpacing negativo ===
+        displayLarge: _corporateTextStyle(
+          fontSize: 40,
+          fontWeight: FontWeight.w600,
+          color: AppTokens.textPrimary,
+          letterSpacing: -0.8,
+          height: 1.1,
+        ),
+        displayMedium: _corporateTextStyle(
+          fontSize: 36,
+          fontWeight: FontWeight.w600,
+          color: AppTokens.textPrimary,
+          letterSpacing: -0.6,
+          height: 1.2,
+        ),
+        displaySmall: _corporateTextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: AppTokens.textPrimary,
+          letterSpacing: -0.4,
+          height: 1.2,
         ),
-        displayMedium: GoogleFonts.inter(
+        
+        // === HEADLINE (sección) - 24-28px, w600 ===
+        headlineLarge: _corporateTextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: AppTokens.textPrimary,
+          height: 1.3,
         ),
-        displaySmall: GoogleFonts.inter(
+        headlineMedium: _corporateTextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.w600,
+          color: AppTokens.textPrimary,
+          height: 1.3,
+        ),
+        headlineSmall: _corporateTextStyle(
           fontSize: 24,
           fontWeight: FontWeight.w600,
           color: AppTokens.textPrimary,
+          height: 1.3,
         ),
-        headlineLarge: FontManager.inter(
+        
+        // === TITLE (pantalla) - 20-22px, w500-w600 ===
+        titleLarge: _corporateTextStyle(
           fontSize: 22,
           fontWeight: FontWeight.w600,
           color: AppTokens.textPrimary,
+          height: 1.4,
         ),
-        headlineMedium: FontManager.inter(
+        titleMedium: _corporateTextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           color: AppTokens.textPrimary,
+          height: 1.4,
         ),
-        headlineSmall: FontManager.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: AppTokens.textPrimary,
-        ),
-        titleLarge: FontManager.inter(
+        titleSmall: _corporateTextStyle(
           fontSize: 18,
           fontWeight: FontWeight.w500,
           color: AppTokens.textPrimary,
+          height: 1.4,
         ),
-        titleMedium: FontManager.inter(
+        
+        // === BODY - 14-16px, w400 ===
+        bodyLarge: _corporateTextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w400,
           color: AppTokens.textPrimary,
+          height: 1.5,
         ),
-        titleSmall: FontManager.inter(
+        bodyMedium: _corporateTextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: AppTokens.textPrimary,
-        ),
-        bodyLarge: FontManager.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
-          color: AppTokens.textPrimary,
-        ),
-        bodyMedium: FontManager.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w400,
           color: AppTokens.textSecondary,
+          height: 1.5,
         ),
-        bodySmall: FontManager.inter(
+        bodySmall: _corporateTextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w400,
           color: AppTokens.textTertiary,
+          height: 1.4,
         ),
-        labelMedium: FontManager.inter(
+        
+        // === LABEL/CAPTION - 12-13px, w500, tracking positivo ===
+        labelLarge: _corporateTextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: AppTokens.textPrimary,
+          letterSpacing: 0.1,
+          height: 1.3,
+        ),
+        labelMedium: _corporateTextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: AppTokens.textPrimary,
+          fontWeight: FontWeight.w500,
+          color: AppTokens.textSecondary,
+          letterSpacing: 0.2,
+          height: 1.3,
         ),
-        labelSmall: FontManager.inter(
+        labelSmall: _corporateTextStyle(
           fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: AppTokens.textPrimary,
+          fontWeight: FontWeight.w500,
+          color: AppTokens.textTertiary,
+          letterSpacing: 0.3,
+          height: 1.2,
         ),
       ),
     );
@@ -403,7 +475,7 @@ class AppTheme {
       visualDensity: VisualDensity.standard,
       colorScheme: scheme,
       scaffoldBackgroundColor: darkBackground,
-      fontFamily: FontManager.fontFamily,
+      fontFamily: _platformFontFamily,
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: <TargetPlatform, PageTransitionsBuilder>{
           TargetPlatform.android: FadeThroughPageTransitionsBuilder(),
@@ -420,9 +492,9 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: true,
-        titleTextStyle: FontManager.inter(
+        titleTextStyle: _corporateTextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w500,
           color: Colors.white, // Texto blanco en modo oscuro
         ),
         iconTheme: const IconThemeData(color: Colors.white),
@@ -474,72 +546,112 @@ class AppTheme {
         ),
       ),
       
-      // Text Theme con colores ajustados para modo oscuro
+      // 🌙 ESCALA TIPOGRÁFICA CORPORATIVA - MODO OSCURO
       textTheme: TextTheme(
-        displayLarge: GoogleFonts.inter(
+        // === DISPLAY (muy grande) - 32-40px, w600, letterSpacing negativo ===
+        displayLarge: _corporateTextStyle(
+          fontSize: 40,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          letterSpacing: -0.8,
+          height: 1.1,
+        ),
+        displayMedium: _corporateTextStyle(
+          fontSize: 36,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          letterSpacing: -0.6,
+          height: 1.2,
+        ),
+        displaySmall: _corporateTextStyle(
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: Colors.white,
+          letterSpacing: -0.4,
+          height: 1.2,
         ),
-        displayMedium: GoogleFonts.inter(
+        
+        // === HEADLINE (sección) - 24-28px, w600 ===
+        headlineLarge: _corporateTextStyle(
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: Colors.white,
+          height: 1.3,
         ),
-        displaySmall: GoogleFonts.inter(
+        headlineMedium: _corporateTextStyle(
+          fontSize: 26,
+          fontWeight: FontWeight.w600,
+          color: Colors.white,
+          height: 1.3,
+        ),
+        headlineSmall: _corporateTextStyle(
           fontSize: 24,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: Colors.white,
+          height: 1.3,
         ),
-        headlineLarge: FontManager.inter(
+        
+        // === TITLE (pantalla) - 20-22px, w500-w600 ===
+        titleLarge: _corporateTextStyle(
           fontSize: 22,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w600,
           color: Colors.white,
+          height: 1.4,
         ),
-        headlineMedium: FontManager.inter(
+        titleMedium: _corporateTextStyle(
           fontSize: 20,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
+          height: 1.4,
         ),
-        headlineSmall: FontManager.inter(
+        titleSmall: _corporateTextStyle(
           fontSize: 18,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
+          height: 1.4,
         ),
-        titleLarge: FontManager.inter(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        titleMedium: FontManager.inter(
+        
+        // === BODY - 14-16px, w400 ===
+        bodyLarge: _corporateTextStyle(
           fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        titleSmall: FontManager.inter(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Colors.white,
-        ),
-        bodyLarge: FontManager.inter(
-          fontSize: 16,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w400,
           color: const Color(0xFFE2E8F0), // Gris claro para mejor contraste
+          height: 1.5,
         ),
-        bodyMedium: FontManager.inter(
+        bodyMedium: _corporateTextStyle(
           fontSize: 14,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w400,
           color: const Color(0xFFCBD5E1), // Gris medio para texto secundario
+          height: 1.5,
         ),
-        bodySmall: FontManager.inter(
+        bodySmall: _corporateTextStyle(
           fontSize: 12,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w400,
           color: const Color(0xFF94A3B8), // Gris más suave para texto terciario
+          height: 1.4,
         ),
-        labelMedium: FontManager.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+        
+        // === LABEL/CAPTION - 12-13px, w500, tracking positivo ===
+        labelLarge: _corporateTextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
           color: Colors.white,
+          letterSpacing: 0.1,
+          height: 1.3,
+        ),
+        labelMedium: _corporateTextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFFE2E8F0),
+          letterSpacing: 0.2,
+          height: 1.3,
+        ),
+        labelSmall: _corporateTextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+          color: const Color(0xFFCBD5E1),
+          letterSpacing: 0.3,
+          height: 1.2,
         ),
       ),
       
@@ -559,13 +671,15 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: primaryColor, width: 2),
         ),
-        hintStyle: GoogleFonts.inter(
+        hintStyle: _corporateTextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w400,
           color: const Color(0xFF94A3B8),
-          fontSize: 16,
         ),
-        labelStyle: GoogleFonts.inter(
-          color: Colors.white,
+        labelStyle: _corporateTextStyle(
           fontSize: 16,
+          fontWeight: FontWeight.w400,
+          color: Colors.white,
         ),
       ),
       
@@ -574,13 +688,13 @@ class AppTheme {
         backgroundColor: const Color(0xFF1E293B),
         selectedItemColor: Colors.white,
         unselectedItemColor: const Color(0xFFE2E8F0),
-        selectedLabelStyle: GoogleFonts.inter(
-          fontWeight: FontWeight.w600,
+        selectedLabelStyle: _corporateTextStyle(
           fontSize: 12,
-        ),
-        unselectedLabelStyle: GoogleFonts.inter(
           fontWeight: FontWeight.w500,
+        ),
+        unselectedLabelStyle: _corporateTextStyle(
           fontSize: 12,
+          fontWeight: FontWeight.w400,
         ),
       ),
     );

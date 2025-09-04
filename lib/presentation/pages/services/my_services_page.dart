@@ -6,14 +6,16 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../../../core/injection/injection_container.dart';
 import '../../../core/themes/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/service_refresh_notifier.dart';
 import '../../../domain/entities/service_entity.dart';
 import '../../../domain/usecases/services/get_user_services_usecase.dart';
 import '../../../domain/usecases/services/delete_service_usecase.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
-import '../../widgets/common/service_card.dart';
+import '../../widgets/common/service_card.dart' hide LoginRequiredWidget;
 import '../../widgets/common/profile_completion_dialog.dart';
+import '../../widgets/common/coming_soon_widget.dart';
 import '../../../domain/usecases/reviews/get_service_review_stats_usecase.dart';
 
 
@@ -158,23 +160,44 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    super.build(context); // Required for AutomaticKeepAliveClientMixin
-    
-    return Scaffold(
-      backgroundColor: AppTheme.getBackgroundColor(context),
-      appBar: AppBar(
-        title: Text(
-          'Mis servicios',
-          style: GoogleFonts.inter(
-            fontWeight: FontWeight.w600,
+  /// Determina si debe mostrar el botón de retroceso
+  /// Solo lo muestra si la página no está siendo usada dentro de MainNavigationPage
+  bool _shouldShowBackButton() {
+    // Verificar si hay más de una ruta en el stack
+    // Si solo hay una ruta, significa que llegamos directamente aquí
+    return ModalRoute.of(context)?.canPop ?? false;
+  }
+
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.all(AppConstants.paddingMedium),
+      child: Row(
+        children: [
+          // Botón de retroceso si es necesario
+          if (_shouldShowBackButton())
+            IconButton(
+              icon: const Icon(Symbols.arrow_back),
+              onPressed: () => context.pop(),
+              style: IconButton.styleFrom(
+                backgroundColor: AppTheme.getSurfaceColor(context),
+                foregroundColor: AppTheme.getTextPrimary(context),
+              ),
+            ),
+          if (_shouldShowBackButton()) const SizedBox(width: 16),
+          
+          // Título principal
+          Expanded(
+            child: Text(
+              'Mis servicios',
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.getTextPrimary(context),
+              ),
+            ),
           ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
+          
+          // Botón de agregar servicio
           BlocBuilder<AuthBloc, AuthState>(
             builder: (context, authState) {
               if (authState is AuthAuthenticated) {
@@ -182,6 +205,11 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
                   icon: const Icon(Symbols.add),
                   onPressed: _validateProfileAndCreateService,
                   tooltip: 'Crear nuevo servicio',
+                  style: IconButton.styleFrom(
+                    backgroundColor: AppTheme.primaryColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.all(12),
+                  ),
                 );
               }
               return const SizedBox.shrink();
@@ -189,17 +217,35 @@ class _MyServicesPageState extends State<MyServicesPage> with WidgetsBindingObse
           ),
         ],
       ),
-      body: BlocBuilder<AuthBloc, AuthState>(
-        builder: (context, authState) {
-          if (authState is AuthAuthenticated) {
-            return _buildAuthenticatedContent();
-          } else {
-            return const LoginRequiredWidget(
-              title: 'Inicia sesión para gestionar tus servicios',
-              subtitle: 'Necesitas tener una cuenta para crear y administrar tus servicios profesionales.',
-            );
-          }
-        },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
+    
+    return Scaffold(
+      backgroundColor: AppTheme.getBackgroundColor(context),
+      body: SafeArea(
+        child: BlocBuilder<AuthBloc, AuthState>(
+          builder: (context, authState) {
+            if (authState is AuthAuthenticated) {
+              return Column(
+                children: [
+                  _buildAppBar(),
+                  Expanded(
+                    child: _buildAuthenticatedContent(),
+                  ),
+                ],
+              );
+            } else {
+              return const LoginRequiredWidget(
+                title: 'Inicia sesión para gestionar tus servicios',
+                subtitle: 'Necesitas tener una cuenta para crear y administrar tus servicios profesionales.',
+              );
+            }
+          },
+        ),
       ),
     );
   }

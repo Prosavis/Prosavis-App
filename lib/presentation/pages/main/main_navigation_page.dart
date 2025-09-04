@@ -17,7 +17,9 @@ import '../../widgets/common/auth_required_dialog.dart';
 
 
 class MainNavigationPage extends StatefulWidget {
-  const MainNavigationPage({super.key});
+  final int initialTab;
+  
+  const MainNavigationPage({super.key, this.initialTab = 0});
 
   @override
   State<MainNavigationPage> createState() => _MainNavigationPageState();
@@ -35,8 +37,9 @@ class _MainNavigationPageState extends State<MainNavigationPage>
   @override
   void initState() {
     super.initState();
+    _selectedIndex = widget.initialTab.clamp(0, 3); // Validar que esté en rango
     _pageController = PageController(
-      initialPage: 0,
+      initialPage: _selectedIndex,
       keepPage: true, // Optimización: mantener páginas en memoria
     );
   }

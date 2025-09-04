@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/config/app_config.dart';
 import '../../../core/themes/app_theme.dart';
@@ -191,9 +190,7 @@ class _SplashPageState extends State<SplashPage>
   Widget _buildBrandText() {
     return Text(
       'Prosavis',
-      style: GoogleFonts.inter(
-        fontSize: 42,
-        fontWeight: FontWeight.w900,
+      style: Theme.of(context).textTheme.displayLarge?.copyWith(
         color: Colors.white,
         letterSpacing: -1.0,
         shadows: [
@@ -210,9 +207,7 @@ class _SplashPageState extends State<SplashPage>
   Widget _buildTagline() {
     return Text(
       'Conectando servicios de calidad',
-      style: GoogleFonts.inter(
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
         color: Colors.white.withValues(alpha: 0.9),
         letterSpacing: 0.5,
       ),

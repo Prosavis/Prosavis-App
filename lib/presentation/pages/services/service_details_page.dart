@@ -2412,7 +2412,7 @@ La aplicación que conecta a las mejores personas que ofrecen servicios profesio
         return AlertDialog(
           title: Text(
             'Todas las reseñas',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.labelLarge,
           ),
           content: SizedBox(
             width: double.maxFinite,
@@ -2611,7 +2611,7 @@ La aplicación que conecta a las mejores personas que ofrecen servicios profesio
         return AlertDialog(
           title: Text(
             'Inicio de sesión requerido',
-            style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+            style: Theme.of(context).textTheme.labelLarge,
           ),
           content: Text(
             'Para agregar una reseña necesitas iniciar sesión o crear una cuenta.',

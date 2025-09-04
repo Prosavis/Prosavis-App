@@ -79,7 +79,7 @@ class BrandConstants {
   static const TextStyle headlineLarge = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 32,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.2,
     letterSpacing: -0.5,
     color: textPrimary,
@@ -88,7 +88,7 @@ class BrandConstants {
   static const TextStyle headlineMedium = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 28,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.3,
     letterSpacing: -0.25,
     color: textPrimary,
@@ -97,7 +97,7 @@ class BrandConstants {
   static const TextStyle headlineSmall = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 24,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.3,
     color: textPrimary,
   );
@@ -105,7 +105,7 @@ class BrandConstants {
   static const TextStyle titleLarge = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 22,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.4,
     color: textPrimary,
   );
@@ -113,7 +113,7 @@ class BrandConstants {
   static const TextStyle titleMedium = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 18,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.4,
     color: textPrimary,
   );
@@ -121,7 +121,7 @@ class BrandConstants {
   static const TextStyle titleSmall = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 16,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.4,
     color: textPrimary,
   );
@@ -153,7 +153,7 @@ class BrandConstants {
   static const TextStyle labelLarge = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 14,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.4,
     letterSpacing: 0.1,
     color: textPrimary,
@@ -162,7 +162,7 @@ class BrandConstants {
   static const TextStyle labelMedium = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 12,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.3,
     letterSpacing: 0.5,
     color: textSecondary,
@@ -171,7 +171,7 @@ class BrandConstants {
   static const TextStyle labelSmall = TextStyle(
     fontFamily: primaryFontFamily,
     fontSize: 11,
-    fontWeight: FontWeight.w900,
+    fontWeight: FontWeight.w600, // Corporativo: headings con w600
     height: 1.3,
     letterSpacing: 0.5,
     color: textTertiary,

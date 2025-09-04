@@ -24,6 +24,7 @@ import 'presentation/blocs/search/search_bloc.dart';
 import 'presentation/blocs/search/search_event.dart';
 import 'presentation/blocs/profile/profile_bloc.dart';
 import 'presentation/blocs/home/home_bloc.dart';
+import 'presentation/blocs/home/home_event.dart';
 import 'presentation/blocs/favorites/favorites_bloc.dart';
 import 'presentation/blocs/favorites/favorites_event.dart';
 import 'presentation/blocs/favorites/favorites_state.dart';
@@ -54,7 +55,6 @@ import 'presentation/pages/services/service_details_page.dart';
 import 'domain/entities/service_entity.dart';
 import 'domain/usecases/services/create_service_usecase.dart';
 import 'core/injection/injection_container.dart' as di;
-import 'core/utils/font_manager.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 
@@ -65,6 +65,11 @@ void main() async {
   runZonedGuarded<Future<void>>(() async {
     // Optimización: Defer first frame para inicialización más suave
     WidgetsFlutterBinding.ensureInitialized();
+    
+    // 🚀 OPTIMIZACIÓN: Usar fuentes locales Inter desde assets
+    
+    // 🚀 OPTIMIZACIÓN: Límite de caché de imágenes para listas largas (~192MB)
+    PaintingBinding.instance.imageCache.maximumSizeBytes = 192 << 20;
     
     // Inicializar Firebase PRIMERO
     await Firebase.initializeApp(
@@ -190,15 +195,9 @@ Future<void> _initializeCrashlytics() async {
 Future<void> _preloadCriticalAssets() async {
   // Optimización: Ejecutar en un aislamiento para no bloquear el hilo principal
   await Future.microtask(() async {
-    // Usar FontManager para precarga con fallback automático
-    // No realizamos precache de imágenes aquí porque no disponemos de un
-    // BuildContext válido en esta fase de inicio.
-    try {
-      await FontManager.preloadGoogleFonts();
-    } catch (e) {
-      // Si falla la carga de fuentes, FontManager manejará el fallback automáticamente
-      developer.log('FontManager manejó la precarga con fallbacks: $e');
-    }
+    // No precargar fuentes - Inter se carga automáticamente desde assets
+    // Solo tareas mínimas que no bloqueen el primer frame
+    developer.log('✅ Assets críticos optimizados para primer frame');
   });
 }
 
@@ -275,7 +274,11 @@ final _router = GoRouter(
     ),
     GoRoute(
       path: '/home',
-      pageBuilder: (context, state) => _fadeThroughPage(child: const MainNavigationPage()),
+      pageBuilder: (context, state) {
+        final tabString = state.uri.queryParameters['tab'];
+        final initialTab = int.tryParse(tabString ?? '0') ?? 0;
+        return _fadeThroughPage(child: MainNavigationPage(initialTab: initialTab));
+      },
     ),
 
     GoRoute(
@@ -373,15 +376,70 @@ final _router = GoRouter(
   ],
 );
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   final bool dependenciesReady;
   
   const MyApp({super.key, this.dependenciesReady = true});
 
   @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    
+    // 🚀 OPTIMIZACIÓN: Prewarm after first frame (evita jank en arranque)
+    if (widget.dependenciesReady) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _prewarmAboveTheFold();
+      });
+    }
+  }
+  
+  /// Pre-carga datos "above the fold" después del primer frame
+  void _prewarmAboveTheFold() {
+    try {
+      final context = this.context;
+      if (!mounted) return;
+      
+      developer.log('🔥 Prewarm: Iniciando carga de datos above-the-fold');
+      
+      // Pre-warm imágenes críticas del branding (async, no bloquea)
+      _precacheHeroImages(context);
+      
+      // Disparar carga de servicios home sin bloquear UI
+      context.read<HomeBloc>().add(LoadHomeServices());
+      
+    } catch (e) {
+      developer.log('⚠️ Error en prewarm above-the-fold: $e');
+    }
+  }
+  
+  /// Pre-cachea imágenes críticas del branding y hero
+  void _precacheHeroImages(BuildContext context) {
+    developer.log('🖼️ Precaching hero images...');
+    
+    // Lista de imágenes críticas para precarga
+    const criticalImages = [
+      'assets/branding/logos/logo-color.png',
+      'assets/branding/logos/logo-icon-clean.png',
+      'assets/branding/logos/logo-no-background.png',
+    ];
+    
+    // Precache en paralelo (no await para no bloquear)
+    for (final imagePath in criticalImages) {
+      precacheImage(AssetImage(imagePath), context).catchError((e) {
+        developer.log('⚠️ Error precaching $imagePath: $e');
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Si las dependencias no están listas, mostrar una pantalla de error
-    if (!dependenciesReady) {
+    if (!widget.dependenciesReady) {
       return const MaterialApp(
         title: AppConstants.appName,
         home: Scaffold(
@@ -393,7 +451,7 @@ class MyApp extends StatelessWidget {
                 SizedBox(height: 16),
                 Text(
                   'Error al inicializar la aplicación',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500), // Corporativo
                 ),
                 SizedBox(height: 8),
                 Text('Por favor reinicia la aplicación'),

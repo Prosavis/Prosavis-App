@@ -25,12 +25,6 @@ service cloud.firestore {
     }
     
 
-    // Helper para validar timestamps cercanos al momento actual (más permisivo)
-    function nearNow(ts) {
-      return ts is timestamp
-             && (request.time - ts <= duration.value(30, 'minutes'))
-             && (ts - request.time <= duration.value(10, 'minutes'));
-    }
     
     // === USUARIOS ===
     match /users/{userId} {
@@ -77,19 +71,16 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if true;
 
-        // Fuerza un solo review por usuario: id del doc == uid
+        // Permitir crear reseña: el usuario autenticado puede crear una reseña
         allow create: if isSignedIn()
           && request.auth.uid == request.resource.data.userId
-          && request.resource.id == request.auth.uid
           && request.resource.data.keys().hasAll(['serviceId','userId','rating'])
           && request.resource.data.serviceId == serviceId
           && (request.resource.data.rating is number)
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
           && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
           && (!request.resource.data.keys().hasAny(['userName']) || (request.resource.data.userName is string && request.resource.data.userName.size() <= 100))
-          && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500))
-          && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
-          && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+          && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500));
 
         // Actualizar reseña con whitelisting y re-validación + inmutables
         allow update: if isSignedIn()
@@ -99,12 +90,7 @@ service cloud.firestore {
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
           && (request.resource.data.rating is number)
           && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
-          && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
-          && (!request.resource.data.keys().hasAny(['updatedAt']) || (
-               request.resource.data.updatedAt is timestamp
-               && request.resource.data.updatedAt >= resource.data.updatedAt
-               && nearNow(request.resource.data.updatedAt)
-             ));
+          && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000));
 
         // Permitir borrado de reseñas propias O anonimización (para borrado de cuenta)
         allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
@@ -129,9 +115,7 @@ service cloud.firestore {
         && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
         && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
         && (!request.resource.data.keys().hasAny(['userName']) || (request.resource.data.userName is string && request.resource.data.userName.size() <= 100))
-        && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500))
-        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt))
-        && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt));
+        && (!request.resource.data.keys().hasAny(['userPhotoUrl']) || (request.resource.data.userPhotoUrl is string && request.resource.data.userPhotoUrl.size() <= 500));
 
       // Actualizar reseña global (incluyendo anonimización para borrado de cuenta)
       allow update: if (
@@ -142,8 +126,7 @@ service cloud.firestore {
          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['rating','comment','updatedAt','userName','userPhotoUrl'])
          && (request.resource.data.rating is number)
          && request.resource.data.rating >= 1 && request.resource.data.rating <= 5
-         && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000))
-         && (!request.resource.data.keys().hasAny(['updatedAt']) || nearNow(request.resource.data.updatedAt)))
+         && (!request.resource.data.keys().hasAny(['comment']) || (request.resource.data.comment is string && request.resource.data.comment.size() <= 5000)))
         // O anonimización del sistema para borrado de cuenta (permitir sin autenticación)
         || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['userName','userPhotoUrl','updatedAt'])
             && request.resource.data.userName == 'Usuario eliminado'

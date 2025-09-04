@@ -34,6 +34,7 @@ android {
         targetSdkVersion 35
         versionCode 1
         versionName "1.0.0"
+        // 🚀 Optimizado para AAB - Sin configuración manual de ABI
     }
 
     signingConfigs {
@@ -44,6 +45,9 @@ android {
             storePassword keystoreProperties['storePassword']
         }
     }
+
+    // 📦 AAB (Android App Bundle) - Google Play maneja automáticamente los ABI
+    // No se requieren splits manuales, Play Store genera APKs optimizados por dispositivo
 
     buildTypes {
         release {

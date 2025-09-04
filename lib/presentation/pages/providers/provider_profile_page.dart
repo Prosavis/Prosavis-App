@@ -216,6 +216,10 @@ class _ProviderProfilePageState extends State<ProviderProfilePage>
                   child: Image.network(
                     widget.provider.profileImage,
                     fit: BoxFit.cover,
+                    // 🚀 OPTIMIZACIÓN: cacheWidth reduce memoria para thumbnails
+                    cacheWidth: 200,
+                    cacheHeight: 200,
+                    filterQuality: FilterQuality.medium,
                   ),
                 ),
               ),
@@ -231,7 +235,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage>
                             widget.provider.name,
                             style: GoogleFonts.inter(
                               fontSize: 24,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w600, // Corporativo
                               color: Colors.black87,
                             ),
                           ),
@@ -445,6 +449,10 @@ class _ProviderProfilePageState extends State<ProviderProfilePage>
                       sample.images.first,
                       fit: BoxFit.cover,
                       width: double.infinity,
+                      // 🚀 OPTIMIZACIÓN: cacheWidth reduce memoria para thumbnails
+                      cacheWidth: 300,
+                      cacheHeight: 200,
+                      filterQuality: FilterQuality.medium,
                     ),
                   ),
                 ),
@@ -510,7 +518,7 @@ class _ProviderProfilePageState extends State<ProviderProfilePage>
                       widget.provider.rating.overall.toString(),
                       style: GoogleFonts.inter(
                         fontSize: 32,
-                        fontWeight: FontWeight.w700,
+                        fontWeight: FontWeight.w600, // Corporativo
                         color: Theme.of(context).primaryColor,
                       ),
                     ),

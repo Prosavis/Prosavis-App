@@ -532,25 +532,13 @@ class FirestoreService {
           break;
         case 'distance':
           if (userLatitude != null && userLongitude != null) {
-            services.sort((a, b) {
-              double dA = 1e9;
-              double dB = 1e9;
-              if (a.location != null) {
-                final la = (a.location!['latitude'] ?? a.location!['lat'])?.toDouble();
-                final lo = (a.location!['longitude'] ?? a.location!['lng'] ?? a.location!['lon'])?.toDouble();
-                if (la != null && lo != null) {
-                  dA = LocationUtils.calculateDistance(userLatitude, userLongitude, la, lo);
-                }
-              }
-              if (b.location != null) {
-                final lb = (b.location!['latitude'] ?? b.location!['lat'])?.toDouble();
-                final lob = (b.location!['longitude'] ?? b.location!['lng'] ?? b.location!['lon'])?.toDouble();
-                if (lb != null && lob != null) {
-                  dB = LocationUtils.calculateDistance(userLatitude, userLongitude, lb, lob);
-                }
-              }
-              return dA.compareTo(dB);
-            });
+            // Usar el método helper optimizado para ordenamiento por distancia
+            services = _filterServicesByDistance(
+              services, 
+              userLatitude, 
+              userLongitude, 
+              double.infinity // Sin límite de radio para búsquedas
+            );
           }
           break;
         case 'newest':
@@ -730,9 +718,34 @@ class FirestoreService {
     }
   }
 
+  // === CONVERTERS OPTIMIZADOS (ELIMINA PARSING AD-HOC) ===
+  
+  /// Obtener referencia a colección de servicios con converter optimizado
+  CollectionReference<ServiceEntity> get _servicesCollection {
+    return firestore.collection('services').withConverter<ServiceEntity>(
+      fromFirestore: (snapshot, _) {
+        if (!snapshot.exists) {
+          throw Exception('Service document does not exist');
+        }
+        
+        final data = snapshot.data()!;
+        data['id'] = snapshot.id; // Agregar ID del documento
+        
+        return ServiceModel.fromJson(data) as ServiceEntity;
+      },
+      toFirestore: (service, _) {
+        if (service is ServiceModel) {
+          return service.toJson()..remove('id'); // Remover ID al guardar
+        }
+        // Fallback para ServiceEntity genérica
+        return ServiceModel.fromEntity(service).toJson()..remove('id');
+      },
+    );
+  }
+  
   // === MÉTODOS OPTIMIZADOS PARA HOME (CACHE-FIRST + RED) ===
 
-  /// Obtener servicios destacados con estrategia cache-first + red
+  /// Obtener servicios destacados con estrategia cache-first + red (optimizado con converter)
   /// Permite emitir cache primero y luego datos frescos
   Future<List<ServiceEntity>> getFeaturedServicesWithCache({
     int limit = 5,
@@ -741,11 +754,20 @@ class FirestoreService {
     try {
       developer.Timeline.startSync('get_featured_services_cache_first');
       
-      final query = firestore
-          .collection('services')
-          .where('isActive', isEqualTo: true)
-          .orderBy('rating', descending: true)
-          .limit(limit);
+      // 🔥 FALLBACK: Si falla índice compuesto, usar query simple
+      Query<ServiceEntity> query;
+      try {
+        query = _servicesCollection
+            .where('isActive', isEqualTo: true)
+            .orderBy('rating', descending: true)
+            .limit(limit);
+      } catch (e) {
+        developer.log('⚠️ Índice rating+isActive no ready, usando fallback simple');
+        // Fallback: solo filtrar por isActive, ordenar en memoria
+        query = _servicesCollection
+            .where('isActive', isEqualTo: true)
+            .limit(limit * 2); // Más documentos para ordenar localmente
+      }
       
       List<ServiceEntity> result = [];
       
@@ -753,15 +775,18 @@ class FirestoreService {
       try {
         final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
         if (cachedSnapshot.docs.isNotEmpty) {
-          final cachedServices = cachedSnapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return ServiceModel.fromJson(data) as ServiceEntity;
-          }).toList();
-          
-          developer.log('⚡ ${cachedServices.length} servicios destacados del cache');
-          onData(cachedServices, true); // Emitir datos del cache inmediatamente
-          result = cachedServices;
+                  // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+        var cachedServices = cachedSnapshot.docs.map((doc) => doc.data()).toList();
+        
+        // 📦 FALLBACK: Ordenar en memoria si no hay índice compuesto
+        if (cachedServices.length > limit) {
+          cachedServices.sort((a, b) => b.rating.compareTo(a.rating));
+          cachedServices = cachedServices.take(limit).toList();
+        }
+        
+        developer.log('⚡ ${cachedServices.length} servicios destacados del cache (withConverter)');
+        onData(cachedServices, true); // Emitir datos del cache inmediatamente
+        result = cachedServices;
         }
       } catch (e) {
         developer.log('📝 Cache miss para servicios destacados');
@@ -770,13 +795,16 @@ class FirestoreService {
       // PASO 2: Red después (actualización)
       try {
         final freshSnapshot = await query.get();
-        final freshServices = freshSnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return ServiceModel.fromJson(data) as ServiceEntity;
-        }).toList();
+        // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+        var freshServices = freshSnapshot.docs.map((doc) => doc.data()).toList();
         
-        developer.log('🌐 ${freshServices.length} servicios destacados de la red');
+        // 📦 FALLBACK: Ordenar en memoria si no hay índice compuesto
+        if (freshServices.length > limit) {
+          freshServices.sort((a, b) => b.rating.compareTo(a.rating));
+          freshServices = freshServices.take(limit).toList();
+        }
+        
+        developer.log('🌐 ${freshServices.length} servicios destacados de la red (withConverter)');
         onData(freshServices, false); // Emitir datos frescos
         result = freshServices;
       } catch (e) {
@@ -808,8 +836,7 @@ class FirestoreService {
       }
       
       // Query básico para servicios activos (optimizado sin geoqueries complejas)
-      final query = firestore
-          .collection('services')
+      final query = _servicesCollection
           .where('isActive', isEqualTo: true)
           .limit(limit * 2); // Obtener más para filtrar después
       
@@ -819,18 +846,15 @@ class FirestoreService {
       try {
         final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
         if (cachedSnapshot.docs.isNotEmpty) {
-          final cachedServices = cachedSnapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return ServiceModel.fromJson(data) as ServiceEntity;
-          }).toList();
+          // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+          final cachedServices = cachedSnapshot.docs.map((doc) => doc.data()).toList();
           
           // Filtrar por distancia en memoria
           final nearbyCache = _filterServicesByDistance(
             cachedServices, userLatitude, userLongitude, radiusKm
           ).take(limit).toList();
           
-          developer.log('⚡ ${nearbyCache.length} servicios cercanos del cache');
+          developer.log('⚡ ${nearbyCache.length} servicios cercanos del cache (withConverter)');
           onData(nearbyCache, true);
           result = nearbyCache;
         }
@@ -841,18 +865,15 @@ class FirestoreService {
       // PASO 2: Red después
       try {
         final freshSnapshot = await query.get();
-        final freshServices = freshSnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return ServiceModel.fromJson(data) as ServiceEntity;
-        }).toList();
+        // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+        final freshServices = freshSnapshot.docs.map((doc) => doc.data()).toList();
         
         // Filtrar por distancia en memoria
         final nearbyFresh = _filterServicesByDistance(
           freshServices, userLatitude, userLongitude, radiusKm
         ).take(limit).toList();
         
-        developer.log('🌐 ${nearbyFresh.length} servicios cercanos de la red');
+        developer.log('🌐 ${nearbyFresh.length} servicios cercanos de la red (withConverter)');
         onData(nearbyFresh, false);
         result = nearbyFresh;
       } catch (e) {
@@ -874,8 +895,7 @@ class FirestoreService {
     try {
       developer.Timeline.startSync('get_available_services_cache_first');
       
-      final query = firestore
-          .collection('services')
+      final query = _servicesCollection
           .where('isActive', isEqualTo: true)
           .limit(limit);
       
@@ -885,15 +905,12 @@ class FirestoreService {
       try {
         final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
         if (cachedSnapshot.docs.isNotEmpty) {
-          final cachedServices = cachedSnapshot.docs.map((doc) {
-            final data = doc.data();
-            data['id'] = doc.id;
-            return ServiceModel.fromJson(data) as ServiceEntity;
-          }).toList();
+          // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+          final cachedServices = cachedSnapshot.docs.map((doc) => doc.data()).toList();
           
           cachedServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
           
-          developer.log('⚡ ${cachedServices.length} servicios disponibles del cache');
+          developer.log('⚡ ${cachedServices.length} servicios disponibles del cache (withConverter)');
           onData(cachedServices, true);
           result = cachedServices;
         }
@@ -904,15 +921,12 @@ class FirestoreService {
       // PASO 2: Red después
       try {
         final freshSnapshot = await query.get();
-        final freshServices = freshSnapshot.docs.map((doc) {
-          final data = doc.data();
-          data['id'] = doc.id;
-          return ServiceModel.fromJson(data) as ServiceEntity;
-        }).toList();
+        // 🚀 OPTIMIZACIÓN: No parsing manual, converter automático
+        final freshServices = freshSnapshot.docs.map((doc) => doc.data()).toList();
         
         freshServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
         
-        developer.log('🌐 ${freshServices.length} servicios disponibles de la red');
+        developer.log('🌐 ${freshServices.length} servicios disponibles de la red (withConverter)');
         onData(freshServices, false);
         result = freshServices;
       } catch (e) {
@@ -926,33 +940,77 @@ class FirestoreService {
     }
   }
 
-  /// Filtrar servicios por distancia (helper method)
+  /// Filtrar servicios por distancia y ordenar del más cercano al más lejano
+  /// 
+  /// Este método:
+  /// 1. Calcula la distancia de cada servicio al usuario
+  /// 2. Filtra servicios dentro del radio especificado
+  /// 3. Ordena por distancia ascendente (más cercano primero)
+  /// 4. Incluye servicios sin ubicación al final (ordenados por fecha)
   List<ServiceEntity> _filterServicesByDistance(
     List<ServiceEntity> services,
     double userLat,
     double userLng,
     double radiusKm,
   ) {
-    return services.where((service) {
-      // Solo filtrar si el servicio tiene coordenadas
-      if (service.location == null) {
-        return true; // Incluir servicios sin ubicación específica
+    // Crear lista de servicios con su distancia calculada
+    final servicesWithDistance = services.map((service) {
+      double distance = double.infinity; // Distancia infinita por defecto para servicios sin ubicación
+      
+      // Calcular distancia solo si el servicio tiene coordenadas válidas
+      if (service.location != null) {
+        final lat = service.location!['latitude'] as double?;
+        final lng = service.location!['longitude'] as double?;
+        
+        if (lat != null && lng != null) {
+          distance = LocationUtils.calculateDistance(
+            userLat, userLng,
+            lat, lng,
+          );
+        }
       }
       
-      final lat = service.location!['latitude'] as double?;
-      final lng = service.location!['longitude'] as double?;
-      
-      if (lat == null || lng == null) {
-        return true; // Incluir servicios sin coordenadas válidas
-      }
-      
-      final distance = LocationUtils.calculateDistance(
-        userLat, userLng,
-        lat, lng,
-      );
-      
-      return distance <= radiusKm;
+      return {
+        'service': service,
+        'distance': distance,
+      };
     }).toList();
+    
+    // Filtrar por radio especificado (incluir servicios sin ubicación al final)
+    final filteredServices = servicesWithDistance.where((item) {
+      final distance = item['distance'] as double;
+      return distance <= radiusKm || distance == double.infinity;
+    }).toList();
+    
+    // Ordenar por distancia: servicios con ubicación primero (ordenados por distancia), 
+    // servicios sin ubicación al final
+    filteredServices.sort((a, b) {
+      final distanceA = a['distance'] as double;
+      final distanceB = b['distance'] as double;
+      
+      // Si ambos tienen ubicación, ordenar por distancia
+      if (distanceA != double.infinity && distanceB != double.infinity) {
+        return distanceA.compareTo(distanceB);
+      }
+      
+      // Si solo A tiene ubicación, A va primero
+      if (distanceA != double.infinity && distanceB == double.infinity) {
+        return -1;
+      }
+      
+      // Si solo B tiene ubicación, B va primero
+      if (distanceA == double.infinity && distanceB != double.infinity) {
+        return 1;
+      }
+      
+      // Si ninguno tiene ubicación, mantener orden original (por fecha de creación)
+      final serviceA = a['service'] as ServiceEntity;
+      final serviceB = b['service'] as ServiceEntity;
+      return serviceB.createdAt.compareTo(serviceA.createdAt);
+    });
+    
+    // Extraer solo los servicios ordenados
+    return filteredServices.map((item) => item['service'] as ServiceEntity).toList();
   }
 
   // === MÉTODOS PARA COMPATIBILIDAD CON SERVICE_REPOSITORY ===
@@ -1666,6 +1724,91 @@ class FirestoreService {
     } catch (e) {
       developer.log('❌ Error durante limpieza de datos residuales: $e');
       rethrow;
+    }
+  }
+
+  /// Obtener servicios destacados (versión simplificada sin callbacks)
+  Future<List<ServiceEntity>> getFeaturedServices({int limit = 5}) async {
+    try {
+      developer.Timeline.startSync('get_featured_services_simple');
+      
+      // Query optimizado para servicios destacados
+      Query<ServiceEntity> query;
+      try {
+        query = _servicesCollection
+            .where('isActive', isEqualTo: true)
+            .orderBy('rating', descending: true)
+            .limit(limit);
+      } catch (e) {
+        developer.log('⚠️ Índice rating+isActive no ready, usando fallback simple');
+        // Fallback: solo filtrar por isActive, ordenar en memoria
+        query = _servicesCollection
+            .where('isActive', isEqualTo: true)
+            .limit(limit * 2);
+      }
+      
+      final snapshot = await query.get();
+      var services = snapshot.docs.map((doc) => doc.data()).toList();
+      
+      // Fallback: ordenar en memoria si no hay índice compuesto
+      if (services.length > limit) {
+        services.sort((a, b) => b.rating.compareTo(a.rating));
+        services = services.take(limit).toList();
+      }
+      
+      developer.log('✅ ${services.length} servicios destacados obtenidos');
+      return services;
+      
+    } catch (e) {
+      developer.log('❌ Error obteniendo servicios destacados: $e');
+      rethrow;
+    } finally {
+      developer.Timeline.finishSync();
+    }
+  }
+
+  /// Obtener servicios cercanos (versión simplificada sin callbacks)
+  Future<List<ServiceEntity>> getNearbyServices({
+    required double? userLatitude,
+    required double? userLongitude,
+    double radiusKm = 15.0,
+    int limit = 6,
+  }) async {
+    try {
+      developer.Timeline.startSync('get_nearby_services_simple');
+      
+      // Si no hay ubicación, usar servicios generales
+      if (userLatitude == null || userLongitude == null) {
+        final query = _servicesCollection
+            .where('isActive', isEqualTo: true)
+            .limit(limit);
+        final snapshot = await query.get();
+        final services = snapshot.docs.map((doc) => doc.data()).toList();
+        developer.log('✅ ${services.length} servicios generales obtenidos (sin ubicación)');
+        return services;
+      }
+      
+      // Query básico para servicios activos
+      final query = _servicesCollection
+          .where('isActive', isEqualTo: true)
+          .limit(limit * 2); // Obtener más para filtrar después
+      
+      final snapshot = await query.get();
+      final allServices = snapshot.docs.map((doc) => doc.data()).toList();
+      
+      // Filtrar por distancia en memoria
+      final nearbyServices = _filterServicesByDistance(
+        allServices, userLatitude, userLongitude, radiusKm
+      ).take(limit).toList();
+      
+      developer.log('✅ ${nearbyServices.length} servicios cercanos obtenidos');
+      return nearbyServices;
+      
+    } catch (e) {
+      developer.log('❌ Error obteniendo servicios cercanos: $e');
+      rethrow;
+    } finally {
+      developer.Timeline.finishSync();
     }
   }
 }

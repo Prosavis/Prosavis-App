@@ -3354,8 +3354,8 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
       // Feedback háptico de éxito
       HapticsService.onSuccess();
       
-      // Navegar a mis servicios
-      context.go('/services/my-services');
+      // Navegar de vuelta al MainNavigationPage con el tab de "Ofrecer" seleccionado
+      context.go('/home?tab=1');
       
     } catch (e) {
       if (!mounted) return;

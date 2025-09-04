@@ -65,63 +65,81 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         }
       }
 
-      // Variables para almacenar resultados
-      List<ServiceEntity> currentFeatured = [];
-      List<ServiceEntity> currentNearby = [];
+      // Variables para almacenar resultados finales
+      List<ServiceEntity> featuredServices = [];
+      List<ServiceEntity> nearbyServices = [];
       
-      // ESTRATEGIA CACHE-FIRST: Usar nuevos métodos optimizados
-      await Future.wait([
-        // Servicios destacados con cache-first
-        _firestoreService.getFeaturedServicesWithCache(
-          limit: 5,
-          onData: (services, fromCache) async {
-            developer.log(fromCache ? '⚡ Destacados del cache' : '🌐 Destacados de la red');
-            
-            // Optimizar estadísticas solo para datos frescos
-            if (!fromCache) {
-              services = await _optimizeServiceStats(services);
-            }
-            
-            currentFeatured = services;
-            emit(HomeLoaded(
-              featuredServices: currentFeatured,
-              nearbyServices: currentNearby,
-              isFromCache: fromCache,
-            ));
-          },
-        ),
+      // ESTRATEGIA SECUENCIAL: Cargar servicios uno por uno y emitir al final
+      try {
+        // Cargar servicios destacados
+        final featuredResult = await _loadFeaturedServices();
+        featuredServices = featuredResult;
+        developer.log('⚡ Destacados cargados: ${featuredServices.length}');
         
-        // Servicios cercanos con cache-first
-        _firestoreService.getNearbyServicesWithCache(
-          userLatitude: lat,
-          userLongitude: lng,
-          radiusKm: 15.0,
-          limit: 6,
-          onData: (services, fromCache) async {
-            developer.log(fromCache ? '⚡ Cercanos del cache' : '🌐 Cercanos de la red');
-            
-            // Optimizar estadísticas solo para datos frescos
-            if (!fromCache) {
-              services = await _optimizeServiceStats(services);
-            }
-            
-            currentNearby = services;
-            emit(HomeLoaded(
-              featuredServices: currentFeatured,
-              nearbyServices: currentNearby,
-              isFromCache: fromCache,
-            ));
-          },
-        ),
-      ]);
+        // Cargar servicios cercanos
+        final nearbyResult = await _loadNearbyServices(lat, lng);
+        nearbyServices = nearbyResult;
+        developer.log('⚡ Cercanos cargados: ${nearbyServices.length}');
+        
+        // Emitir resultado final solo una vez
+        if (!emit.isDone) {
+          emit(HomeLoaded(
+            featuredServices: featuredServices,
+            nearbyServices: nearbyServices,
+            isFromCache: false,
+          ));
+        }
+        
+      } catch (e) {
+        developer.log('❌ Error cargando servicios específicos: $e');
+        if (!emit.isDone) {
+          emit(HomeError('Error al cargar servicios: ${e.toString()}'));
+        }
+      }
 
-      developer.log('✅ Servicios optimizados cargados: ${currentFeatured.length} destacados, ${currentNearby.length} cercanos');
+      developer.log('✅ Servicios optimizados cargados: ${featuredServices.length} destacados, ${nearbyServices.length} cercanos');
 
     } catch (e) {
       developer.log('❌ Error al cargar servicios: $e');
-      emit(HomeError('Error al cargar servicios: ${e.toString()}'));
+      if (!emit.isDone) {
+        emit(HomeError('Error al cargar servicios: ${e.toString()}'));
+      }
     } finally {
       developer.Timeline.finishSync();
+    }
+  }
+
+  /// Cargar servicios destacados
+  Future<List<ServiceEntity>> _loadFeaturedServices() async {
+    try {
+      // Usar query directa sin callbacks para evitar emit tardío
+      final services = await _firestoreService.getFeaturedServices(limit: 5);
+      return await _optimizeServiceStats(services);
+    } catch (e) {
+      developer.log('❌ Error cargando servicios destacados: $e');
+      return [];
+    }
+  }
+
+  /// Cargar servicios cercanos
+  Future<List<ServiceEntity>> _loadNearbyServices(double? lat, double? lng) async {
+    try {
+      if (lat == null || lng == null) {
+        developer.log('⚠️ Sin ubicación para servicios cercanos');
+        return [];
+      }
+      
+      // Usar query directa sin callbacks para evitar emit tardío
+      final services = await _firestoreService.getNearbyServices(
+        userLatitude: lat,
+        userLongitude: lng,
+        radiusKm: 15.0,
+        limit: 6,
+      );
+      return await _optimizeServiceStats(services);
+    } catch (e) {
+      developer.log('❌ Error cargando servicios cercanos: $e');
+      return [];
     }
   }
 

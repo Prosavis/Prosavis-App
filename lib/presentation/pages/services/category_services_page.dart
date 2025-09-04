@@ -87,7 +87,7 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
               widget.category['name'] as String,
               style: GoogleFonts.inter(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600, // Corporativo: headings
                 color: AppTheme.getTextPrimary(context),
               ),
             ),
@@ -223,6 +223,8 @@ class _CategoryServicesPageState extends State<CategoryServicesPage>
     return ListView.builder(
       padding: const EdgeInsets.all(AppConstants.paddingMedium),
       itemCount: _filteredServices.length,
+      // 🚀 OPTIMIZACIÓN: itemExtent evita layouts costosos
+      itemExtent: 120, // Altura fija para ServiceCard horizontal
       // Optimizaciones para mejor rendimiento
       cacheExtent: 1000,
       physics: const BouncingScrollPhysics(),
