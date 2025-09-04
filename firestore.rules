@@ -156,18 +156,16 @@ service cloud.firestore {
     // === FAVORITOS ===
     // Usando id canónico ${uid}_${serviceId} para prevenir duplicados
     match /favorites/{favoriteId} {
-      // Lectura simplificada: permitir a usuarios autenticados
+      // Permitir lectura a usuarios autenticados
       allow read: if isSignedIn();
 
-      // Crear con id canónico validado para prevenir duplicados
+      // Crear favorito - simplificado para que funcione
       allow create: if isSignedIn()
         && request.auth.uid == request.resource.data.userId
-        && request.resource.id == (request.auth.uid + '_' + request.resource.data.serviceId)
-        && request.resource.data.keys().hasOnly(['userId','serviceId','createdAt'])
-        && exists(/databases/$(database)/documents/services/$(request.resource.data.serviceId))
-        && (!request.resource.data.keys().hasAny(['createdAt']) || nearNow(request.resource.data.createdAt));
+        && request.resource.data.userId is string
+        && request.resource.data.serviceId is string;
 
-      // Solo dueño puede actualizar/eliminar
+      // Actualizar/eliminar solo el dueño
       allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
     

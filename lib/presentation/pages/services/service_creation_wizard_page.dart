@@ -73,7 +73,6 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
   final _addressController = TextEditingController();
   final _whatsappController = TextEditingController();
   final _phone1Controller = TextEditingController();
-  final _phone2Controller = TextEditingController();
   final _instagramController = TextEditingController();
   final _xController = TextEditingController();
   final _tiktokController = TextEditingController();
@@ -345,7 +344,6 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
     _addressController.dispose();
     _whatsappController.dispose();
     _phone1Controller.dispose();
-    _phone2Controller.dispose();
     _instagramController.dispose();
     _xController.dispose();
     _tiktokController.dispose();
@@ -1172,19 +1170,11 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
                 _buildWhatsAppField(),
                 const SizedBox(height: 16),
                 
-                // Teléfono 1
+                // Teléfono de llamadas
                 _buildPhoneField(
-                  'Teléfono principal',
+                  'Teléfono de llamadas',
                   _phone1Controller,
                   'Ej: 1 234 5678 o móvil',
-                ),
-                const SizedBox(height: 16),
-                
-                // Teléfono 2
-                _buildPhoneField(
-                  'Teléfono secundario',
-                  _phone2Controller,
-                  'Ej: 300 987 6543',
                 ),
                 const SizedBox(height: 16),
                 
@@ -2800,7 +2790,6 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
     bool _hasContactInfo() {
     return _whatsappController.text.trim().isNotEmpty ||
         _phone1Controller.text.trim().isNotEmpty ||
-        _phone2Controller.text.trim().isNotEmpty ||
         _instagramController.text.trim().isNotEmpty ||
         _xController.text.trim().isNotEmpty ||
         _tiktokController.text.trim().isNotEmpty;
@@ -2979,20 +2968,12 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
               '+57 ${_whatsappController.text.trim()}',
             ),
           
-          // Teléfono 1
+          // Teléfono de llamadas
           if (_phone1Controller.text.trim().isNotEmpty)
             _buildContactSummaryRowWithIcon(
               Symbols.call,
               'Teléfono',
               '+57 ${_phone1Controller.text.trim()}',
-            ),
-          
-          // Teléfono 2
-          if (_phone2Controller.text.trim().isNotEmpty)
-            _buildContactSummaryRowWithIcon(
-              Symbols.call,
-              'Teléfono 2',
-              '+57 ${_phone2Controller.text.trim()}',
             ),
           
           // Instagram
@@ -3324,7 +3305,6 @@ class ServiceCreationWizardPageState extends State<ServiceCreationWizardPage>
         tiktok: _tiktokController.text.trim().isNotEmpty ? _tiktokController.text.trim() : null,
         callPhones: [
           if (_phone1Controller.text.trim().isNotEmpty) '+57${_phone1Controller.text.trim()}',
-          if (_phone2Controller.text.trim().isNotEmpty) '+57${_phone2Controller.text.trim()}',
         ],
         mainImage: mainImageUrl,
         images: additionalImageUrls, // URLs de las imágenes adicionales subidas

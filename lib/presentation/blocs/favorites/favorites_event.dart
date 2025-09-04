@@ -86,3 +86,11 @@ class FavoritesStreamUpdated extends FavoritesEvent {
   @override
   List<Object?> get props => [_marker, services];
 }
+
+/// Evento interno para limpiar favoritos cuando se deniegan permisos
+class ClearFavoritesOnPermissionDenied extends FavoritesEvent {
+  const ClearFavoritesOnPermissionDenied();
+
+  @override
+  List<Object?> get props => [];
+}

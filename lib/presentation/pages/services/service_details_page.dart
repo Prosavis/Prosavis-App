@@ -1979,7 +1979,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Future<void> _shareCompleteInfo() async {
     try {
       final shareText = _buildCompleteShareText();
-      await Share.share(shareText);
+      await SharePlus.instance.share(ShareParams(text: shareText));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1998,7 +1998,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
       if (phoneNumber.isEmpty) {
         // Si no hay WhatsApp, compartir por mensaje general
         final shareText = _buildWhatsAppShareText();
-        await Share.share(shareText);
+        await SharePlus.instance.share(ShareParams(text: shareText));
         return;
       }
 
@@ -2012,7 +2012,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         // Fallback: compartir el texto
-        await Share.share(_buildWhatsAppShareText());
+        await SharePlus.instance.share(ShareParams(text: _buildWhatsAppShareText()));
       }
     } catch (e) {
       if (mounted) {
@@ -2029,7 +2029,7 @@ class _ServiceDetailsPageState extends State<ServiceDetailsPage>
   Future<void> _shareAppPromotion() async {
     try {
       final shareText = _buildAppPromotionText();
-      await Share.share(shareText);
+      await SharePlus.instance.share(ShareParams(text: shareText));
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

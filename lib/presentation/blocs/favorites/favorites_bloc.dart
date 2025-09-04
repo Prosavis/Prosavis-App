@@ -36,6 +36,7 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     on<CheckFavoriteStatus>(_onCheckFavoriteStatus);
     on<RefreshFavorites>(_onRefreshFavorites);
     on<FavoritesStreamUpdated>(_onFavoritesStreamUpdated);
+    on<ClearFavoritesOnPermissionDenied>(_onClearFavoritesOnPermissionDenied);
   }
 
   Future<void> _onLoadUserFavorites(
@@ -86,9 +87,10 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
                 message.contains('permission-denied');
             if (isPermissionDenied) {
               _favoritesSubscription?.cancel();
+              // No emitir directamente aquí para evitar el error de concurrencia
+              // En su lugar, agregar un evento que maneje esto de forma segura
               if (!isClosed) {
-                // Volver a un estado seguro sin favoritos
-                emit(const FavoritesLoaded(favorites: [], favoriteStatus: {}));
+                add(const ClearFavoritesOnPermissionDenied());
               }
             }
           },
@@ -279,25 +281,44 @@ class FavoritesBloc extends Bloc<FavoritesEvent, FavoritesState> {
     FavoritesStreamUpdated event,
     Emitter<FavoritesState> emit,
   ) async {
+    if (isClosed) return; // Verificar si el BLoC está cerrado antes de proceder
+    
     final List<ServiceEntity> services = event.services.cast<ServiceEntity>();
     // Opcional: ajustar ratings cuando falte info
-    final adjusted = await Future.wait(services.map((s) async {
-      if (s.reviewCount == 0) {
-        final stats = await getServiceReviewStatsUseCase(s.id);
-        final total = (stats['totalReviews'] ?? 0) as int;
-        final avg = (stats['averageRating'] ?? 0.0).toDouble();
-        if (total > 0) return s.copyWith(rating: avg, reviewCount: total);
+    try {
+      final adjusted = await Future.wait(services.map((s) async {
+        if (s.reviewCount == 0) {
+          final stats = await getServiceReviewStatsUseCase(s.id);
+          final total = (stats['totalReviews'] ?? 0) as int;
+          final avg = (stats['averageRating'] ?? 0.0).toDouble();
+          if (total > 0) return s.copyWith(rating: avg, reviewCount: total);
+        }
+        return s;
+      }));
+
+      if (isClosed) return; // Verificar nuevamente después de operaciones async
+
+      final favoriteStatus = <String, bool>{for (final s in adjusted) s.id: true};
+
+      if (state is FavoritesLoaded) {
+        final current = state as FavoritesLoaded;
+        emit(current.copyWith(favorites: adjusted, favoriteStatus: favoriteStatus));
+      } else {
+        emit(FavoritesLoaded(favorites: adjusted, favoriteStatus: favoriteStatus));
       }
-      return s;
-    }));
+    } catch (e) {
+      if (!isClosed) {
+        emit(FavoritesError('Error al actualizar favoritos desde stream: $e'));
+      }
+    }
+  }
 
-    final favoriteStatus = <String, bool>{for (final s in adjusted) s.id: true};
-
-    if (state is FavoritesLoaded) {
-      final current = state as FavoritesLoaded;
-      emit(current.copyWith(favorites: adjusted, favoriteStatus: favoriteStatus));
-    } else {
-      emit(FavoritesLoaded(favorites: adjusted, favoriteStatus: favoriteStatus));
+  Future<void> _onClearFavoritesOnPermissionDenied(
+    ClearFavoritesOnPermissionDenied event,
+    Emitter<FavoritesState> emit,
+  ) async {
+    if (!isClosed) {
+      emit(const FavoritesLoaded(favorites: [], favoriteStatus: {}));
     }
   }
 

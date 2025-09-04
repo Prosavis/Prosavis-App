@@ -150,9 +150,8 @@ Future<void> init() async {
     sl.registerFactory(() => SearchBloc(sl<SearchServicesUseCase>()));
     
     sl.registerFactory(() => HomeBloc(
-      getFeaturedServicesUseCase: sl<GetFeaturedServicesUseCase>(),
-      getNearbyServicesUseCase: sl<GetNearbyServicesUseCase>(),
       getServiceReviewStatsUseCase: sl<GetServiceReviewStatsUseCase>(),
+      firestoreService: sl<FirestoreService>(),
       locationBloc: sl<LocationBloc>(),
     ));
     

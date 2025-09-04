@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import '../services/permission_service.dart';
 
 class LocationUtils {
   // Cache inteligente en memoria para evitar solicitar la ubicación repetidamente
@@ -54,30 +55,13 @@ class LocationUtils {
     }
   }
 
-  /// Verifica y solicita permisos de ubicación
+  /// Verifica y solicita permisos de ubicación usando PermissionService
   static Future<bool> _handleLocationPermission() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Verificar si el servicio de ubicación está habilitado
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      return false;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        return false;
-      }
-    }
+    final permissionService = PermissionService();
+    final permission = await permissionService.ensureLocationPermission();
     
-    if (permission == LocationPermission.deniedForever) {
-      return false;
-    }
-    
-    return true;
+    return permission == LocationPermission.always || 
+           permission == LocationPermission.whileInUse;
   }
 
   /// Obtiene la ubicación actual del usuario para calcular distancias

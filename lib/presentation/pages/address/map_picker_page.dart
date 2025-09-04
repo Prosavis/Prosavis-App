@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:material_symbols_icons/symbols.dart';
 import '../../../core/themes/app_theme.dart';
 import '../../../core/utils/location_utils.dart';
+import '../../../core/services/permission_service.dart';
 
 class MapPickerPage extends StatefulWidget {
   const MapPickerPage({super.key});
@@ -27,31 +28,33 @@ class _MapPickerPageState extends State<MapPickerPage> {
   @override
   void initState() {
     super.initState();
-    _initLocation();
+    _initLocationWithoutPermissions();
   }
 
-  Future<void> _initLocation() async {
+  /// Inicializar mapa sin solicitar permisos (ubicación por defecto)
+  Future<void> _initLocationWithoutPermissions() async {
     try {
-      final ok = await Geolocator.checkPermission().then((p) async {
-        if (p == LocationPermission.denied) {
-          p = await Geolocator.requestPermission();
-        }
-        return p == LocationPermission.always || p == LocationPermission.whileInUse;
-      });
-
+      // Verificar solo si ya tenemos permisos (sin solicitarlos)
+      final permissionService = PermissionService();
+      final hasPermission = await permissionService.hasLocationPermission();
+      
       Position? pos;
-      if (ok) {
+      if (hasPermission) {
         try {
+          // Si ya tenemos permisos, intentar obtener ubicación actual
           pos = await Geolocator.getCurrentPosition(
             locationSettings: const LocationSettings(
               accuracy: LocationAccuracy.medium,
-              timeLimit: Duration(seconds: 10),
+              timeLimit: Duration(seconds: 5),
             ),
           );
+          developer.log('📍 Ubicación inicial obtenida con permisos existentes', name: 'MapPickerPage');
         } catch (e) {
-          developer.log('Error obteniendo ubicación GPS: $e', name: 'MapPickerPage');
+          developer.log('⚠️ Error obteniendo ubicación inicial: $e', name: 'MapPickerPage');
           // Continuar con ubicación fallback
         }
+      } else {
+        developer.log('📍 Inicializando con ubicación por defecto (sin permisos)', name: 'MapPickerPage');
       }
 
       final lat = pos?.latitude ?? 4.710989; // Bogotá fallback
@@ -96,6 +99,65 @@ class _MapPickerPageState extends State<MapPickerPage> {
     }
   }
 
+  /// Solicitar permisos y ir a ubicación actual del usuario (on-demand)
+  Future<void> _goToCurrentLocation() async {
+    try {
+      setState(() {
+        _loading = true;
+        _errorMessage = null;
+      });
+      
+      final permissionService = PermissionService();
+      final permission = await permissionService.ensureLocationPermission();
+      
+      if (permission != LocationPermission.always && 
+          permission != LocationPermission.whileInUse) {
+        setState(() {
+          _loading = false;
+          _errorMessage = permission == LocationPermission.deniedForever 
+            ? 'Permisos denegados permanentemente. Ve a configuración.'
+            : 'Permisos de ubicación requeridos.';
+        });
+        return;
+      }
+      
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+      
+      final newLocation = LatLng(position.latitude, position.longitude);
+      final controller = await _controller.future;
+      
+      // Animar hacia la nueva ubicación
+      await controller.animateCamera(
+        CameraUpdate.newCameraPosition(
+          CameraPosition(target: newLocation, zoom: 16),
+        ),
+      );
+      
+      // Actualizar ubicación seleccionada
+      setState(() {
+        _selected = newLocation;
+        _loading = false;
+      });
+      
+      // Actualizar dirección
+      _updateAddressForSelected();
+      
+      developer.log('📍 Ubicación actual obtenida y establecida', name: 'MapPickerPage');
+      
+    } catch (e) {
+      developer.log('⚠️ Error al obtener ubicación actual: $e', name: 'MapPickerPage');
+      setState(() {
+        _loading = false;
+        _errorMessage = 'Error al obtener ubicación actual. Intenta de nuevo.';
+      });
+    }
+  }
+
   Future<void> _updateAddressForSelected() async {
     if (_selected == null) return;
     setState(() => _resolvingAddress = true);
@@ -118,16 +180,6 @@ class _MapPickerPageState extends State<MapPickerPage> {
     });
   }
 
-  Future<void> _recenterToCurrent() async {
-    final details = await LocationUtils.getCurrentLocationDetails();
-    if (details == null) return;
-    final lat = details['latitude'] as double;
-    final lng = details['longitude'] as double;
-    _selected = LatLng(lat, lng);
-    _address = details['address'] as String?;
-    (await _controller.future).animateCamera(CameraUpdate.newLatLng(_selected!));
-    if (mounted) setState(() {});
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -177,7 +229,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                               _loading = true;
                               _errorMessage = null;
                             });
-                            _initLocation();
+                            _initLocationWithoutPermissions();
                           },
                           icon: const Icon(Symbols.refresh),
                           label: const Text('Reintentar'),
@@ -250,7 +302,7 @@ class _MapPickerPageState extends State<MapPickerPage> {
                   bottom: totalUIHeight + 16, // Posicionar arriba de los elementos UI
                   child: FloatingActionButton(
                     heroTag: 'gps',
-                    onPressed: _recenterToCurrent,
+                    onPressed: _goToCurrentLocation,
                     backgroundColor: AppTheme.primaryColor,
                     foregroundColor: Colors.white,
                     child: const Icon(Symbols.my_location),

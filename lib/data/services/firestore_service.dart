@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:developer' as developer;
 import '../../core/utils/location_utils.dart';
+import '../../core/utils/isolate_utils.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../models/user_model.dart';
@@ -326,50 +327,123 @@ class FirestoreService {
     }
   }
 
-  /// Obtener todos los servicios
-  Future<List<ServiceEntity>> getAllServices() async {
+  /// Obtener todos los servicios (optimizado cache-first)
+  Future<List<ServiceEntity>> getAllServices({int limit = 20}) async {
     try {
-      final querySnapshot = await firestore
+      developer.Timeline.startSync('get_all_services');
+      
+      final query = firestore
           .collection('services')
           .orderBy('createdAt', descending: true)
-          .get();
+          .limit(limit);
       
-      final services = querySnapshot.docs.map((doc) {
+      // Cache-first: intentar obtener del cache primero
+      try {
+        final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
+        if (cachedSnapshot.docs.isNotEmpty) {
+          final rawData = cachedSnapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList();
+          
+          // Procesar en isolate si hay muchos servicios
+          final cachedServices = rawData.length > 10 
+            ? await IsolateUtils.parseServicesInIsolate(rawData)
+            : rawData.map((data) => ServiceModel.fromJson(data) as ServiceEntity).toList();
+          
+          developer.log('⚡ ${cachedServices.length} servicios obtenidos del cache${rawData.length > 10 ? ' (procesados en isolate)' : ''}');
+          return cachedServices;
+        }
+      } catch (e) {
+        developer.log('📝 Cache miss para servicios, consultando red...');
+      }
+      
+      // Red como fallback
+      final querySnapshot = await query.get();
+      final rawData = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
-        return ServiceModel.fromJson(data) as ServiceEntity;
+        return data;
       }).toList();
       
-      developer.log('✅ ${services.length} servicios obtenidos de Firestore');
+      // Procesar en isolate si hay muchos servicios
+      final services = rawData.length > 10 
+        ? await IsolateUtils.parseServicesInIsolate(rawData)
+        : rawData.map((data) => ServiceModel.fromJson(data) as ServiceEntity).toList();
+      
+      developer.log('✅ ${services.length} servicios obtenidos de la red');
       return services;
     } catch (e) {
       developer.log('⚠️ Error al obtener todos los servicios: $e');
       rethrow;
+    } finally {
+      developer.Timeline.finishSync();
     }
   }
 
-  /// Obtener servicios disponibles (activos)
-  Future<List<ServiceEntity>> getAvailableServices() async {
+  /// Obtener servicios disponibles (activos) - optimizado cache-first
+  Future<List<ServiceEntity>> getAvailableServices({int limit = 20}) async {
     try {
-      final querySnapshot = await firestore
+      developer.Timeline.startSync('get_available_services');
+      
+      final query = firestore
           .collection('services')
           .where('isActive', isEqualTo: true)
-          .get();
+          .limit(limit);
 
-      final services = querySnapshot.docs.map((doc) {
+      // Cache-first: intentar obtener del cache primero
+      try {
+        final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
+        if (cachedSnapshot.docs.isNotEmpty) {
+          final rawData = cachedSnapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return data;
+          }).toList();
+          
+          // Procesar y ordenar en isolate si hay muchos servicios
+          final cachedServices = rawData.length > 10 
+            ? await IsolateUtils.parseAndSortServicesInIsolate(
+                rawServicesData: rawData,
+                sortType: ServiceSortType.createdAt,
+                ascending: false,
+              )
+            : rawData.map((data) => ServiceModel.fromJson(data) as ServiceEntity).toList()
+              ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
+          developer.log('⚡ ${cachedServices.length} servicios activos obtenidos del cache${rawData.length > 10 ? ' (procesados en isolate)' : ''}');
+          return cachedServices;
+        }
+      } catch (e) {
+        developer.log('📝 Cache miss para servicios activos, consultando red...');
+      }
+
+      // Red como fallback
+      final querySnapshot = await query.get();
+      final rawData = querySnapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id;
-        return ServiceModel.fromJson(data) as ServiceEntity;
+        return data;
       }).toList();
       
-      // Ordenar en memoria por fecha de creación (más recientes primero)
-      services.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Procesar y ordenar en isolate si hay muchos servicios
+      final services = rawData.length > 10 
+        ? await IsolateUtils.parseAndSortServicesInIsolate(
+            rawServicesData: rawData,
+            sortType: ServiceSortType.createdAt,
+            ascending: false,
+          )
+        : rawData.map((data) => ServiceModel.fromJson(data) as ServiceEntity).toList()
+          ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
       
-      developer.log('✅ ${services.length} servicios activos obtenidos');
+      developer.log('✅ ${services.length} servicios activos obtenidos de la red');
       return services;
     } catch (e) {
       developer.log('⚠️ Error al obtener servicios disponibles: $e');
       rethrow;
+    } finally {
+      developer.Timeline.finishSync();
     }
   }
 
@@ -654,6 +728,231 @@ class FirestoreService {
       developer.log('⚠️ Error en stream de todos los servicios: $e');
       rethrow;
     }
+  }
+
+  // === MÉTODOS OPTIMIZADOS PARA HOME (CACHE-FIRST + RED) ===
+
+  /// Obtener servicios destacados con estrategia cache-first + red
+  /// Permite emitir cache primero y luego datos frescos
+  Future<List<ServiceEntity>> getFeaturedServicesWithCache({
+    int limit = 5,
+    required Function(List<ServiceEntity>, bool) onData, // (data, fromCache)
+  }) async {
+    try {
+      developer.Timeline.startSync('get_featured_services_cache_first');
+      
+      final query = firestore
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .orderBy('rating', descending: true)
+          .limit(limit);
+      
+      List<ServiceEntity> result = [];
+      
+      // PASO 1: Cache primero (rápido)
+      try {
+        final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
+        if (cachedSnapshot.docs.isNotEmpty) {
+          final cachedServices = cachedSnapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return ServiceModel.fromJson(data) as ServiceEntity;
+          }).toList();
+          
+          developer.log('⚡ ${cachedServices.length} servicios destacados del cache');
+          onData(cachedServices, true); // Emitir datos del cache inmediatamente
+          result = cachedServices;
+        }
+      } catch (e) {
+        developer.log('📝 Cache miss para servicios destacados');
+      }
+      
+      // PASO 2: Red después (actualización)
+      try {
+        final freshSnapshot = await query.get();
+        final freshServices = freshSnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return ServiceModel.fromJson(data) as ServiceEntity;
+        }).toList();
+        
+        developer.log('🌐 ${freshServices.length} servicios destacados de la red');
+        onData(freshServices, false); // Emitir datos frescos
+        result = freshServices;
+      } catch (e) {
+        developer.log('⚠️ Error al obtener servicios destacados de la red: $e');
+        // Si ya tenemos cache, no hacer rethrow
+        if (result.isEmpty) rethrow;
+      }
+      
+      return result;
+    } finally {
+      developer.Timeline.finishSync();
+    }
+  }
+
+  /// Obtener servicios cercanos con estrategia cache-first + red
+  Future<List<ServiceEntity>> getNearbyServicesWithCache({
+    required double? userLatitude,
+    required double? userLongitude,
+    double radiusKm = 15.0,
+    int limit = 6,
+    required Function(List<ServiceEntity>, bool) onData, // (data, fromCache)
+  }) async {
+    try {
+      developer.Timeline.startSync('get_nearby_services_cache_first');
+      
+      // Si no hay ubicación, usar servicios generales
+      if (userLatitude == null || userLongitude == null) {
+        return await getAvailableServicesWithCache(limit: limit, onData: onData);
+      }
+      
+      // Query básico para servicios activos (optimizado sin geoqueries complejas)
+      final query = firestore
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .limit(limit * 2); // Obtener más para filtrar después
+      
+      List<ServiceEntity> result = [];
+      
+      // PASO 1: Cache primero
+      try {
+        final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
+        if (cachedSnapshot.docs.isNotEmpty) {
+          final cachedServices = cachedSnapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return ServiceModel.fromJson(data) as ServiceEntity;
+          }).toList();
+          
+          // Filtrar por distancia en memoria
+          final nearbyCache = _filterServicesByDistance(
+            cachedServices, userLatitude, userLongitude, radiusKm
+          ).take(limit).toList();
+          
+          developer.log('⚡ ${nearbyCache.length} servicios cercanos del cache');
+          onData(nearbyCache, true);
+          result = nearbyCache;
+        }
+      } catch (e) {
+        developer.log('📝 Cache miss para servicios cercanos');
+      }
+      
+      // PASO 2: Red después
+      try {
+        final freshSnapshot = await query.get();
+        final freshServices = freshSnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return ServiceModel.fromJson(data) as ServiceEntity;
+        }).toList();
+        
+        // Filtrar por distancia en memoria
+        final nearbyFresh = _filterServicesByDistance(
+          freshServices, userLatitude, userLongitude, radiusKm
+        ).take(limit).toList();
+        
+        developer.log('🌐 ${nearbyFresh.length} servicios cercanos de la red');
+        onData(nearbyFresh, false);
+        result = nearbyFresh;
+      } catch (e) {
+        developer.log('⚠️ Error al obtener servicios cercanos de la red: $e');
+        if (result.isEmpty) rethrow;
+      }
+      
+      return result;
+    } finally {
+      developer.Timeline.finishSync();
+    }
+  }
+
+  /// Obtener servicios disponibles con estrategia cache-first + red
+  Future<List<ServiceEntity>> getAvailableServicesWithCache({
+    int limit = 20,
+    required Function(List<ServiceEntity>, bool) onData,
+  }) async {
+    try {
+      developer.Timeline.startSync('get_available_services_cache_first');
+      
+      final query = firestore
+          .collection('services')
+          .where('isActive', isEqualTo: true)
+          .limit(limit);
+      
+      List<ServiceEntity> result = [];
+      
+      // PASO 1: Cache primero
+      try {
+        final cachedSnapshot = await query.get(const GetOptions(source: Source.cache));
+        if (cachedSnapshot.docs.isNotEmpty) {
+          final cachedServices = cachedSnapshot.docs.map((doc) {
+            final data = doc.data();
+            data['id'] = doc.id;
+            return ServiceModel.fromJson(data) as ServiceEntity;
+          }).toList();
+          
+          cachedServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
+          developer.log('⚡ ${cachedServices.length} servicios disponibles del cache');
+          onData(cachedServices, true);
+          result = cachedServices;
+        }
+      } catch (e) {
+        developer.log('📝 Cache miss para servicios disponibles');
+      }
+      
+      // PASO 2: Red después
+      try {
+        final freshSnapshot = await query.get();
+        final freshServices = freshSnapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id;
+          return ServiceModel.fromJson(data) as ServiceEntity;
+        }).toList();
+        
+        freshServices.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        
+        developer.log('🌐 ${freshServices.length} servicios disponibles de la red');
+        onData(freshServices, false);
+        result = freshServices;
+      } catch (e) {
+        developer.log('⚠️ Error al obtener servicios disponibles de la red: $e');
+        if (result.isEmpty) rethrow;
+      }
+      
+      return result;
+    } finally {
+      developer.Timeline.finishSync();
+    }
+  }
+
+  /// Filtrar servicios por distancia (helper method)
+  List<ServiceEntity> _filterServicesByDistance(
+    List<ServiceEntity> services,
+    double userLat,
+    double userLng,
+    double radiusKm,
+  ) {
+    return services.where((service) {
+      // Solo filtrar si el servicio tiene coordenadas
+      if (service.location == null) {
+        return true; // Incluir servicios sin ubicación específica
+      }
+      
+      final lat = service.location!['latitude'] as double?;
+      final lng = service.location!['longitude'] as double?;
+      
+      if (lat == null || lng == null) {
+        return true; // Incluir servicios sin coordenadas válidas
+      }
+      
+      final distance = LocationUtils.calculateDistance(
+        userLat, userLng,
+        lat, lng,
+      );
+      
+      return distance <= radiusKm;
+    }).toList();
   }
 
   // === MÉTODOS PARA COMPATIBILIDAD CON SERVICE_REPOSITORY ===
